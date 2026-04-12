@@ -41,10 +41,9 @@ pre{background:#1A2536;color:#e8e8e8;padding:16px;border-radius:8px;overflow-x:a
 <div class="container">
 
 <h2>Overview</h2>
-<p>Traditional marketing relies on static segmentation: group customers by RFM scores, assign a blanket promotion, and hope for the best. This system replaces that approach with a contextual bandit (LinUCB) that learns which promotional action works best for each customer profile — balancing exploration of new strategies with exploitation of proven ones.</p>
+<p>Traditional marketing relies on static segmentation: group customers by RFM scores, assign a blanket promotion, and apply it broadly. This system replaces that approach with a contextual bandit (LinUCB) that learns which promotional action works best for each customer profile — balancing exploration of new strategies with exploitation of proven ones.</p>
 
 <h2>Architecture</h2>
-<p>The system is deployed as a Dockerized microservice stack:</p>
 <div class="card-grid">
 <div class="card"><h4>PostgreSQL (db)</h4><p>Stores customers, actions, interactions, model state</p><span class="tech">Port 5432</span></div>
 <div class="card"><h4>ETL / Simulation</h4><p>Feature engineering from UCI Online Retail II, response simulation</p><span class="tech">Python</span></div>
@@ -75,9 +74,9 @@ docker-compose up --build</pre>
 <tr><th>Role</th><th>Member</th><th>Responsibility</th></tr>
 <tr><td>Product Manager</td><td>Anna Asatryan</td><td>Roadmap, stakeholder sync, PR management</td></tr>
 <tr><td>DB Developer</td><td>Hayk Alekyan</td><td>Schema design, PostgreSQL, CRUD</td></tr>
-<tr><td>Data Scientist</td><td>Davit Badalyan</td><td>LinUCB model, simulation, feature engineering</td></tr>
 <tr><td>Backend Developer</td><td>Victoria Makaryan</td><td>FastAPI endpoints, API layer</td></tr>
 <tr><td>Frontend Developer</td><td>Armine Babajanyan</td><td>Streamlit dashboard</td></tr>
+<tr><td>Data Scientist</td><td>Davit Badalyan</td><td>LinUCB model, simulation, feature engineering</td></tr>
 </table>
 
 <h2>Milestones</h2>
@@ -94,14 +93,12 @@ docker-compose up --build</pre>
 <ul>
 <li><a href="problem_definition.pdf">Problem Definition (PDF)</a></li>
 <li><a href="product_roadmap.pdf">Product Roadmap (PDF)</a></li>
-<li><a href="architecture_flow.svg">Architecture Flowchart (SVG — editable in Figma)</a></li>
+<li><a href="architecture_flow.svg">Architecture Flowchart (SVG)</a></li>
 <li><a href="ui_prototype.png">UI Prototype (PNG)</a></li>
 <li><a href="roadmap_swimlane.png">Swimlane Roadmap (PNG)</a></li>
 </ul>
 
-<div class="footer">
-DS 223 Marketing Analytics · Spring 2026 · American University of Armenia
-</div>
+<div class="footer">DS 223 Marketing Analytics · Spring 2026 · American University of Armenia</div>
 </div>
 </body>
 </html>
