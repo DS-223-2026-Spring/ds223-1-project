@@ -40,6 +40,13 @@ services:
     depends_on:
       - db
 
+  ds:
+    build: ./ds
+    container_name: campaign_ds
+    env_file: .env
+    depends_on:
+      - db
+
   api:
     build: ./api
     container_name: campaign_api
