@@ -37,38 +37,38 @@ services:
       - pgadmin_data:/var/lib/pgadmin
       
 
-#   etl:
-#     build: ./etl
-#     container_name: campaign_etl
-#     env_file: .env
-#     depends_on:
-#       - db
+  etl:
+    build: ./etl
+    container_name: campaign_etl
+    env_file: .env
+    depends_on:
+      - db
 
-#   model:
-#     build: ./model
-#     container_name: campaign_model
-#     env_file: .env
-#     depends_on:
-#       - db
+  model:
+    build: ./model
+    container_name: campaign_model
+    env_file: .env
+    depends_on:
+      - db
 
-#   api:
-#     build: ./api
-#     container_name: campaign_api
-#     ports:
-#       - "8000:8000"
-#     env_file: .env
-#     depends_on:
-#       - db
-#       - model
+  api:
+    build: ./api
+    container_name: campaign_api
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      - db
+      - model
 
-#   app:
-#     build: ./app
-#     container_name: campaign_app
-#     ports:
-#       - "8501:8501"
-#     env_file: .env
-#     depends_on:
-#       - api
+  app:
+    build: ./app
+    container_name: campaign_app
+    ports:
+      - "8501:8501"
+    env_file: .env
+    depends_on:
+      - api
 
 volumes:
   postgres_data:
