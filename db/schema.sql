@@ -1,6 +1,3 @@
--- Campaign Optimization Engine | Schema
--- This script runs automatically on first container start
-
 CREATE TABLE IF NOT EXISTS customers (
     customer_id SERIAL PRIMARY KEY,
     recency FLOAT,
@@ -18,14 +15,6 @@ CREATE TABLE IF NOT EXISTS actions (
     action_cost FLOAT NOT NULL DEFAULT 0.0,
     description TEXT
 );
-
--- Seed actions
-INSERT INTO actions (action_name, action_cost, description) VALUES
-    ('no_action', 0.0, 'Control — no promotion'),
-    ('discount_10', 0.10, '10% discount offer'),
-    ('free_shipping', 2.50, 'Free shipping offer'),
-    ('product_recommendation', 0.05, 'Personalized product recommendation'),
-    ('bundle_offer', 0.15, 'Cross-sell bundle at slight discount');
 
 CREATE TABLE IF NOT EXISTS interactions (
     interaction_id SERIAL PRIMARY KEY,
@@ -50,6 +39,5 @@ CREATE TABLE IF NOT EXISTS model_state (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Index for fast lookups
 CREATE INDEX IF NOT EXISTS idx_interactions_sim ON interactions(simulation_id);
 CREATE INDEX IF NOT EXISTS idx_interactions_customer ON interactions(customer_id);
