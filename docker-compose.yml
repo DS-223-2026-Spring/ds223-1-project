@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   db:
-    image: postgres:latest
+    image: postgres:17
     container_name: campaign_db
     restart: always
     env_file: .env
@@ -27,21 +27,21 @@ services:
       - pgadmin_data:/var/lib/pgadmin
 
   etl:
-    build: ./etl
+    build: ./ds/etl
     container_name: campaign_etl
     env_file: .env
     depends_on:
       - db
 
   model:
-    build: ./model
+    build: ./ds/model
     container_name: campaign_model
     env_file: .env
     depends_on:
       - db
 
   api:
-    build: ./api
+    build: ./backend
     container_name: campaign_api
     ports:
       - "8000:8000"
@@ -51,7 +51,7 @@ services:
       - model
 
   app:
-    build: ./app
+    build: ./frontend
     container_name: campaign_app
     ports:
       - "8501:8501"

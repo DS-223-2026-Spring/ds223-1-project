@@ -53,3 +53,36 @@ CREATE TABLE IF NOT EXISTS model_state (
 -- Index for fast lookups
 CREATE INDEX IF NOT EXISTS idx_interactions_sim ON interactions(simulation_id);
 CREATE INDEX IF NOT EXISTS idx_interactions_customer ON interactions(customer_id);
+
+
+-- Simulation run metadata
+CREATE TABLE IF NOT EXISTS simulations (
+    simulation_id SERIAL PRIMARY KEY,
+    sim_name VARCHAR(100),
+    num_rounds INTEGER,
+    num_customers INTEGER,
+    alpha FLOAT DEFAULT 0.5,
+    notes TEXT,
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP
+);
+
+-- Raw source transactions (UCI Online Retail II)
+CREATE TABLE IF NOT EXISTS raw_transactions (
+    transaction_id SERIAL PRIMARY KEY,
+    customer_id INTEGER REFERENCES customers(customer_id),
+    invoice_no VARCHAR(20),
+    stock_code VARCHAR(20),
+    description TEXT,
+    quantity INTEGER,
+    invoice_date TIMESTAMP,
+    unit_price FLOAT,
+    country VARCHAR(50),
+    line_total FLOAT GENERATED ALWAYS AS (quantity * unit_price) STORED
+);
+
+-- Also add segment_label to customers (for Davit's EDA)
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS segment_label VARCHAR(30);
+
+CREATE INDEX IF NOT EXISTS idx_raw_customer ON raw_transactions(customer_id);
+CREATE INDEX IF NOT EXISTS idx_sim_name ON simulations(sim_name);
