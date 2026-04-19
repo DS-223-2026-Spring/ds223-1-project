@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 from .config import SyntheticDataConfig
@@ -35,6 +36,14 @@ def export_artifacts(
     validation.latent_feature_correlations.to_csv(
         output_dir / "latent_feature_correlations.csv"
     )
+    validation.target_moment_comparison.to_csv(
+        output_dir / "target_moment_comparison.csv",
+        index=False,
+    )
+    validation.monotonicity_checks.to_csv(
+        output_dir / "monotonicity_checks.csv",
+        index=False,
+    )
     (output_dir / "validation_report.txt").write_text(validation.report_text + "\n")
     (output_dir / "sanity_checks.json").write_text(
         sanity_checks_to_json(validation.sanity_checks) + "\n"
@@ -49,3 +58,6 @@ def export_artifacts(
         "alpha": config.alpha,
     }
     (output_dir / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
+    (output_dir / "calibration.json").write_text(
+        json.dumps(asdict(config.calibration), indent=2) + "\n"
+    )

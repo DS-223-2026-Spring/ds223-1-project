@@ -18,6 +18,8 @@ class ValidationArtifacts:
     action_summary: pd.DataFrame
     customer_summary: pd.DataFrame
     latent_feature_correlations: pd.DataFrame
+    target_moment_comparison: pd.DataFrame
+    monotonicity_checks: pd.DataFrame
     sanity_checks: dict[str, object]
     report_text: str
 
@@ -74,6 +76,18 @@ def build_validation_artifacts(
         .round(3)
     )
 
+    target_moment_comparison = build_target_moment_comparison(
+        customers=customers,
+        interactions=interaction_summary,
+        config=config,
+    )
+    monotonicity_checks = build_monotonicity_checks(
+        customers=customers,
+        latents=latents,
+        interactions=interaction_summary,
+        config=config,
+    )
+
     bundle_avg_revenue = (
         interaction_summary.loc[interaction_summary["action_id"] == 4, "revenue"].mean()
     )
@@ -105,6 +119,8 @@ def build_validation_artifacts(
         config=config,
         segment_counts=segment_counts,
         action_summary=action_summary,
+        target_moment_comparison=target_moment_comparison,
+        monotonicity_checks=monotonicity_checks,
         sanity_checks=sanity_checks,
     )
 
@@ -113,9 +129,168 @@ def build_validation_artifacts(
         action_summary=action_summary,
         customer_summary=customer_summary,
         latent_feature_correlations=latent_feature_correlations,
+        target_moment_comparison=target_moment_comparison,
+        monotonicity_checks=monotonicity_checks,
         sanity_checks=sanity_checks,
         report_text=report_text,
     )
+
+
+def build_target_moment_comparison(
+    customers: pd.DataFrame,
+    interactions: pd.DataFrame,
+    config: SyntheticDataConfig,
+) -> pd.DataFrame:
+    """Compare realized dataset moments against configured targets."""
+
+    targets = config.calibration.targets
+    rows: list[dict[str, object]] = []
+
+    actual_segment_mix = customers["segment"].value_counts(normalize=True).to_dict()
+    for segment_name, target_share in targets.segment_mix.items():
+        actual_share = float(actual_segment_mix.get(segment_name, 0.0))
+        deviation = actual_share - target_share
+        rows.append(
+            {
+                "metric_group": "segment_mix",
+                "metric_name": segment_name,
+                "target": round(target_share, 4),
+                "actual": round(actual_share, 4),
+                "deviation": round(deviation, 4),
+                "within_tolerance": abs(deviation) <= targets.segment_mix_tolerance,
+            }
+        )
+
+    actual_mean_aov = float(customers["avg_order_size"].mean())
+    rows.append(
+        {
+            "metric_group": "avg_order_size",
+            "metric_name": "mean_avg_order_size",
+            "target": round(targets.mean_avg_order_size, 4),
+            "actual": round(actual_mean_aov, 4),
+            "deviation": round(actual_mean_aov - targets.mean_avg_order_size, 4),
+            "within_tolerance": abs(actual_mean_aov - targets.mean_avg_order_size)
+            <= targets.mean_avg_order_tolerance,
+        }
+    )
+
+    actual_conversion = interactions.groupby("action_name")["converted"].mean().to_dict()
+    for action_name, target_rate in targets.conversion_rate_by_action.items():
+        actual_rate = float(actual_conversion.get(action_name, 0.0))
+        rows.append(
+            {
+                "metric_group": "conversion_rate",
+                "metric_name": action_name,
+                "target": round(target_rate, 4),
+                "actual": round(actual_rate, 4),
+                "deviation": round(actual_rate - target_rate, 4),
+                "within_tolerance": abs(actual_rate - target_rate)
+                <= targets.conversion_tolerance,
+            }
+        )
+
+    converted_only = interactions.loc[interactions["converted"]].copy()
+    converted_revenue = converted_only.groupby("action_name")["revenue"].mean().to_dict()
+    for action_name, (range_min, range_max) in targets.converted_revenue_range_by_action.items():
+        actual_revenue = float(converted_revenue.get(action_name, 0.0))
+        midpoint = (range_min + range_max) / 2.0
+        rows.append(
+            {
+                "metric_group": "converted_revenue_range",
+                "metric_name": action_name,
+                "target": round(midpoint, 4),
+                "actual": round(actual_revenue, 4),
+                "deviation": round(actual_revenue - midpoint, 4),
+                "within_tolerance": range_min <= actual_revenue <= range_max,
+            }
+        )
+
+    return pd.DataFrame(rows)
+
+
+def build_monotonicity_checks(
+    customers: pd.DataFrame,
+    latents: pd.DataFrame,
+    interactions: pd.DataFrame,
+    config: SyntheticDataConfig,
+) -> pd.DataFrame:
+    """Verify the directional assumptions remain true after refactors."""
+
+    monotonicity_cfg = config.calibration.monotonicity
+    merged = customers.merge(latents, on="customer_id", how="inner")
+    cutoff = monotonicity_cfg.quantile_cutoff
+
+    low_loyalty = merged["z_brand_loyalty"] <= merged["z_brand_loyalty"].quantile(cutoff)
+    high_loyalty = merged["z_brand_loyalty"] >= merged["z_brand_loyalty"].quantile(1.0 - cutoff)
+    low_impulse = merged["z_impulse_tendency"] <= merged["z_impulse_tendency"].quantile(cutoff)
+    high_impulse = merged["z_impulse_tendency"] >= merged["z_impulse_tendency"].quantile(1.0 - cutoff)
+    low_price = merged["z_price_sensitivity"] <= merged["z_price_sensitivity"].quantile(cutoff)
+    high_price = merged["z_price_sensitivity"] >= merged["z_price_sensitivity"].quantile(1.0 - cutoff)
+
+    converted = interactions.loc[interactions["converted"]].copy()
+    bundle_converted_revenue = float(
+        converted.loc[converted["action_name"] == "bundle_offer", "revenue"].mean()
+    )
+    no_action_converted_revenue = float(
+        converted.loc[converted["action_name"] == "no_action", "revenue"].mean()
+    )
+
+    rows = [
+        _monotonicity_row(
+            "high_loyalty_lowers_recency",
+            float(merged.loc[low_loyalty, "recency"].mean() - merged.loc[high_loyalty, "recency"].mean()),
+            monotonicity_cfg.loyalty_recency_gap_min,
+        ),
+        _monotonicity_row(
+            "high_loyalty_raises_frequency",
+            float(merged.loc[high_loyalty, "frequency"].mean() - merged.loc[low_loyalty, "frequency"].mean()),
+            monotonicity_cfg.loyalty_frequency_gap_min,
+        ),
+        _monotonicity_row(
+            "high_loyalty_raises_monetary",
+            float(merged.loc[high_loyalty, "monetary"].mean() - merged.loc[low_loyalty, "monetary"].mean()),
+            monotonicity_cfg.loyalty_monetary_gap_min,
+        ),
+        _monotonicity_row(
+            "high_loyalty_raises_regularity",
+            float(
+                merged.loc[high_loyalty, "purchase_regularity"].mean()
+                - merged.loc[low_loyalty, "purchase_regularity"].mean()
+            ),
+            monotonicity_cfg.loyalty_regularity_gap_min,
+        ),
+        _monotonicity_row(
+            "high_impulse_raises_basket_diversity",
+            float(
+                merged.loc[high_impulse, "basket_diversity"].mean()
+                - merged.loc[low_impulse, "basket_diversity"].mean()
+            ),
+            monotonicity_cfg.impulse_basket_gap_min,
+        ),
+        _monotonicity_row(
+            "high_impulse_raises_avg_order_size",
+            float(
+                merged.loc[high_impulse, "avg_order_size"].mean()
+                - merged.loc[low_impulse, "avg_order_size"].mean()
+            ),
+            monotonicity_cfg.impulse_avg_order_gap_min,
+        ),
+        _monotonicity_row(
+            "low_price_sensitivity_raises_avg_order_size",
+            float(
+                merged.loc[low_price, "avg_order_size"].mean()
+                - merged.loc[high_price, "avg_order_size"].mean()
+            ),
+            monotonicity_cfg.low_price_minus_high_price_aov_gap_min,
+        ),
+        _monotonicity_row(
+            "bundle_offer_revenue_exceeds_no_action",
+            float(bundle_converted_revenue - no_action_converted_revenue),
+            monotonicity_cfg.bundle_minus_no_action_converted_revenue_gap_min,
+        ),
+    ]
+
+    return pd.DataFrame(rows)
 
 
 def sanity_checks_to_json(sanity_checks: dict[str, object]) -> str:
@@ -128,6 +303,8 @@ def _format_report(
     config: SyntheticDataConfig,
     segment_counts: pd.DataFrame,
     action_summary: pd.DataFrame,
+    target_moment_comparison: pd.DataFrame,
+    monotonicity_checks: pd.DataFrame,
     sanity_checks: dict[str, object],
 ) -> str:
     """Render a concise terminal report."""
@@ -159,4 +336,27 @@ def _format_report(
     for key, value in sanity_checks.items():
         lines.append(f"  - {key}: {value}")
 
+    lines.append("")
+    lines.append(
+        "Target moments within tolerance: "
+        f"{int(target_moment_comparison['within_tolerance'].sum())}/"
+        f"{len(target_moment_comparison)}"
+    )
+    lines.append(
+        "Monotonicity checks passed: "
+        f"{int(monotonicity_checks['passed'].sum())}/"
+        f"{len(monotonicity_checks)}"
+    )
+
     return "\n".join(lines)
+
+
+def _monotonicity_row(metric_name: str, actual_gap: float, threshold: float) -> dict[str, object]:
+    """Return one monotonicity check row."""
+
+    return {
+        "metric_name": metric_name,
+        "actual_gap": round(actual_gap, 4),
+        "threshold": round(threshold, 4),
+        "passed": actual_gap >= threshold,
+    }

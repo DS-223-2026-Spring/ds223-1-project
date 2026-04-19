@@ -64,14 +64,31 @@ It also writes validation artifacts in the same folder:
 - `action_summary.csv`
 - `customer_feature_summary.csv`
 - `latent_feature_correlations.csv`
+- `target_moment_comparison.csv`
+- `monotonicity_checks.csv`
 - `validation_report.txt`
 - `sanity_checks.json`
 - `metadata.json`
+- `calibration.json`
 
 The generator uses latent customer traits to create noisy observable RFM-style
 features, assigns segments from observed features only, and simulates
 action-level conversions and rewards under `random_policy` or a
 `bandit_scaffold` placeholder mode.
+
+The full calibration now lives in `ds/synthetic/config.py`, including:
+
+- latent priors
+- feature-generation coefficients
+- action-response and revenue coefficients
+- target moments for segment mix, mean AOV, conversion rates, and revenue ranges
+- monotonicity thresholds checked during validation and tests
+
+Run the generator regression tests with:
+
+```bash
+python3 -m unittest discover -s tests
+```
 
 ---
 

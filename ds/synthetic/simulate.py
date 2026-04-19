@@ -7,25 +7,29 @@ import json
 import numpy as np
 import pandas as pd
 
-from .actions import ActionDefinition
-from .config import FEATURE_COLUMNS, SyntheticDataConfig
+from .config import ActionCalibration, FEATURE_COLUMNS, SyntheticDataConfig
 
 
 def simulate_interactions(
     customers: pd.DataFrame,
     latents: pd.DataFrame,
-    actions: tuple[ActionDefinition, ...],
+    actions: tuple[ActionCalibration, ...],
     config: SyntheticDataConfig,
     rng: np.random.Generator,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Simulate round-by-round interactions under the selected policy."""
 
     customer_frame = customers.merge(latents, on="customer_id", how="inner")
-    sampled_customers = sample_customer_rounds(customer_frame, config.n_rounds, rng)
+    sampled_customers = sample_customer_rounds(customer_frame, config.n_rounds, config, rng)
     action_ids = choose_actions(sampled_customers, actions, config, rng)
     round_numbers = np.arange(1, config.n_rounds + 1, dtype=int)
 
-    p_convert = compute_conversion_probabilities(action_ids, sampled_customers)
+    p_convert = compute_conversion_probabilities(
+        action_ids=action_ids,
+        sampled_customers=sampled_customers,
+        actions=actions,
+        config=config,
+    )
     converted = rng.random(config.n_rounds) < p_convert
 
     revenue = simulate_revenue(
@@ -34,9 +38,15 @@ def simulate_interactions(
         actions=actions,
         round_numbers=round_numbers,
         converted=converted,
+        config=config,
         rng=rng,
     )
-    cost = compute_realized_costs(action_ids, revenue, converted)
+    cost = compute_realized_costs(
+        action_ids=action_ids,
+        revenue=revenue,
+        converted=converted,
+        actions=actions,
+    )
     reward = revenue - cost
 
     interactions = pd.DataFrame(
@@ -59,19 +69,30 @@ def simulate_interactions(
 
 
 def sample_customer_rounds(
-    customer_frame: pd.DataFrame, n_rounds: int, rng: np.random.Generator
+    customer_frame: pd.DataFrame,
+    n_rounds: int,
+    config: SyntheticDataConfig,
+    rng: np.random.Generator,
 ) -> pd.DataFrame:
     """Sample customers with replacement, weighted by purchase frequency."""
 
-    weights = customer_frame["frequency"].astype(float).to_numpy() + 1.0
+    sampling_cfg = config.calibration.simulation
+    weights = (
+        customer_frame["frequency"].astype(float).to_numpy()
+        + sampling_cfg.sampling_frequency_offset
+    )
     probabilities = weights / weights.sum()
-    sampled_indices = rng.choice(customer_frame.index.to_numpy(), size=n_rounds, p=probabilities)
+    sampled_indices = rng.choice(
+        customer_frame.index.to_numpy(),
+        size=n_rounds,
+        p=probabilities,
+    )
     return customer_frame.loc[sampled_indices].reset_index(drop=True)
 
 
 def choose_actions(
     sampled_customers: pd.DataFrame,
-    actions: tuple[ActionDefinition, ...],
+    actions: tuple[ActionCalibration, ...],
     config: SyntheticDataConfig,
     rng: np.random.Generator,
 ) -> np.ndarray:
@@ -87,55 +108,74 @@ def choose_actions(
 
 
 def compute_conversion_probabilities(
-    action_ids: np.ndarray, sampled_customers: pd.DataFrame
+    action_ids: np.ndarray,
+    sampled_customers: pd.DataFrame,
+    actions: tuple[ActionCalibration, ...],
+    config: SyntheticDataConfig,
 ) -> np.ndarray:
     """Compute action-specific conversion probabilities from latent traits."""
 
     price = sampled_customers["z_price_sensitivity"].to_numpy()
     loyalty = sampled_customers["z_brand_loyalty"].to_numpy()
     impulse = sampled_customers["z_impulse_tendency"].to_numpy()
+    planner = 1.0 - impulse
+    action_lookup = {action.action_id: action for action in actions}
+    simulation_cfg = config.calibration.simulation
 
     logits = np.zeros(len(sampled_customers), dtype=float)
-
-    mask = action_ids == 0
-    logits[mask] = -2.2 + 3.1 * loyalty[mask] - 0.3 * price[mask]
-
-    mask = action_ids == 1
-    logits[mask] = -1.9 + 3.4 * price[mask] - 1.6 * loyalty[mask] + 0.4 * impulse[mask]
-
-    mask = action_ids == 2
-    logits[mask] = -1.8 + 2.5 * price[mask] - 1.4 * impulse[mask] + 0.3 * loyalty[mask]
-
-    mask = action_ids == 3
-    logits[mask] = -2.3 + 2.1 * loyalty[mask] + 1.6 * impulse[mask]
-
-    mask = action_ids == 4
-    logits[mask] = -2.35 + 2.5 * impulse[mask] + 1.0 * loyalty[mask] + 0.4 * price[mask]
+    for action_id, action in action_lookup.items():
+        mask = action_ids == action_id
+        if not np.any(mask):
+            continue
+        logits[mask] = (
+            action.conversion_intercept
+            + action.conversion_price_weight * price[mask]
+            + action.conversion_loyalty_weight * loyalty[mask]
+            + action.conversion_impulse_weight * impulse[mask]
+            + action.conversion_planner_weight * planner[mask]
+        )
 
     probabilities = 1.0 / (1.0 + np.exp(-logits))
-    return np.clip(probabilities, 0.02, 0.90)
+    return np.clip(
+        probabilities,
+        simulation_cfg.p_convert_min,
+        simulation_cfg.p_convert_max,
+    )
 
 
 def simulate_revenue(
     sampled_customers: pd.DataFrame,
     action_ids: np.ndarray,
-    actions: tuple[ActionDefinition, ...],
+    actions: tuple[ActionCalibration, ...],
     round_numbers: np.ndarray,
     converted: np.ndarray,
+    config: SyntheticDataConfig,
     rng: np.random.Generator,
 ) -> np.ndarray:
     """Simulate gross merchandise revenue when a conversion occurs."""
 
     action_lookup = {action.action_id: action for action in actions}
+    simulation_cfg = config.calibration.simulation
 
     avg_order = sampled_customers["avg_order_size"].to_numpy()
-    loyalty = sampled_customers["z_brand_loyalty"].to_numpy()
     price = sampled_customers["z_price_sensitivity"].to_numpy()
+    loyalty = sampled_customers["z_brand_loyalty"].to_numpy()
     impulse = sampled_customers["z_impulse_tendency"].to_numpy()
+    planner = 1.0 - impulse
     basket_diversity = sampled_customers["basket_diversity"].to_numpy()
 
-    seasonality = 1.0 + 0.08 * np.sin(2.0 * np.pi * (round_numbers - 1) / 52.0)
-    base_basket = avg_order * np.clip(rng.normal(1.0, 0.10, size=len(sampled_customers)), 0.75, 1.35)
+    seasonality = 1.0 + simulation_cfg.seasonality_amplitude * np.sin(
+        2.0 * np.pi * (round_numbers - 1) / simulation_cfg.seasonality_period
+    )
+    base_basket = avg_order * np.clip(
+        rng.normal(
+            simulation_cfg.basket_noise_mean,
+            simulation_cfg.basket_noise_sd,
+            size=len(sampled_customers),
+        ),
+        simulation_cfg.basket_noise_min,
+        simulation_cfg.basket_noise_max,
+    )
 
     revenue = np.zeros(len(sampled_customers), dtype=float)
     for action_id, action in action_lookup.items():
@@ -143,17 +183,14 @@ def simulate_revenue(
         if not np.any(mask):
             continue
 
-        multiplier = np.ones(mask.sum(), dtype=float) * action.revenue_multiplier
-        if action_id == 0:
-            multiplier += 0.05 * loyalty[mask]
-        elif action_id == 1:
-            multiplier += 0.10 * price[mask]
-        elif action_id == 2:
-            multiplier += 0.06 * price[mask] + 0.03 * (1.0 - impulse[mask])
-        elif action_id == 3:
-            multiplier += 0.08 * loyalty[mask] + 0.06 * impulse[mask]
-        elif action_id == 4:
-            multiplier += 0.18 * impulse[mask] + 0.04 * basket_diversity[mask]
+        multiplier = (
+            action.revenue_base_multiplier
+            + action.revenue_price_weight * price[mask]
+            + action.revenue_loyalty_weight * loyalty[mask]
+            + action.revenue_impulse_weight * impulse[mask]
+            + action.revenue_planner_weight * planner[mask]
+            + action.revenue_basket_weight * basket_diversity[mask]
+        )
 
         raw_revenue = (
             base_basket[mask]
@@ -172,33 +209,37 @@ def simulate_revenue(
 
 
 def compute_realized_costs(
-    action_ids: np.ndarray, revenue: np.ndarray, converted: np.ndarray
+    action_ids: np.ndarray,
+    revenue: np.ndarray,
+    converted: np.ndarray,
+    actions: tuple[ActionCalibration, ...],
 ) -> np.ndarray:
     """Compute realized action cost for each interaction."""
 
     costs = np.zeros(len(action_ids), dtype=float)
+    action_lookup = {action.action_id: action for action in actions}
 
-    mask = action_ids == 1
-    costs[mask] = np.where(
-        converted[mask],
-        np.maximum(0.10 * revenue[mask], 4.00),
-        0.10,
-    )
+    for action_id, action in action_lookup.items():
+        mask = action_ids == action_id
+        if not np.any(mask):
+            continue
 
-    mask = action_ids == 2
-    costs[mask] = np.where(converted[mask], 4.99, 0.10)
-
-    mask = action_ids == 3
-    costs[mask] = 0.30
-
-    mask = action_ids == 4
-    costs[mask] = np.where(converted[mask], 9.00, 0.20)
+        converted_cost = np.maximum(
+            action.converted_cost_rate * revenue[mask],
+            action.converted_cost_floor,
+        )
+        costs[mask] = np.where(
+            converted[mask],
+            converted_cost,
+            action.non_conversion_cost,
+        )
 
     return costs
 
 
 def initialize_model_state(
-    actions: tuple[ActionDefinition, ...], config: SyntheticDataConfig
+    actions: tuple[ActionCalibration, ...],
+    config: SyntheticDataConfig,
 ) -> pd.DataFrame:
     """Create a schema-ready placeholder for later LinUCB state persistence."""
 

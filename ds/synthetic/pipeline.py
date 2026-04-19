@@ -32,10 +32,18 @@ def run_pipeline(config: SyntheticDataConfig) -> SyntheticArtifacts:
     """Run the standalone synthetic dataset generation pipeline."""
 
     rng = np.random.default_rng(config.random_seed)
-    action_definitions = get_action_definitions()
+    action_definitions = get_action_definitions(config.calibration)
 
-    customer_latents = generate_latent_traits(config.n_customers, rng)
-    customers = generate_observed_features(customer_latents, rng)
+    customer_latents = generate_latent_traits(
+        config.n_customers,
+        config.calibration,
+        rng,
+    )
+    customers = generate_observed_features(
+        customer_latents,
+        config.calibration,
+        rng,
+    )
     actions = actions_to_frame(action_definitions)
     interactions, model_state = simulate_interactions(
         customers=customers,
