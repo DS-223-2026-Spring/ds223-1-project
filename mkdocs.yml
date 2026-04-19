@@ -1,15 +1,32 @@
-site_name: DS223 — Campaign Optimization Engine
-site_description: Adaptive marketing campaign optimization using contextual bandits (LinUCB)
-site_author: Group 1 — AUA DS223 Spring 2026
+site_name: Campaign Optimization Engine
+site_description: LinUCB contextual bandit for promotional action selection — DS223 Group 1
+site_author: Group 1, AUA Spring 2026
 
 theme:
   name: material
-  palette:
-    primary: indigo
-    accent: indigo
+  palette: 
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
   features:
     - navigation.tabs
     - navigation.sections
+    - navigation.top
 
 nav:
   - Home: index.md
@@ -24,3 +41,4 @@ markdown_extensions:
   - admonition
   - pymdownx.highlight
   - pymdownx.superfences
+  - tables

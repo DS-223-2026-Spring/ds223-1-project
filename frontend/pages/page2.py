@@ -1,4 +1,8 @@
-"""Page 2 — Exploration Analysis."""
+"""
+Page 2: Live Dashboard
+Owner: Armine Babajanyan (frontend branch)
+M3: GET /metrics → plot cumulative reward curve, action distribution, conversion rates
+Auto-refreshes every 30s while simulation is running.
+"""
 import streamlit as st
-st.title("Exploration Analysis")
-# TODO (M3): Action distribution, conversion by action
+import time

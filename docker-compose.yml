@@ -1,6 +1,16 @@
-version: "3.9"
+# version: "3.9"
+
+# Campaign Optimization Engine — DS223 Group 1
+# Run: docker-compose up --build
+# Dashboard:  http://localhost:8502
+# API docs:   http://localhost:8000/docs
+# pgAdmin:    http://localhost:5050
+# Prefect UI: http://localhost:4200
 
 services:
+
+  # ── DATABASE ─────────────────────────────────────────
+  # Owner: Hayk Alekyan
   db:
     image: postgres:17
     container_name: campaign_db
@@ -11,6 +21,10 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      retries: 5
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -22,24 +36,25 @@ services:
     ports:
       - "5050:80"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - pgadmin_data:/var/lib/pgadmin
 
-  etl:
-    build: ./ds/etl
-    container_name: campaign_etl
+  # ── DATA SCIENCE ──────────────────────────────────────
+  # Owner: Davit Badalyan
+  # Runs ETL then simulation sequentially — exits when done
+  ds:
+    build: ./ds
+    container_name: campaign_ds
     env_file: .env
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    restart: "no"
 
-  model:
-    build: ./ds/model
-    container_name: campaign_model
-    env_file: .env
-    depends_on:
-      - db
-
+  # ── BACKEND API ───────────────────────────────────────
+  # Owner: Victoria Makaryan
   api:
     build: ./backend
     container_name: campaign_api
@@ -47,18 +62,48 @@ services:
       - "8000:8000"
     env_file: .env
     depends_on:
-      - db
-      - model
+      db:
+        condition: service_healthy
+    restart: always
 
+  # ── FRONTEND ──────────────────────────────────────────
+  # Owner: Armine Babajanyan
   app:
     build: ./frontend
     container_name: campaign_app
     ports:
-      - "8501:8501"
+      - "8502:8501"
     env_file: .env
     depends_on:
       - api
+    restart: always
+
+  # ── ORCHESTRATION ─────────────────────────────────────
+  # Owner: shared
+  prefect:
+    image: prefecthq/prefect:2-latest
+    container_name: campaign_prefect
+    command: prefect server start --host 0.0.0.0
+    ports:
+      - "4200:4200"
+    environment:
+      PREFECT_UI_API_URL: http://localhost:4200/api
+    volumes:
+      - prefect_data:/root/.prefect
+    restart: always
+
+  orchestration:
+      build: ./orchestration
+      container_name: campaign_orchestration
+      env_file: .env
+      environment:
+        PREFECT_API_URL: http://prefect:4200/api
+      depends_on:
+        - prefect
+        - db
+      restart: "no"    
 
 volumes:
   postgres_data:
   pgadmin_data:
+  prefect_data:

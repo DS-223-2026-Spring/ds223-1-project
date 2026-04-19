@@ -2,114 +2,147 @@
 
 ## 1. Team Roles & Responsibilities
 
-The following roles are assigned to ensure the "Adaptive Campaign Optimization Engine" meets all Milestone requirements.
-
-| Role | Member | Primary Branch | Key Responsibilities |
+| Role | Member | Branch | Key Responsibilities |
 | :--- | :--- | :--- | :--- |
-| **PM / Lead** | Anna | `pm` | Repo architecture, MkDocs, PR reviews, milestone tracking (#16–22). |
-| **DB Developer** | Hayk | `db` | PostgreSQL schema, CRUD helpers, data loading (#23–31). |
-| **Backend** | Victoria | `backend` | FastAPI routes, logic, integration, API docs (#41–49). |
-| **Frontend** | Armine | `frontend` | Streamlit pages, dashboards, API consumption (#50–57). |
-| **Data Scientist** | Davit | `ds` | EDA, simulation engine, LinUCB model logic (#32–40). |
-| **Orchestration** | *(Shared)* | `orchestration` | Prefect flows and service automation (#11–15, #58–67). |
+| **PM** | Anna | `pm` | Repo structure, MkDocs, PR reviews, milestone tracking (#16–22, #68–72) |
+| **DB Developer** | Hayk | `db` | PostgreSQL schema, CRUD helpers, seed data (#23–31, #73–77) |
+| **Backend** | Victoria | `backend` | FastAPI routes, SQLAlchemy models, Pydantic schemas (#41–49) |
+| **Frontend** | Armine | `frontend` | Streamlit pages, dashboard charts, simulation controls (#50–57) |
+| **Data Scientist** | Davit | `ds` | Customer generation, LinUCB, simulation loop, baselines (#32–40, #78–81) |
+| **Orchestration** | *(shared)* | `orchestration` | Prefect flows, scheduling, outcome loop (#11–15, #58–67) |
 
 ---
 
-## 2. Branching Strategy
+## 2. Dependency Order — who does what first
 
-We follow a hierarchical branching model to protect the stability of the project.
+```
+[1] Anna (pm)
+Finalises repo structure, schema, docs, pushes to master
+↓
+[2] Hayk (db)
+Implements db/init.sql, db/crud.py helpers
+Verifies PostgreSQL + seed data running
+↓
+[3] Davit (ds)
+Uses Hayk's CRUD to write generated customers to DB
+Implements LinUCB — reads customers, writes interactions + model_state
+↓
+[4] Victoria (backend)          [4] Armine (frontend)
+Implements /decide               Builds dashboard pages
+Implements /feedback             Connects to /metrics endpoint
+Implements /metrics
+↓
+[5] Orchestration (shared)
+Prefect flows wire everything into a continuous loop
+```
 
-- **`master` (Protected)**: Only contains reviewed and approved work. No direct pushes allowed.
-- **Role Branches**: Long-lived branches (`db`, `ds`, `backend`, `frontend`, `pm`) where major service components are integrated.
-- **Feature Branches**: Temporary branches created for specific tasks (e.g., `db/add-indexes`, `ds/linucb-init`).
-
-### Workflow
-
-feature-branch → role-branch → master
+Victoria and Armine can set up skeletons in parallel from step 1.
+Their real implementation depends on Hayk finishing CRUD first.
 
 ---
 
-## 3. Contribution Standards
+## 3. Branching Strategy
+
+```
+master  (protected — PM merges here only)
+├── pm           Anna: mkdocs, structure, governance
+├── db           Hayk: schema, CRUD
+├── backend      Victoria: FastAPI
+├── frontend     Armine: Streamlit
+├── ds           Davit: customer gen, LinUCB
+└── orchestration  Prefect flows
+```
+
+One branch per person. Push directly to your branch.
+Open one PR to master when your M2 work is complete.
+
+---
+
+## 4. Contribution Standards
 
 ### Commit message format
 
-Use role-based prefixes to keep the history readable:
+```
+<role>: <short description>
+```
 
-db: implement customer table schema
-ds: add LinUCB update logic
-backend: add /predict endpoint
-frontend: add simulation results chart
-pm: update mkdocs navigation
-orchestration: draft Prefect flow plan
+db: implement get_customer_latents helper
+ds: add LinUCB select_action and update methods
+backend: add /decide endpoint with DB connection
+frontend: cumulative reward chart on dashboard page
+pm: fix governance dependency order
+orchestration: implement decision_loop flow
 
 ### Pull Request process
 
-1. **Push your branch**: `git push origin <feature-branch>`
-2. **Open a PR**: Target your **role branch** (e.g., `ds/eda-notebook` → `ds`, not `master`)
-3. **Notify for review**: Tag Anna as the reviewer
-4. **No self-merging**: The PM reviews and merges into role branches, then finally into `master`
-5. **Cleanup**: Delete the feature branch immediately after it is merged
+1. Push your branch: `git push origin <branch>`
+2. Open PR targeting **master**
+3. Write 2–3 sentences: what changed and why
+4. Tag **Anna** as reviewer — do not merge your own PR
+5. Anna reviews, merges, and deletes the branch
 
 ---
 
-## 4. Communication & Sync
+## 5. Change from M1 proposal
 
-- **Slack**: All blockers must be posted in `#group-1` by **10:00 AM daily**
-- **Project Board**: Anna tracks all tasks (#2–#71) via the GitHub Projects board
-- **Deadlines**: All M2 code must be in an open PR by **April 20** to meet the **April 21** deadline
+M1 proposed a hybrid approach using UCI Online Retail II for customer features.
+After evaluation the dataset was found to be a UK giftware wholesaler with 25%
+missing customer IDs — incompatible with the fashion retail domain and insufficient
+for grounding the simulation meaningfully.
+
+The revised approach is fully simulated using a latent generative model. This
+was also motivated by a methodological concern: simulating conversion directly
+from RFM features makes the learning problem trivially easy. Latent traits introduce
+genuine noise between observable context and reward signal, making the bandit
+problem non-trivial and the results more academically defensible.
+
+Note: M1 listed latent traits as out of scope. This decision reverses that.
+The rationale is documented above.
 
 ---
 
-## 5. Milestone 2: Definition of Done (Due April 21)
+## 6. Definition of Done — M2 (Due April 21)
 
-All of the following must be complete and merged (or in a reviewed PR) by April 21.
+### PM — Anna
+- [x] Repository structure finalised
+- [x] `docker-compose.yml` correct with all services
+- [x] MkDocs live — all pages render
+- [x] Governance and ERD published
+- [ ] All M2 PRs reviewed and merged
+- [ ] Merged branches deleted
 
-### Project Management (`pm`) — Anna
+### DB — Hayk
+- [ ] `docker-compose up db` starts PostgreSQL 17 cleanly
+- [x] `db/init.sql` schema complete and validated
+- [ ] `db/init.sql` runs without error on fresh container
+- [ ] All 6 tables visible in pgAdmin: `customers`, `customer_latents`, `actions`, `simulations`, `interactions`, `model_state`
+- [ ] `actions` table has 5 seeded rows with correct £ cost values
+- [ ] `db/crud.py` — all helpers implemented with docstrings
+- [ ] `python db/crud.py` smoke test passes
+- [ ] PR open: `db` → `master`
 
-- [ ] `pm` branch exists and is up to date (#19, #20)
-- [ ] MkDocs initialised, all pages render without errors (#16)
-- [ ] Governance and ERD pages live in docs/ (#16, #17)
-- [ ] ERD reviewed and signed off by Hayk and Davit (#17)
-- [ ] Service-based folder structure finalised and merged into `master` (#18)
-- [ ] Contribution rules defined and published in this document (#19)
-- [ ] All M2 PRs reviewed and merged by Anna (#21)
-- [ ] Merged feature branches deleted (#22)
+### Data Science — Davit
+- [ ] `docker-compose up ds` runs without error
+- [ ] 500 customers generated and visible in `customers` table
+- [ ] `customer_latents` populated with same 500 rows
+- [ ] LinUCB runs 1000 rounds, `interactions` table populated
+- [ ] `model_state` has 5 rows (one per action) after simulation
+- [ ] Random and heuristic baselines implemented
+- [ ] PR open: `ds` → `master`
 
-### Database (`db`) — Hayk
+### Backend — Victoria
+- [ ] `docker-compose up api` starts cleanly
+- [ ] Swagger accessible at `http://localhost:8000/docs`
+- [ ] All routes return placeholder responses
+- [ ] PR open: `backend` → `master`
 
-- [ ] `db` branch created and pushed to remote (#23)
-- [ ] `db` Docker container defined and running via `docker-compose up db` (#24)
-- [ ] PostgreSQL schema deployed based on the PM-approved ERD (#25, #26)
-- [ ] All tables, keys, relationships, and constraints implemented (#26)
-- [ ] Python connection to PostgreSQL verified and tested (#27)
-- [ ] UCI Online Retail II data loaded into `raw_transactions` and `customers` tables; row counts validated (#28)
-- [ ] Reusable CRUD helper methods written: `insert_customer`, `log_interaction`, `get_model_state`, `update_model_state` (#29)
-- [ ] All utilities documented with clear docstrings (#30)
-- [ ] PR opened from `db` → `master` and tagged for Anna's review (#31)
+### Frontend — Armine
+- [ ] `docker-compose up app` starts cleanly
+- [ ] All 4 pages load in Streamlit sidebar without errors
+- [ ] PR open: `frontend` → `master`
 
-### Data Science (`ds`) — Davit
-
-- [ ] `ds` branch created and pushed to remote (#32)
-- [ ] `ds` Docker containers (`etl`, `model`) defined in `docker-compose.yml` (#33)
-- [ ] EDA complete: missing fields, quality issues, and modelling opportunities identified and documented (#34)
-- [ ] Hybrid data strategy implemented: UCI data for customer context, simulated rewards documented as synthetic (#35)
-- [ ] DS pipeline uses Hayk's CRUD helpers — no direct local file reads in production code (#36)
-- [ ] LinUCB algorithm implemented in NumPy: A matrix, b vector, θ update, UCB score per arm (#37–#38)
-- [ ] Simulation engine functional: runs N rounds, logs interactions to DB, updates model state (#39)
-- [ ] PR opened from `ds` → `master` and tagged for Anna's review (#40)
-
-### Orchestration — *(Shared)*
-
-- [ ] Repository reviewed; overall architecture and service dependencies understood (#11)
-- [ ] Prefect research complete; short proposal written on how it fits the project (#12)
-- [ ] Alignment with PM, DB, and DS on which steps become automated flows (#13)
-- [ ] Orchestration plan written: which jobs are manual now, which are automated in M3+ (#14)
-- [ ] Draft folder/service plan for the `orchestration/` component created (#15)
-
-### Backend & Frontend — Victoria & Armine
-
-> M2 focus is DB and DS. Backend and Frontend are primary M3 deliverables.
-
-- [ ] `backend` branch pulled and local environment set up
-- [ ] `frontend` branch pulled and local environment set up
-- [ ] Architecture reviewed and any M3 blockers raised in Slack by April 20
+### Orchestration
+- [ ] `docker-compose up prefect` starts Prefect UI at port 4200
+- [ ] `flows.py` imports without error
+- [ ] Short proposal written: which flows automate in M3
+- [ ] PR open: `orchestration` → `master`
