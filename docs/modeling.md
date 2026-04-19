@@ -14,6 +14,10 @@ The core model is **LinUCB** (Linear Upper Confidence Bound), a contextual bandi
 4. Observes the reward (revenue − cost)
 5. Updates **Aₐ** and **bₐ** matrices for the chosen arm
 
+The detailed DS data contract for features, leakage rules, simulator
+assumptions, and reward definition is documented separately in
+[DS Feature & Reward Spec](ds_data_spec.md).
+
 ---
 
 ## Data strategy — fully simulated
