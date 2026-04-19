@@ -59,9 +59,17 @@ This is what makes the learning problem genuinely non-trivial.
 
 ## Quick start
 
+
+1. **Setup environment variables:**
+```bash
+cp .env.example .env
+```
+
+2. **Launch services:**
 ```bash
 docker-compose up --build
 ```
+
 
 | Service | URL |
 |---------|-----|

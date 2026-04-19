@@ -23,6 +23,12 @@ net profit for which customer profile, updating after every interaction.
 
 ## Quick start
 
+1. **Setup environment variables:**
+```bash
+cp .env.example .env
+```
+
+2. **Launch services:**
 ```bash
 docker-compose up --build
 ```
@@ -73,7 +79,8 @@ ds223-1-project/
 ├── docker-compose.yml
 ├── mkdocs.yml
 ├── .env                  Local config — never committed
-└── .gitignore
+├── .env.example          # Template for environment variables (committed)
+└── .gitignore          
 ```
 
 ---

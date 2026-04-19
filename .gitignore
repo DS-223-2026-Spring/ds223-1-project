@@ -38,6 +38,6 @@ data/raw/
 site/
 
 
-# # Environment
-# .env
-# *.env
+# Environment
+.env
+*.env
