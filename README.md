@@ -50,6 +50,12 @@ Generate a standalone synthetic dataset before any DB integration:
 python3 generate_synthetic_data.py --n-customers 500 --n-rounds 5000 --random-seed 42 --output-dir outputs/synthetic_data
 ```
 
+Persist the same generated artifacts through the DB developer's CRUD layer:
+
+```bash
+python3 generate_synthetic_data.py --n-customers 500 --n-rounds 5000 --persist-db --db-notes "initial DS integration load"
+```
+
 This writes:
 
 - `customers.csv`
