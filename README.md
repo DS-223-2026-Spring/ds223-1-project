@@ -42,6 +42,39 @@ docker-compose up --build
 
 ---
 
+## Synthetic data generation
+
+Generate a standalone synthetic dataset before any DB integration:
+
+```bash
+python3 generate_synthetic_data.py --n-customers 500 --n-rounds 5000 --random-seed 42 --output-dir outputs/synthetic_data
+```
+
+This writes:
+
+- `customers.csv`
+- `customer_latents.csv`
+- `actions.csv`
+- `interactions.csv`
+- `model_state.csv`
+
+It also writes validation artifacts in the same folder:
+
+- `segment_counts.csv`
+- `action_summary.csv`
+- `customer_feature_summary.csv`
+- `latent_feature_correlations.csv`
+- `validation_report.txt`
+- `sanity_checks.json`
+- `metadata.json`
+
+The generator uses latent customer traits to create noisy observable RFM-style
+features, assigns segments from observed features only, and simulates
+action-level conversions and rewards under `random_policy` or a
+`bandit_scaffold` placeholder mode.
+
+---
+
 ## Project structure
 
 ```
