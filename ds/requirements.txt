@@ -1,5 +1,5 @@
 numpy
 pandas
 scipy
-sqlalchemy
+sqlalchemyk
 psycopg2-binary

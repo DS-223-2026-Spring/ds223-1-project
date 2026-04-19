@@ -25,10 +25,6 @@ Thumbs.db
 postgres_data/
 pgadmin_data/
 
-# Environment
-.env
-*.env
-
 # Data files (too large for git)
 *.csv
 *.xlsx
@@ -36,3 +32,12 @@ data/raw/
 
 # Jupyter
 .ipynb_checkpoints/
+
+
+*.pyc
+site/
+
+
+# Environment
+.env
+*.env

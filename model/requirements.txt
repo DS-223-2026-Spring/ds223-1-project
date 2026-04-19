@@ -1,4 +1,0 @@
-numpy
-scipy
-psycopg2-binary
-sqlalchemy
