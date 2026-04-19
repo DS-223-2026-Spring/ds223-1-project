@@ -96,6 +96,15 @@ Run the generator regression tests with:
 python3 -m unittest discover -s tests
 ```
 
+Create an initial EDA report from the generated CSVs:
+
+```bash
+python3 generate_eda_report.py --input-dir outputs/synthetic_data
+```
+
+By default this writes summary tables, PNG charts, and a short Markdown report
+to `outputs/synthetic_data/eda/`.
+
 ---
 
 ## Project structure
