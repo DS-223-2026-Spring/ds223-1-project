@@ -12,7 +12,7 @@ net profit for which customer profile, updating after every interaction.
 
 | Role | Member | Branch |
 |------|--------|--------|
-| PM | Anna Asatryan | `pm` |
+| PM | Anna Asatryan | `pm/main` |
 | DB Developer | Hayk Alekyan | `db` |
 | Backend | Victoria Makaryan | `backend` |
 | Frontend | Armine Babajanyan | `frontend` |
@@ -87,6 +87,7 @@ ds223-1-project/
 
 ## Branching
 
+```
 One branch per role. Push directly to your branch, open one PR to main when ready.
 main  (protected — Anna merges here)
 ├── pm
@@ -95,6 +96,7 @@ main  (protected — Anna merges here)
 ├── frontend
 ├── ds
 └── orchestration
+```
 
 Commit format: `db: add crud helpers` / `ds: implement linucb` / `backend: add /decide endpoint`
 
