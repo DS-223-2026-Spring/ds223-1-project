@@ -1,18 +1,57 @@
-"""
-ETL Service — Campaign Optimization Engine
-Loads customer features from UCI Online Retail II dataset,
-engineers RFM + behavioral features, inserts into PostgreSQL.
-"""
+# from SQLHandler import SQLHandler
+# import os
+# from dotenv import load_dotenv
+
+# load_dotenv()
+
+# DB_NAME = os.getenv("POSTGRES_DB")
+# DB_USER = os.getenv("POSTGRES_USER")
+# DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+
+# inst = SQLHandler(
+#     host="db", 
+#     dbname=DB_NAME,  
+#     user=DB_USER, 
+#     password=DB_PASSWORD)
+
+# query = """
+# SELECT *
+# FROM dbo.sales
+# """
+
+# inst.set_schema('dbo')
+# df = inst.select(query=query)
+# print(type(df))
+
+# data = inst.from_sql(query)
+# print(data)
+
+# ##inst.commit()
+# inst.close()
+
+from SQLHandler import SQLHandler
 import os
+from dotenv import load_dotenv
+import db_interactions as dbi
+from loguru import logger
 
-def main():
-    print("ETL service started.")
-    # TODO (M2): Feature engineering pipeline
-    # 1. Load UCI Online Retail II data
-    # 2. Compute RFM features per customer
-    # 3. Compute basket_diversity, avg_order_size, purchase_regularity
-    # 4. Insert into customers table
-    print("ETL service placeholder — implement in M2.")
+load_dotenv()
 
-if __name__ == "__main__":
-    main()
+db = SQLHandler(
+    host="db",
+    dbname=os.getenv("POSTGRES_DB"),
+    user=os.getenv("POSTGRES_USER"),
+    password=os.getenv("POSTGRES_PASSWORD"),
+)
+
+print(os.getenv("POSTGRES_PASSWORD"))
+logger.error(os.getenv("POSTGRES_PASSWORD"))
+
+# use CRUD with injected handler
+customers = dbi.get_all_customers(db)
+print(customers.shape)
+
+sim_id = dbi.create_simulation(db, "test", 10, 100, 0.5)
+print(sim_id)
+
+db.close()
