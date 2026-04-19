@@ -12,9 +12,11 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - 5433:5432
-    volumes:
+    volumes: # docker-entrypoint-initdb works only once during initialization of the container
       - postgres_data:/var/lib/postgresql/data
-      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./db/1_schema.sql:/docker-entrypoint-initdb.d/1_schema.sql 
+      - ./db/2_indexes.sql:/docker-entrypoint-initdb.d/2_indexes.sql
+      - ./db/3_initial_insert.sql:/docker-entrypoint-initdb.d/3_initial_insert.sql
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]  
@@ -27,8 +29,8 @@ services:
     container_name: PGAadmin
     restart: always
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL} #admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD} #admin123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL} 
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
     ports:
       - 5050:80
     depends_on:
@@ -39,7 +41,7 @@ services:
 
   etl:
     build: ./etl
-    container_name: campaign_etl
+    container_name: etl
     env_file: .env
     depends_on:
       - db
