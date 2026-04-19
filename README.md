@@ -105,6 +105,25 @@ python3 generate_eda_report.py --input-dir outputs/synthetic_data
 By default this writes summary tables, PNG charts, and a short Markdown report
 to `outputs/synthetic_data/eda/`.
 
+Compare simple baseline policies against the synthetic environment:
+
+```bash
+python3 run_baseline_comparison.py --n-customers 500 --train-rounds 5000 --eval-rounds 5000 --output-dir outputs/baselines
+```
+
+This writes:
+
+- `policy_summary.csv`
+- `policy_action_distribution.csv`
+- `policy_round_traces.csv`
+- `training_action_summary.csv`
+- `policy_mapping.csv`
+- `linear_model_coefficients.csv`
+- `cumulative_reward_by_policy.png`
+- `total_reward_by_policy.png`
+- `action_mix_by_policy.png`
+- `baseline_report.md`
+
 ---
 
 ## Project structure
