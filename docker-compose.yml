@@ -20,24 +20,27 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./db/1_schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
+      - ./db/2_indexes.sql:/docker-entrypoint-initdb.d/2_indexes.sql
+      - ./db/3_initial_insert.sql:/docker-entrypoint-initdb.d/3_initial_insert.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
-      retries: 5      
+      retries: 5
 
   pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: campaign_pgadmin
+    image: dpage/pgadmin4:8
+    container_name: PGAadmin
     restart: always
     env_file: .env
     ports:
-      - "5050:80"
+      - 5050:80
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+      
 
   # ── DATA SCIENCE ──────────────────────────────────────
   # Owner: Davit Badalyan
@@ -46,6 +49,9 @@ services:
     build: ./ds
     container_name: campaign_ds
     env_file: .env
+    volumes:
+      - ./db/SQLHandler.py:/app/SQLHandler.py
+      - ./db/db_interactions.py:/app/db_interactions.py
     depends_on:
       db:
         condition: service_healthy
@@ -59,6 +65,9 @@ services:
     ports:
       - "8000:8000"
     env_file: .env
+    volumes:
+      - ./db/SQLHandler.py:/app/SQLHandler.py
+      - ./db/db_interactions.py:/app/db_interactions.py
     depends_on:
       db:
         condition: service_healthy
