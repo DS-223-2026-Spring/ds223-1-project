@@ -1,4 +1,6 @@
 numpy
+pandas
 scipy
-psycopg2-binary
 sqlalchemy
+psycopg2-binary
+matplotlib

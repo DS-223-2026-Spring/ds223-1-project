@@ -1,3 +1,15 @@
+<<<<<<< HEAD
+"""DS service entrypoint."""
+
+try:
+    from .synthetic.cli import main
+except ImportError:  # pragma: no cover - supports running inside the ds container
+    from synthetic.cli import main
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+=======
 # from SQLHandler import SQLHandler
 # import os
 # from dotenv import load_dotenv
@@ -55,3 +67,4 @@ sim_id = dbi.create_simulation(db, "test", 10, 100, 0.5)
 print(sim_id)
 
 db.close()
+>>>>>>> main

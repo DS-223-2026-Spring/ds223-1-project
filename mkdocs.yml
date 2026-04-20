@@ -34,6 +34,7 @@ nav:
   - Services:
       - Database: database.md
       - Data Science & Modeling: modeling.md
+      - DS Feature & Reward Spec: ds_data_spec.md
       - Backend API: api.md
       - Frontend UI: frontend.md
 
