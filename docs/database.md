@@ -14,8 +14,8 @@ Eight tables in two layers.
 |-------|---------|
 | `customers` | One row per simulated customer — RFM context vector for LinUCB |
 | `customer_latents` | Debug only — latent traits that generated RFM and drive conversion |
-| `products` | Static fashion product catalog — used by A3 and A4 actions |
-| `bundles` | Pre-defined outfit bundles — used by bundle_offer action |
+| `products` | Static fashion product catalog — used by product_rec and bundle_offer actions |
+| `bundles` | Pre-defined curated outfits — used by bundle_offer action |
 
 **Bandit layer** — grows during simulation:
 
@@ -28,16 +28,29 @@ Eight tables in two layers.
 
 ---
 
+## Schema files
+
+The schema is split across three files, run in order by PostgreSQL on first container start:
+
+| File | Contents |
+|------|---------|
+| `db/1_schema.sql` | All table definitions |
+| `db/2_indexes.sql` | Performance indexes |
+| `db/3_initial_insert.sql` | Seed data — actions, products, bundles |
+
+---
+
 ## Time dimension in `interactions`
 
 Three timestamps capture the real-time decision → outcome gap:
-
-decision_at   ← when the system assigned the action (email sent)
+```
+decision_at   ← when the system assigned the action
 │
 │  [conversion_window_hours — default 48h]
 │
 converted_at  ← when purchase occurred (NULL until observed)
 observed_at   ← when model received outcome and updated
+```
 
 `converted`, `revenue`, `reward` are NULL until `observed_at` is set.
 Prefect Flow 3 (outcome_observer) closes these pending rows after the window elapses.
@@ -50,33 +63,81 @@ Prefect Flow 3 (outcome_observer) closes these pending rows after the window ela
 docker-compose up db pgadmin
 ```
 
-Schema initialises automatically from `db/init.sql`.
-Verify at http://localhost:5050 — login: admin@admin.com / admin123.
+Schema initialises automatically. All 8 tables and seed data are created on first start.
 
 ---
 
-## CRUD helpers (`db/crud.py`)
+## pgAdmin setup (first time only)
 
-All DB access goes through these helpers. No raw SQL elsewhere.
+pgAdmin does not auto-connect. After running the command above:
+
+1. Open http://localhost:5050
+2. Login: `admin@admin.com` / `admin123`
+3. Right-click **Servers** → **Register** → **Server**
+4. **General tab** — Name: `campaign`
+5. **Connection tab**:
+   - Host: `db`
+   - Port: `5432`
+   - Database: `campaign`
+   - Username: `campaign_user`
+   - Password: `campaign_pass`
+   - Save password: on
+6. Click **Save**
+
+Navigate to:
+`Servers → campaign → Databases → campaign → Schemas → public → Tables`
+
+You should see 8 tables. `actions` has 5 rows, `products` has 12 rows, `bundles` has 6 rows.
+
+---
+
+## CRUD helpers
+
+All DB access goes through `db/db_interactions.py`. No raw SQL elsewhere.
+Every function takes a `SQLHandler` instance as its first argument.
 
 ```python
+from SQLHandler import SQLHandler
+import db_interactions as dbi
+```
+```
+db = SQLHandler(
+    host=os.getenv("DB_HOST", "db"),
+    dbname=os.getenv("POSTGRES_DB", "campaign"),
+    user=os.getenv("POSTGRES_USER", "campaign_user"),
+    password=os.getenv("POSTGRES_PASSWORD", "campaign_pass"),
+)
+```
+
 # Customers
-get_all_customers()
-get_customer_by_id(customer_id)
-get_customer_latents(customer_id)
-insert_customer(**fields)
-insert_customer_latent(customer_id, z_price_sensitivity, z_brand_loyalty, z_impulse_tendency)
+```
+dbi.get_all_customers(db)
+dbi.get_customer_by_id(db, customer_id)
+dbi.get_customer_latents(db, customer_id)
+dbi.insert_customer(db, gender, segment_label, recency, frequency,
+                    monetary, basket_diversity, avg_order_size, purchase_regularity)
+dbi.insert_customer_latent(db, customer_id, z_price_sensitivity,
+                           z_brand_loyalty, z_impulse_tendency)
+```
 
 # Interactions
-log_interaction(simulation_id, customer_id, action_id, round_number, context_vector_bytes, ucb_score, cost)
-observe_outcome(interaction_id, converted, revenue, converted_at, observed_at)
-get_pending_interactions(older_than_hours=48)
+```
+dbi.log_interaction(db, simulation_id, customer_id, action_id,
+                    round_number, context_vector_bytes, ucb_score, cost)
+dbi.observe_outcome(db, interaction_id, converted, revenue,
+                    converted_at, observed_at)
+dbi.get_pending_interactions(db, older_than_hours=48)
+```
 
 # Model state
-get_model_state(simulation_id, action_id)
-upsert_model_state(simulation_id, action_id, round_number, n_pulls, theta_bytes, a_bytes, b_bytes, alpha)
+```
+dbi.get_model_state(db, simulation_id, action_id)
+dbi.upsert_model_state(db, simulation_id, action_id, round_number,
+                       n_pulls, theta_bytes, a_bytes, b_bytes, alpha)
+```
 
 # Simulations
-create_simulation(sim_name, num_rounds, num_customers, alpha, ...)
-complete_simulation(simulation_id)
+```
+dbi.create_simulation(db, sim_name, num_rounds, num_customers, alpha)
+dbi.complete_simulation(db, simulation_id)
 ```
