@@ -63,7 +63,7 @@ action_df = pd.DataFrame([
     }
     for (k, v), segment in zip(bu.ACTION_COSTS.items(), intended_segments)
 ])
-st.dataframe(action_df, hide_index=True, use_container_width=True)
+st.dataframe(action_df, hide_index=True, width='stretch')
 
 st.divider()
 
