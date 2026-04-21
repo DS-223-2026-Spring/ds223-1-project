@@ -57,7 +57,7 @@ with st.form("new_simulation", clear_on_submit=False):
         notes = st.text_area("Notes", placeholder="Why this run?", height=100)
 
     submitted = st.form_submit_button(
-        "▶ Launch run", type="primary", use_container_width=True
+        "▶ Launch run", type="primary", width='stretch'
     )
 
 if submitted:
@@ -103,7 +103,7 @@ else:
             "completed_at", "cumulative_reward",
         ]],
         hide_index=True,
-        use_container_width=True,
+        width='stretch',
         column_config={
             "simulation_id": "ID",
             "sim_name": "Name",
@@ -126,12 +126,12 @@ else:
     )
     col_a, col_b = st.columns(2)
     with col_a:
-        if st.button("📊 Watch live (Interaction) →",
-                     use_container_width=True):
+        if st.button("Watch live (Interaction) →",
+                     width='stretch'):
             st.session_state["selected_simulation_id"] = sim_id
-            st.switch_page("pages/2_Interaction.py")
+            st.switch_page("pages/2_interaction.py")
     with col_b:
-        if st.button("📈 See results (Analytics) →",
-                     use_container_width=True):
+        if st.button("See results (Analytics) →",
+                     width='stretch'):
             st.session_state["selected_simulation_id"] = sim_id
-            st.switch_page("pages/3_Analytics.py")
+            st.switch_page("pages/3_analytics.py")

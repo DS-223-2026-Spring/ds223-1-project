@@ -81,7 +81,7 @@ fig.update_layout(
     legend=dict(orientation="h", yanchor="bottom", y=1.02),
     margin=dict(t=20, b=20),
 )
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, width='stretch')
 
 st.divider()
 
@@ -99,7 +99,7 @@ st.dataframe(
     ri[["interaction_id", "decision_at", "customer_id",
         "action", "converted", "revenue", "reward"]],
     hide_index=True,
-    use_container_width=True,
+    width='stretch',
     column_config={
         "interaction_id": "ID",
         "decision_at": "Time",

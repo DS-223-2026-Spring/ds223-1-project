@@ -80,7 +80,7 @@ with left:
     )
     fig_d.update_layout(showlegend=False, height=380,
                         margin=dict(t=20, b=20))
-    st.plotly_chart(fig_d, use_container_width=True)
+    st.plotly_chart(fig_d, width='stretch')
     st.caption("M3: upgrade to stacked-area over time.")
 
 with right:
@@ -96,7 +96,7 @@ with right:
         yaxis_tickformat=".0%",
         margin=dict(t=20, b=20),
     )
-    st.plotly_chart(fig_c, use_container_width=True)
+    st.plotly_chart(fig_c, width='stretch')
 
 st.divider()
 
@@ -130,7 +130,7 @@ fig_f.update_layout(
     showlegend=False, height=320, yaxis_title="£",
     margin=dict(t=20, b=20),
 )
-st.plotly_chart(fig_f, use_container_width=True)
+st.plotly_chart(fig_f, width='stretch')
 
 st.divider()
 
@@ -144,7 +144,7 @@ detail["est_reward_per_pull"] = detail["est_reward_per_pull"].map(
     lambda x: f"£{x:+.2f}"
 )
 st.dataframe(
-    detail, hide_index=True, use_container_width=True,
+    detail, hide_index=True, width='stretch',
     column_config={
         "label": "Action",
         "n_pulls": "Pulls",

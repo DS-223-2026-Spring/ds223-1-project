@@ -65,7 +65,7 @@ fig_t.update_layout(
     yaxis_title=None,
     margin=dict(t=20, b=20),
 )
-st.plotly_chart(fig_t, use_container_width=True)
+st.plotly_chart(fig_t, width='stretch')
 
 st.divider()
 
@@ -85,7 +85,7 @@ fig_p = px.bar(
 fig_p.update_layout(
     showlegend=False, height=350, margin=dict(t=20, b=20),
 )
-st.plotly_chart(fig_p, use_container_width=True)
+st.plotly_chart(fig_p, width='stretch')
 
 st.divider()
 
@@ -102,7 +102,7 @@ with c1:
         "Customer ID", min_value=1, max_value=500, value=1, step=1,
     )
     predict_clicked = st.button(
-        "🎯 Predict", type="primary", use_container_width=True,
+        "🎯 Predict", type="primary", width='stretch',
     )
 
 with c2:
@@ -134,11 +134,11 @@ with c2:
             barmode="stack", height=320,
             legend_title_text=None, margin=dict(t=20, b=20),
         )
-        st.plotly_chart(fig_u, use_container_width=True)
+        st.plotly_chart(fig_u, width='stretch')
 
         with st.expander("Raw per-action scores"):
             st.dataframe(
-                breakdown, hide_index=True, use_container_width=True,
+                breakdown, hide_index=True, width='stretch',
             )
     else:
         st.info(
