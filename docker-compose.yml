@@ -39,8 +39,8 @@ services:
     container_name: campaign_ds
     env_file: .env
     volumes:
-      - ./db/SQLHandler.py:/app/SQLHandler.py
-      - ./db/db_interactions.py:/app/db_interactions.py
+      - ./etl/SQLHandler.py:/app/SQLHandler.py
+      - ./etl/db_interactions.py:/app/db_interactions.py
     depends_on:
       db:
         condition: service_healthy
