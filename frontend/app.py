@@ -24,7 +24,6 @@ st.markdown(
     "maximises profit for each fashion retail customer — updating after "
     "every interaction."
 )
-st.caption("DS 223 · Marketing Analytics · Group 1 · AUA Spring 2026")
 
 st.divider()
 
@@ -96,10 +95,10 @@ with st.expander("📦 M2 status"):
         API integration lands in **M3** — see `docs/frontend.md` for the
         backend contract Victoria will implement.
 
-        - ✅ Navigation skeleton
-        - ✅ Layout + placeholders on all 4 pages
-        - ✅ Backend contract documented
-        - ⏳ Real API calls (M3)
-        - ⏳ Live auto-refresh (M3)
+        - Navigation skeleton
+        - Layout + placeholders on all 4 pages
+        - Backend contract documented
+        - Real API calls will be in M3
+        - Live auto-refresh will be in M3
         """
     )
