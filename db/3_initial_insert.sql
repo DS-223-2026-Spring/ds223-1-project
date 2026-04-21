@@ -3,7 +3,7 @@ OVERRIDING SYSTEM VALUE VALUES
     (0, 'no_action',     0.00, 'brand_loyalty',              'Control — no promotion sent. Protects margin for loyal customers who buy regardless.'),
     (1, 'discount_10',   6.50, 'price_sensitivity',          '10% off next order. Brand absorbs avg £6.50. Targets price-sensitive lapsed customers.'),
     (2, 'free_shipping', 4.99, 'price_sensitivity+planning', 'Standard shipping waived. Removes friction for moderate-basket planners.'),
-    (3, 'product_rec',   0.30, 'brand_loyalty+impulse',      'Personalised category suggestion email. Highest-margin action when it converts.'),
+    (3, 'product_recommendation', 0.30, 'brand_loyalty+impulse', 'Personalised category suggestion email. Highest-margin action when it converts.'),
     (4, 'bundle_offer',  9.00, 'impulse_tendency',           'Curated outfit at 15% off. Increases basket value. Works on impulse buyers.');
 
 INSERT INTO products (product_name, category, gender, price, margin_pct) VALUES

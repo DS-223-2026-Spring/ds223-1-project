@@ -34,7 +34,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--persist-db",
         action="store_true",
-        help="Persist generated artifacts into PostgreSQL via db.crud.",
+        help="Persist generated artifacts into PostgreSQL via db_interactions.",
     )
     parser.add_argument(
         "--db-notes",

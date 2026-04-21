@@ -4,3 +4,4 @@ scipy
 sqlalchemy
 psycopg2-binary
 matplotlib
+loguru
