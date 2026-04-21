@@ -102,6 +102,11 @@ def generate_observed_features(
     customers = pd.DataFrame(
         {
             "customer_id": latents["customer_id"].astype(int),
+            "gender": np.where(
+                latents["customer_id"].astype(int).to_numpy() % 2 == 0,
+                "F",
+                "M",
+            ),
             "recency": np.rint(recency).astype(int),
             "frequency": frequency.astype(int),
             "monetary": monetary,
@@ -115,6 +120,7 @@ def generate_observed_features(
     return customers[
         [
             "customer_id",
+            "gender",
             "segment",
             "recency",
             "frequency",
