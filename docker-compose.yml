@@ -1,23 +1,12 @@
-# version: "3.9"
-
-# Campaign Optimization Engine — DS223 Group 1
-# Run: docker-compose up --build
-# Dashboard:  http://localhost:8502
-# API docs:   http://localhost:8000/docs
-# pgAdmin:    http://localhost:5050
-# Prefect UI: http://localhost:4200
-
 services:
 
-  # ── DATABASE ─────────────────────────────────────────
-  # Owner: Hayk Alekyan
   db:
-    image: postgres:17
-    container_name: campaign_db
+    image: postgres:16
+    container_name: PostgreSQL
     restart: always
     env_file: .env
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/1_schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
@@ -57,8 +46,6 @@ services:
         condition: service_healthy
     restart: "no"
 
-  # ── BACKEND API ───────────────────────────────────────
-  # Owner: Victoria Makaryan
   api:
     build: ./backend
     container_name: campaign_api
@@ -73,8 +60,6 @@ services:
         condition: service_healthy
     restart: always
 
-  # ── FRONTEND ──────────────────────────────────────────
-  # Owner: Armine Babajanyan
   app:
     build: ./frontend
     container_name: campaign_app
@@ -85,8 +70,6 @@ services:
       - api
     restart: always
 
-  # ── ORCHESTRATION ─────────────────────────────────────
-  # Owner: shared
   prefect:
     image: prefecthq/prefect:2-latest
     container_name: campaign_prefect
