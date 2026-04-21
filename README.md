@@ -42,6 +42,90 @@ docker-compose up --build
 
 ---
 
+## Synthetic data generation
+
+Generate a standalone synthetic dataset before any DB integration:
+
+```bash
+python3 generate_synthetic_data.py --n-customers 500 --n-rounds 5000 --random-seed 42 --output-dir outputs/synthetic_data
+```
+
+Persist the same generated artifacts through the DB developer's CRUD layer:
+
+```bash
+python3 generate_synthetic_data.py --n-customers 500 --n-rounds 5000 --persist-db --db-notes "initial DS integration load"
+```
+
+This writes:
+
+- `customers.csv`
+- `customer_latents.csv`
+- `actions.csv`
+- `interactions.csv`
+- `model_state.csv`
+
+It also writes validation artifacts in the same folder:
+
+- `segment_counts.csv`
+- `action_summary.csv`
+- `customer_feature_summary.csv`
+- `latent_feature_correlations.csv`
+- `target_moment_comparison.csv`
+- `monotonicity_checks.csv`
+- `validation_report.txt`
+- `sanity_checks.json`
+- `metadata.json`
+- `calibration.json`
+
+The generator uses latent customer traits to create noisy observable RFM-style
+features, assigns segments from observed features only, and simulates
+action-level conversions and rewards under `random_policy` or a
+`bandit_scaffold` placeholder mode.
+
+The full calibration now lives in `ds/synthetic/config.py`, including:
+
+- latent priors
+- feature-generation coefficients
+- action-response and revenue coefficients
+- target moments for segment mix, mean AOV, conversion rates, and revenue ranges
+- monotonicity thresholds checked during validation and tests
+
+Run the generator regression tests with:
+
+```bash
+python3 -m unittest discover -s tests
+```
+
+Create an initial EDA report from the generated CSVs:
+
+```bash
+python3 generate_eda_report.py --input-dir outputs/synthetic_data
+```
+
+By default this writes summary tables, PNG charts, and a short Markdown report
+to `outputs/synthetic_data/eda/`.
+
+Compare simple baseline policies against the synthetic environment:
+
+```bash
+python3 run_baseline_comparison.py --n-customers 500 --train-rounds 5000 --eval-rounds 5000 --output-dir outputs/baselines
+```
+
+This writes:
+
+- `policy_summary.csv`
+- `policy_action_distribution.csv`
+- `policy_round_traces.csv`
+- `training_action_summary.csv`
+- `policy_mapping.csv`
+- `linear_model_coefficients.csv`
+- `cumulative_reward_by_policy.png`
+- `total_reward_by_policy.png`
+- `action_mix_by_policy.png`
+- `baseline_report.md`
+
+---
+
 ## Project structure
 
 ```

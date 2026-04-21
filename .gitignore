@@ -1,3 +1,6 @@
+# Synthetic data -> since you can just generate.
+outputs/*
+
 # Python
 __pycache__/
 *.py[cod]
