@@ -64,11 +64,11 @@ services:
         condition: service_healthy
     restart: always
 
-  # ── FRONTEND ──────────────────────────────────────────
+# ── FRONTEND ──────────────────────────────────────────
   # Owner: Armine Babajanyan
-  app:
+  front:
     build: ./frontend
-    container_name: campaign_app
+    container_name: front
     ports:
       - "8502:8501"
     env_file: .env
