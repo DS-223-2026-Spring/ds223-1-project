@@ -35,27 +35,27 @@ RNG = np.random.default_rng(42)
 # Theme — action constants + formatters
 # ═════════════════════════════════════════════════════════════
 ACTION_COLORS = {
-    "no_action":     "#6B7280",  # grey
-    "discount_10":   "#EF4444",  # red
-    "free_shipping": "#3B82F6",  # blue
-    "product_rec":   "#10B981",  # emerald
-    "bundle_offer":  "#F59E0B",  # amber
+    "no_action":              "#6B7280",  # grey
+    "discount_10":            "#EF4444",  # red
+    "free_shipping":          "#3B82F6",  # blue
+    "product_recommendation": "#10B981",  # emerald
+    "bundle_offer":           "#F59E0B",  # amber
 }
 
 ACTION_LABELS = {
-    "no_action":     "No action",
-    "discount_10":   "10% discount",
-    "free_shipping": "Free shipping",
-    "product_rec":   "Product recommendation",
-    "bundle_offer":  "Bundle offer",
+    "no_action":              "No action",
+    "discount_10":            "10% discount",
+    "free_shipping":          "Free shipping",
+    "product_recommendation": "Product recommendation",
+    "bundle_offer":           "Bundle offer",
 }
 
 ACTION_COSTS = {
-    "no_action":     0.00,
-    "discount_10":   6.50,
-    "free_shipping": 4.99,
-    "product_rec":   0.30,
-    "bundle_offer":  9.00,
+    "no_action":              0.00,
+    "discount_10":            6.50,
+    "free_shipping":          4.99,
+    "product_recommendation": 0.30,
+    "bundle_offer":           9.00,
 }
 
 RFM_FEATURES = [
@@ -126,7 +126,7 @@ def _mock_action_distribution(n_rounds: int = 1000) -> pd.DataFrame:
     for r in range(1, n_rounds + 1):
         phase = min(r / n_rounds, 1.0)
         start_w = np.ones(5) * 0.20
-        end_w = np.array([0.10, 0.35, 0.15, 0.25, 0.15])
+        end_w = np.array([0.10, 0.35, 0.15, 0.25, 0.15])  # order matches ACTION_LABELS keys
         weights = start_w * (1 - phase) + end_w * phase
         weights /= weights.sum()
         data.append({"round": r, "action": RNG.choice(actions, p=weights)})
@@ -167,7 +167,8 @@ def _mock_recent_interactions(n: int = 20) -> pd.DataFrame:
 
 
 def _mock_customers(n: int = 200) -> pd.DataFrame:
-    segments = ["Champion", "Loyal", "At Risk", "Lost", "New"]
+    # Must match CHECK constraint in db/1_schema.sql
+    segments = ["Champion", "Loyal", "At-Risk", "Lost"]
     genders = ["F", "M"]
     rows = []
     for i in range(n):
