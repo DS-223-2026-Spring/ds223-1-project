@@ -22,6 +22,7 @@ from crud import (
 from database import get_db
 from models import (
     API_ASSUMPTIONS,
+    RESOURCE_STRUCTURE,
     API_TAGS,
     PENDING_DEPENDENCIES,
     RESOURCE_NAMES,
@@ -30,6 +31,8 @@ from models import (
 from schema import (
     ActionsResponse,
     AssumptionsResponse,
+    ApiStructureResource,
+    ApiStructureResponse,
     CustomerCreate,
     CustomerResponse,
     CustomersResponse,
@@ -97,6 +100,28 @@ def get_assumptions() -> AssumptionsResponse:
         resource_names=list(RESOURCE_NAMES),
         api_assumptions=list(API_ASSUMPTIONS),
         pending_dependencies=list(PENDING_DEPENDENCIES),
+    )
+
+
+@app.get(
+    "/api-structure",
+    response_model=ApiStructureResponse,
+    tags=["system"],
+    summary="Show agreed resource names and API structure",
+)
+def get_api_structure() -> ApiStructureResponse:
+    return ApiStructureResponse(
+        service=SERVICE_NAME,
+        resources=[
+            ApiStructureResource(
+                resource=item["resource"],
+                table=item["table"],
+                paths=list(item["paths"]),
+                methods=list(item["methods"]),
+                owner_notes=item["owner_notes"],
+            )
+            for item in RESOURCE_STRUCTURE
+        ],
     )
 
 

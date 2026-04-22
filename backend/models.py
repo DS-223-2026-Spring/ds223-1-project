@@ -12,6 +12,59 @@ RESOURCE_NAMES = (
     "metrics",
 )
 
+RESOURCE_STRUCTURE = (
+    {
+        "resource": "customers",
+        "table": "customers",
+        "paths": ("/customers", "/customers/{customer_id}"),
+        "methods": ("GET", "POST", "PUT", "DELETE"),
+        "owner_notes": (
+            "Primary milestone-2 CRUD resource agreed with the DB schema because "
+            "customers and customer_latents already support end-to-end reads and writes."
+        ),
+    },
+    {
+        "resource": "actions",
+        "table": "actions",
+        "paths": ("/actions",),
+        "methods": ("GET",),
+        "owner_notes": (
+            "Read-only reference resource seeded by the DB initialization scripts and "
+            "consumed by DS and backend decision flows."
+        ),
+    },
+    {
+        "resource": "simulations",
+        "table": "simulations",
+        "paths": ("/simulations", "/simulations/{simulation_id}/complete"),
+        "methods": ("GET", "POST", "PUT"),
+        "owner_notes": (
+            "Simulation records provide the shared coordination point between backend, "
+            "DB persistence, and later orchestration-triggered runs."
+        ),
+    },
+    {
+        "resource": "interactions",
+        "table": "interactions",
+        "paths": ("/decide", "/feedback"),
+        "methods": ("POST",),
+        "owner_notes": (
+            "Interaction logging is exposed through decision and feedback endpoints "
+            "rather than raw table CRUD so the API matches the bandit workflow."
+        ),
+    },
+    {
+        "resource": "metrics",
+        "table": "interactions",
+        "paths": ("/metrics",),
+        "methods": ("GET",),
+        "owner_notes": (
+            "Metrics are derived from interactions and surfaced as read-only aggregates "
+            "for PM review and experiment monitoring."
+        ),
+    },
+)
+
 CUSTOMER_FIELDS = (
     "gender",
     "segment_label",
@@ -31,6 +84,7 @@ LATENT_FIELDS = (
 
 API_ASSUMPTIONS = (
     "The `customers` resource is the primary milestone-2 CRUD surface because the schema and helper layer already support it end to end.",
+    "Public resource names are `customers`, `actions`, `simulations`, `interactions`, and `metrics`, matching the shared API structure exposed by the backend.",
     "The `decide` endpoint is a placeholder integration point: the caller supplies `action_id` and optional scoring context until the DS-owned LinUCB selector is wired in.",
     "Context vectors are stored in `interactions.context_vector` as UTF-8 encoded JSON bytes so the API can exercise the BYTEA column without introducing a separate model serializer.",
     "Creating a simulation writes a record to the database only; orchestration-triggered execution remains a follow-up integration.",

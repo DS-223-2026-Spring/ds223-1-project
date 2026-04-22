@@ -159,3 +159,16 @@ class AssumptionsResponse(BaseModel):
     resource_names: list[str]
     api_assumptions: list[str]
     pending_dependencies: list[str]
+
+
+class ApiStructureResource(BaseModel):
+    resource: str
+    table: str
+    paths: list[str]
+    methods: list[str]
+    owner_notes: str
+
+
+class ApiStructureResponse(BaseModel):
+    service: str
+    resources: list[ApiStructureResource]
