@@ -73,9 +73,9 @@ docker-compose up --build
 
 | Service | URL |
 |---------|-----|
-| Streamlit dashboard | http://localhost:8502 |
+| Streamlit dashboard | http://localhost:8501 |
 | FastAPI docs | http://localhost:8000/docs |
-| pgAdmin | http://localhost:5050 — admin@admin.com / admin123 |
+| pgAdmin | http://localhost:5050 |
 | Prefect UI | http://localhost:4200 |
 
 ---

@@ -13,12 +13,12 @@ import streamlit as st
 import bandit_utils as bu
 
 st.set_page_config(
-    page_title="Campaign Optimization Engine",
+    page_title="CampX",
     layout="wide",
 )
 
 # ── Hero ──────────────────────────────────────────────────────
-st.title("Campaign Optimization Engine")
+st.title("CampX")
 st.markdown(
     "A **contextual bandit (LinUCB)** that learns which promotional action "
     "maximises profit for each fashion retail customer — updating after "

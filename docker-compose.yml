@@ -46,9 +46,9 @@ services:
         condition: service_healthy
     restart: "no"
 
-  api:
+  back:
     build: ./campx/api
-    container_name: campaign_api
+    container_name: back
     ports:
       - "8000:8000"
     env_file: campx/.env
@@ -91,9 +91,8 @@ services:
       environment:
         PREFECT_API_URL: http://prefect:4200/api
       depends_on:
-        - prefect
         - db
-      restart: "no"    
+      restart: "no"
 
 volumes:
   postgres_data:

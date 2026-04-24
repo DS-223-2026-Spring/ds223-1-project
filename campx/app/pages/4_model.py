@@ -22,7 +22,7 @@ import streamlit as st
 import bandit_utils as bu
 
 st.set_page_config(
-    page_title="Model · Campaign Engine",
+    page_title="Model · CampX",
     layout="wide",
 )
 

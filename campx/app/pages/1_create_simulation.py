@@ -15,7 +15,7 @@ import streamlit as st
 import bandit_utils as bu
 
 st.set_page_config(
-    page_title="Create Simulation · Campaign Engine",
+    page_title="Create Simulation · CampX",
     layout="wide",
 )
 
