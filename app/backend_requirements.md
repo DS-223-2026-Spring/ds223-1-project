@@ -19,7 +19,7 @@ The frontend is a Streamlit app running in the `front` container. The backend is
 
 The frontend reads the base URL from an environment variable called `API_URL`.
 
-The actual switch from mock data to real API calls happens in one line in `frontend/bandit_utils.py`:
+The actual switch from mock data to real API calls happens in one line in `app/bandit_utils.py`:
 
 ```python
 USE_MOCKS = True  # change to False when endpoints are ready

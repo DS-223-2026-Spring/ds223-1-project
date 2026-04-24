@@ -63,10 +63,10 @@ services:
 # ── FRONTEND ──────────────────────────────────────────
   # Owner: Armine Babajanyan
   front:
-    build: ./frontend
+    build: ./app
     container_name: front
     ports:
-      - "8502:8501"
+      - "8501:8501"
     env_file: .env
     depends_on:
       - api

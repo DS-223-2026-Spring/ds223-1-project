@@ -19,7 +19,7 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("🚀 Create Simulation")
+st.title("Create Simulation")
 st.caption("Configure a new bandit run or inspect past ones.")
 
 # ── Launch form ────────────────────────────────────────────────
