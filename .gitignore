@@ -44,3 +44,4 @@ site/
 # Environment
 #.env
 *.env
+!campx/.env
