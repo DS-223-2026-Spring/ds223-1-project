@@ -4,8 +4,8 @@
 
 This backend package now provides:
 
-- a FastAPI service/container named `back`
-- a clean package layout under `backend/app`
+- a FastAPI service/container named `backend`
+- a clean package layout directly under `backend/`
 - dummy CRUD for `customers`
 - placeholder database-backed endpoints for `actions`, `simulations`, `decide`, `feedback`, and `metrics`
 - generated Swagger docs at `/docs` and OpenAPI JSON at `/openapi.json`

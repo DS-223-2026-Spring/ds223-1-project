@@ -1,4 +1,4 @@
-"""FastAPI backend service for milestone backend tasks."""
+"""FastAPI backend service for the campaign optimization project."""
 
 from __future__ import annotations
 
@@ -7,51 +7,98 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.crud import (
-    complete_simulation_record,
-    create_customer_record,
-    create_simulation_record,
-    delete_customer_record,
-    get_customer_record,
-    get_metrics_snapshot,
-    list_actions,
-    list_customers,
-    list_simulations,
-    log_decision,
-    submit_feedback,
-    update_customer_record,
-)
-from app.database import get_db
-from app.metadata import (
-    API_ASSUMPTIONS,
-    API_TAGS,
-    PENDING_DEPENDENCIES,
-    RESOURCE_NAMES,
-    RESOURCE_STRUCTURE,
-    SERVICE_NAME,
-)
-from app.schemas import (
-    ActionsResponse,
-    ApiError,
-    ApiStructureResource,
-    ApiStructureResponse,
-    AssumptionsResponse,
-    CustomerCreate,
-    CustomerResponse,
-    CustomersResponse,
-    CustomerUpdate,
-    DecideRequest,
-    DecideResponse,
-    DeleteResponse,
-    FeedbackRequest,
-    FeedbackResponse,
-    HealthResponse,
-    MetricsResponse,
-    SimulationCreate,
-    SimulationResponse,
-    SimulationsResponse,
-)
-from app.shared.SQLHandler import SQLHandler
+try:
+    from .SQLHandler import SQLHandler
+    from .crud import (
+        complete_simulation_record,
+        create_customer_record,
+        create_simulation_record,
+        delete_customer_record,
+        get_customer_record,
+        get_metrics_snapshot,
+        list_actions,
+        list_customers,
+        list_simulations,
+        log_decision,
+        submit_feedback,
+        update_customer_record,
+    )
+    from .database import get_db
+    from .metadata import (
+        API_ASSUMPTIONS,
+        API_TAGS,
+        PENDING_DEPENDENCIES,
+        RESOURCE_NAMES,
+        RESOURCE_STRUCTURE,
+        SERVICE_NAME,
+    )
+    from .schemas import (
+        ActionsResponse,
+        ApiError,
+        ApiStructureResource,
+        ApiStructureResponse,
+        AssumptionsResponse,
+        CustomerCreate,
+        CustomerResponse,
+        CustomersResponse,
+        CustomerUpdate,
+        DecideRequest,
+        DecideResponse,
+        DeleteResponse,
+        FeedbackRequest,
+        FeedbackResponse,
+        HealthResponse,
+        MetricsResponse,
+        SimulationCreate,
+        SimulationResponse,
+        SimulationsResponse,
+    )
+except ImportError:
+    from SQLHandler import SQLHandler
+    from crud import (
+        complete_simulation_record,
+        create_customer_record,
+        create_simulation_record,
+        delete_customer_record,
+        get_customer_record,
+        get_metrics_snapshot,
+        list_actions,
+        list_customers,
+        list_simulations,
+        log_decision,
+        submit_feedback,
+        update_customer_record,
+    )
+    from database import get_db
+    from metadata import (
+        API_ASSUMPTIONS,
+        API_TAGS,
+        PENDING_DEPENDENCIES,
+        RESOURCE_NAMES,
+        RESOURCE_STRUCTURE,
+        SERVICE_NAME,
+    )
+    from schemas import (
+        ActionsResponse,
+        ApiError,
+        ApiStructureResource,
+        ApiStructureResponse,
+        AssumptionsResponse,
+        CustomerCreate,
+        CustomerResponse,
+        CustomersResponse,
+        CustomerUpdate,
+        DecideRequest,
+        DecideResponse,
+        DeleteResponse,
+        FeedbackRequest,
+        FeedbackResponse,
+        HealthResponse,
+        MetricsResponse,
+        SimulationCreate,
+        SimulationResponse,
+        SimulationsResponse,
+    )
 
 
 def build_description() -> str:
@@ -61,10 +108,10 @@ def build_description() -> str:
     return (
         "FastAPI backend for the campaign optimization project.\n\n"
         "Implemented scope:\n"
-        "- `back` backend service/container\n"
-        "- clean FastAPI package layout under `backend/app`\n"
-        "- dummy CRUD endpoints for `customers`\n"
-        "- placeholder request/response schemas for customer, simulation, and interaction flows\n"
+        "- `backend` service/container\n"
+        "- flat FastAPI package layout under `backend/`\n"
+        "- CRUD endpoints for `customers`\n"
+        "- simulation, decision, and metrics endpoints wired through the DB helper layer\n"
         "- Swagger/OpenAPI output at `/docs` and `/openapi.json`\n\n"
         "API assumptions:\n"
         f"{assumptions}\n\n"
@@ -342,4 +389,3 @@ def get_metrics(
     if metrics is None:
         raise HTTPException(status_code=404, detail=f"Simulation {simulation_id} was not found.")
     return MetricsResponse(**metrics)
-

@@ -13,10 +13,16 @@ BACKEND_DIR = Path(__file__).resolve().parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-import app.main as app_module
-from app.database import get_db
-from app.main import app
-from app.metadata import SERVICE_NAME
+try:
+    import main as app_module
+    from database import get_db
+    from main import app
+    from metadata import SERVICE_NAME
+except ImportError:
+    from . import main as app_module
+    from .database import get_db
+    from .main import app
+    from .metadata import SERVICE_NAME
 
 
 SYSTEM_PATHS = ("/health", "/assumptions", "/api-structure")

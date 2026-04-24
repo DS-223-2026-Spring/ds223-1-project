@@ -7,12 +7,16 @@ from collections.abc import Generator
 from fastapi import HTTPException
 from psycopg2 import OperationalError
 
-from app.config import get_database_settings
-from app.shared.SQLHandler import SQLHandler
+try:
+    from .config import get_database_settings
+    from .SQLHandler import SQLHandler
+except ImportError:
+    from config import get_database_settings
+    from SQLHandler import SQLHandler
 
 
 def create_db_handler() -> SQLHandler:
-    """Create a fresh SQLHandler for a request."""
+    """Create a fresh SQL handler for a request."""
     return SQLHandler(**get_database_settings())
 
 
@@ -37,4 +41,3 @@ def get_db() -> Generator[SQLHandler, None, None]:
     finally:
         if db is not None:
             db.close()
-

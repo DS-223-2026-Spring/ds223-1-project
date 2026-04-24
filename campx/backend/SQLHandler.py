@@ -1,6 +1,6 @@
 from loguru import logger
-import pandas as pd
 import numpy as np
+import pandas as pd
 import psycopg2
 from psycopg2.extras import execute_values
 
@@ -21,10 +21,6 @@ class SQLHandler:
 
         logger.info(f"Connected to PostgreSQL: {dbname}@{host}:{port}")
 
-    # -------------------------
-    # Helpers
-    # -------------------------
-
     def set_schema(self, schema_name: str):
         self.schema = schema_name
         logger.info(f"Using schema: {self.schema}")
@@ -43,30 +39,25 @@ class SQLHandler:
         self.conn.close()
         logger.info("Connection closed")
 
-    # -------------------------
-    # Schema utilities
-    # -------------------------
-
     def get_columns(self):
-        query = f"""
+        query = """
             SELECT column_name
             FROM information_schema.columns
             WHERE table_schema = %s AND table_name = %s
         """
         self.cursor.execute(query, (self.schema, self.table_name))
-        return [c[0] for c in self.cursor.fetchall()]
+        return [column[0] for column in self.cursor.fetchall()]
 
     def delete_rows(self, condition: str):
         query = f"DELETE FROM {self.table_ref} WHERE {condition}"
         self.cursor.execute(query)
         logger.info(query)
 
-
     def from_sql(self, query: str, parse_dates=None, dtypes=None) -> pd.DataFrame:
         df = pd.read_sql_query(query, self.conn, parse_dates=parse_dates, dtype=dtypes)
         logger.info(f"Fetched shape: {df.shape}")
         return df
-    
+
     def select(self, query: str, params: tuple = None) -> pd.DataFrame:
         if not query.strip().lower().startswith("select"):
             raise ValueError("Only SELECT queries are allowed")
@@ -77,35 +68,22 @@ class SQLHandler:
             df = pd.read_sql_query(query, self.conn, params=params)
             logger.info(f"SELECT completed | shape={df.shape}")
             return df
-
-        except Exception as e:
-            logger.error(f"SELECT failed: {e}")
+        except Exception as exc:
+            logger.error(f"SELECT failed: {exc}")
             raise
 
     def insert_dataframe(self, df: pd.DataFrame, table: str):
-        """
-        Bulk insert a pandas DataFrame into PostgreSQL table.
-
-        Args:
-            df (pd.DataFrame): data to insert
-            table (str): table name WITHOUT schema (uses self.schema)
-        """
-
         if df.empty:
             logger.warning("Empty DataFrame. Nothing to insert.")
             return
 
         full_table = f"{self.schema}.{table}"
-
-        # normalize
-        df = df.copy()
-        df = df.replace({np.nan: None})
-        df.columns = [c.lower() for c in df.columns]
+        df = df.copy().replace({np.nan: None})
+        df.columns = [column.lower() for column in df.columns]
 
         columns = list(df.columns)
-
         cols_sql = ", ".join(columns)
-        values = [tuple(x) for x in df.to_numpy()]
+        values = [tuple(row) for row in df.to_numpy()]
 
         query = f"""
             INSERT INTO {full_table} ({cols_sql})
@@ -115,13 +93,10 @@ class SQLHandler:
         try:
             execute_values(self.cursor, query, values)
             self.conn.commit()
-
             logger.info(
                 f"Inserted {len(values)} rows into {full_table} | cols={len(columns)}"
             )
-
-        except Exception as e:
+        except Exception as exc:
             self.conn.rollback()
-            logger.error(f"INSERT DF failed: {e}")
+            logger.error(f"INSERT DF failed: {exc}")
             raise
-

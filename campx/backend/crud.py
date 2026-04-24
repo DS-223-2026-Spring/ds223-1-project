@@ -9,19 +9,34 @@ from typing import Any
 
 from psycopg2 import sql
 
-from app.metadata import CUSTOMER_FIELDS, LATENT_FIELDS
-from app.schemas import CustomerCreate, CustomerUpdate, DecideRequest, FeedbackRequest, SimulationCreate
-from app.shared.SQLHandler import SQLHandler
-from app.shared.db_interactions import (
-    complete_simulation,
-    create_simulation,
-    get_customer_by_id,
-    get_customer_latents,
-    insert_customer,
-    insert_customer_latent,
-    log_interaction,
-    observe_outcome,
-)
+try:
+    from .SQLHandler import SQLHandler
+    from .db_interactions import (
+        complete_simulation,
+        create_simulation,
+        get_customer_by_id,
+        get_customer_latents,
+        insert_customer,
+        insert_customer_latent,
+        log_interaction,
+        observe_outcome,
+    )
+    from .metadata import CUSTOMER_FIELDS, LATENT_FIELDS
+    from .schemas import CustomerCreate, CustomerUpdate, DecideRequest, FeedbackRequest, SimulationCreate
+except ImportError:
+    from SQLHandler import SQLHandler
+    from db_interactions import (
+        complete_simulation,
+        create_simulation,
+        get_customer_by_id,
+        get_customer_latents,
+        insert_customer,
+        insert_customer_latent,
+        log_interaction,
+        observe_outcome,
+    )
+    from metadata import CUSTOMER_FIELDS, LATENT_FIELDS
+    from schemas import CustomerCreate, CustomerUpdate, DecideRequest, FeedbackRequest, SimulationCreate
 
 
 def _dump_model(model: Any, *, exclude_unset: bool = False) -> dict[str, Any]:
@@ -414,4 +429,3 @@ def get_metrics_snapshot(db: SQLHandler, simulation_id: int) -> dict[str, Any] |
         "total_cost": float(metrics["total_cost"]) if metrics else 0.0,
         "total_reward": float(metrics["total_reward"]) if metrics else 0.0,
     }
-

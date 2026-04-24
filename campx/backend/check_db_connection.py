@@ -1,17 +1,29 @@
 """Backend-local script for checking database connectivity and read helpers."""
 
 from __future__ import annotations
+
 from psycopg2 import OperationalError
 
-from app.config import get_database_settings, load_backend_env
-from app.shared.SQLHandler import SQLHandler
-from app.shared.db_interactions import (
-    get_all_customers,
-    get_customer_by_id,
-    get_customer_latents,
-    get_model_state,
-    get_pending_interactions,
-)
+try:
+    from .SQLHandler import SQLHandler
+    from .config import get_database_settings, load_backend_env
+    from .db_interactions import (
+        get_all_customers,
+        get_customer_by_id,
+        get_customer_latents,
+        get_model_state,
+        get_pending_interactions,
+    )
+except ImportError:
+    from SQLHandler import SQLHandler
+    from config import get_database_settings, load_backend_env
+    from db_interactions import (
+        get_all_customers,
+        get_customer_by_id,
+        get_customer_latents,
+        get_model_state,
+        get_pending_interactions,
+    )
 
 
 REQUIRED_TABLES = (

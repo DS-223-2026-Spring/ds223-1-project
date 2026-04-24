@@ -9,12 +9,12 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 
-BACKEND_DIR = Path(__file__).resolve().parent.parent
-ENV_FILE = BACKEND_DIR / ".env"
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+ENV_FILE = PROJECT_DIR / ".env"
 
 
 def load_backend_env() -> Path:
-    """Load the backend-local environment file for local scripts."""
+    """Load the project-level environment file for local scripts."""
     load_dotenv(ENV_FILE, override=False)
     return ENV_FILE
 
@@ -37,14 +37,14 @@ def _normalize_db_port(raw_port: str | int | None, *, raw_host: str | None) -> i
 
     port = int(raw_port)
     if not running_in_container() and raw_host == "db" and port == 5432:
-        # The compose file publishes postgres on 5434 for host-side verification.
+        # docker-compose publishes postgres on 5434 for host-side scripts.
         return 5434
     return port
 
 
 @lru_cache(maxsize=1)
 def get_database_settings() -> dict[str, object]:
-    """Read database settings from backend/.env with local-friendly defaults."""
+    """Read database settings with local-friendly defaults."""
     load_backend_env()
 
     raw_host = os.getenv("DB_HOST") or os.getenv("POSTGRES_HOST")

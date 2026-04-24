@@ -1,7 +1,7 @@
 services:
 
   db:
-    image: postgres:17
+    image: postgres:16
     container_name: PostgreSQL
     restart: always
     env_file: campx/.env
@@ -46,15 +46,15 @@ services:
         condition: service_healthy
     restart: "no"
 
-  back:
-    build: ./campx/api
-    container_name: back
+  backend:
+    build: ./campx/backend
+    container_name: backend
     ports:
       - "8000:8000"
     env_file: campx/.env
     volumes:
-      - ./campx/db/SQLHandler.py:/app/SQLHandler.py
-      - ./campx/db/db_interactions.py:/app/db_interactions.py
+      - ./campx/etl/SQLHandler.py:/app/SQLHandler.py
+      - ./campx/etl/db_interactions.py:/app/db_interactions.py
     depends_on:
       db:
         condition: service_healthy
@@ -68,8 +68,10 @@ services:
     ports:
       - "8501:8501"
     env_file: campx/.env
+    environment:
+      API_URL: http://backend:8000
     depends_on:
-      - back
+      - backend
     restart: always
 
   # prefect:
@@ -84,15 +86,15 @@ services:
   #     - prefect_data:/root/.prefect
   #   restart: always
 
-  orchestration:
-      build: ./campx/orchestration
-      container_name: campaign_orchestration
-      env_file: campx/.env
-      environment:
-        PREFECT_API_URL: http://prefect:4200/api
-      depends_on:
-        - db
-      restart: "no"
+  # orchestration:
+  #     build: ./campx/orchestration
+  #     container_name: campaign_orchestration
+  #     env_file: campx/.env
+  #     environment:
+  #       PREFECT_API_URL: http://prefect:4200/api
+  #     depends_on:
+  #       - db
+  #     restart: "no"
 
 volumes:
   postgres_data:

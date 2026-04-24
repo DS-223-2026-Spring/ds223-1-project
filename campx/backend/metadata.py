@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-SERVICE_NAME = "back"
+SERVICE_NAME = "backend"
 
 RESOURCE_NAMES = (
     "customers",
@@ -88,7 +88,7 @@ API_ASSUMPTIONS = (
     "The backend reuses DB-facing helper logic copied from `etl/` into the backend container so imports work without changing the ETL codebase.",
     "The `decide` endpoint is a placeholder integration point: the caller supplies `action_id` and optional scoring context until the DS-owned LinUCB selector is wired in.",
     "Context vectors are stored in `interactions.context_vector` as UTF-8 encoded JSON bytes so the API can exercise the BYTEA column without introducing a separate model serializer.",
-    "The frontend requirements currently describe the backend service as `api`, while docker-compose now runs it as `back`; compose injects `API_URL=http://back:8000` to bridge that naming mismatch.",
+    "The frontend should reach the service at `http://backend:8000` inside docker-compose.",
 )
 
 PENDING_DEPENDENCIES = (
@@ -102,7 +102,7 @@ API_TAGS = [
     {"name": "system", "description": "Health checks and API metadata."},
     {
         "name": "customers",
-        "description": "Dummy CRUD endpoints backed by the customers and customer_latents tables.",
+        "description": "CRUD endpoints backed by the customers and customer_latents tables.",
     },
     {
         "name": "actions",
@@ -114,11 +114,10 @@ API_TAGS = [
     },
     {
         "name": "interactions",
-        "description": "Placeholder decision and feedback endpoints that write to the interactions table.",
+        "description": "Decision and feedback endpoints that write to the interactions table.",
     },
     {
         "name": "metrics",
         "description": "Read-only aggregated metrics derived from logged interactions.",
     },
 ]
-

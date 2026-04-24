@@ -124,7 +124,7 @@ class SimulationsResponse(BaseModel):
 class DecideRequest(BaseModel):
     simulation_id: int = Field(..., gt=0)
     customer_id: int = Field(..., gt=0)
-    action_id: int = Field(default=0, ge=0)
+    action_id: int = Field(..., gt=0)
     round_number: int = Field(default=1, gt=0)
     context_vector: list[float] = Field(default_factory=list)
     ucb_score: float = 0.0
@@ -181,4 +181,3 @@ class ApiStructureResource(BaseModel):
 class ApiStructureResponse(BaseModel):
     service: str
     resources: list[ApiStructureResource]
-
