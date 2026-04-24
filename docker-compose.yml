@@ -1,17 +1,17 @@
 services:
 
   db:
-    image: postgres:16
+    image: postgres:17
     container_name: PostgreSQL
     restart: always
-    env_file: .env
+    env_file: campx/.env
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db/1_schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
-      - ./db/2_indexes.sql:/docker-entrypoint-initdb.d/2_indexes.sql
-      - ./db/3_initial_insert.sql:/docker-entrypoint-initdb.d/3_initial_insert.sql
+      - ./campx/db/1_schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
+      - ./campx/db/2_indexes.sql:/docker-entrypoint-initdb.d/2_indexes.sql
+      - ./campx/db/3_initial_insert.sql:/docker-entrypoint-initdb.d/3_initial_insert.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
@@ -21,7 +21,7 @@ services:
     image: dpage/pgadmin4:8
     container_name: PGAadmin
     restart: always
-    env_file: .env
+    env_file: campx/.env
     ports:
       - 5050:80
     depends_on:
@@ -35,26 +35,26 @@ services:
   # Owner: Davit Badalyan
   # Runs ETL then simulation sequentially — exits when done
   ds:
-    build: ./ds
+    build: ./campx/ds
     container_name: campaign_ds
-    env_file: .env
+    env_file: campx/.env
     volumes:
-      - ./etl/SQLHandler.py:/app/SQLHandler.py
-      - ./etl/db_interactions.py:/app/db_interactions.py
+      - ./campx/etl/SQLHandler.py:/app/SQLHandler.py
+      - ./campx/etl/db_interactions.py:/app/db_interactions.py
     depends_on:
       db:
         condition: service_healthy
     restart: "no"
 
   api:
-    build: ./backend
+    build: ./campx/api
     container_name: campaign_api
     ports:
       - "8000:8000"
-    env_file: .env
+    env_file: campx/.env
     volumes:
-      - ./db/SQLHandler.py:/app/SQLHandler.py
-      - ./db/db_interactions.py:/app/db_interactions.py
+      - ./campx/db/SQLHandler.py:/app/SQLHandler.py
+      - ./campx/db/db_interactions.py:/app/db_interactions.py
     depends_on:
       db:
         condition: service_healthy
@@ -63,11 +63,11 @@ services:
 # ── FRONTEND ──────────────────────────────────────────
   # Owner: Armine Babajanyan
   front:
-    build: ./app
+    build: ./campx/app
     container_name: front
     ports:
       - "8501:8501"
-    env_file: .env
+    env_file: campx/.env
     depends_on:
       - api
     restart: always
@@ -85,9 +85,9 @@ services:
     restart: always
 
   orchestration:
-      build: ./orchestration
+      build: ./campx/orchestration
       container_name: campaign_orchestration
-      env_file: .env
+      env_file: campx/.env
       environment:
         PREFECT_API_URL: http://prefect:4200/api
       depends_on:

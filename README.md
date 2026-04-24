@@ -2,9 +2,7 @@
 
 **DS 223 · Marketing Analytics · Group 1 · Spring 2026 · AUA**
 
-A contextual bandit system (LinUCB) that selects the optimal promotional
-action for each fashion retail customer — learning which offer maximises
-net profit for which customer profile, updating after every interaction.
+A contextual bandit system (LinUCB) that selects the optimal promotional action for each fashion retail customer — learning which offer maximises net profit for which customer profile, updating after every interaction.
 
 ---
 
@@ -12,179 +10,198 @@ net profit for which customer profile, updating after every interaction.
 
 | Role | Member | Branch |
 |------|--------|--------|
-| PM | Anna Asatryan | `pm/main` |
+| PM | Anna Asatryan | `main` |
 | DB Developer | Hayk Alekyan | `db` |
 | Backend | Victoria Makaryan | `backend` |
-| Frontend | Armine Babajanyan | `frontend` |
+| Frontend | Armine Babajanyan | `front` |
 | Data Scientist | Davit Badalyan | `ds` |
 | Orchestration | *(shared)* | `orchestration` |
 
 ---
 
-## Quick start
+## Quick Start
 
-1. **Setup environment variables:**
 ```bash
-cp .env.example .env
-```
-
-2. **Launch services:**
-```bash
-docker-compose up --build
+git clone https://github.com/DS-223-2026-Spring/ds223-1-project
+cd ds223-1-project
+cp campx/.env.example campx/.env   # fill in credentials
+docker compose up --build
 ```
 
 | Service | URL |
 |---------|-----|
-| Streamlit dashboard | http://localhost:8502 |
-| FastAPI docs | http://localhost:8000/docs |
-| pgAdmin | http://localhost:5050 — admin@admin.com / admin123 |
+| Streamlit dashboard | http://localhost:8501 |
+| FastAPI docs (Swagger) | http://localhost:8000/docs |
+| pgAdmin | http://localhost:5050 |
 | Prefect UI | http://localhost:4200 |
 
 ---
 
-## Synthetic data generation
-
-Generate a standalone synthetic dataset before any DB integration:
-
-```bash
-python3 generate_synthetic_data.py --n-customers 500 --n-rounds 5000 --random-seed 42 --output-dir outputs/synthetic_data
-```
-
-Persist the same generated artifacts through the DB developer's CRUD layer:
-
-```bash
-python3 generate_synthetic_data.py --n-customers 500 --n-rounds 5000 --persist-db --db-notes "initial DS integration load"
-```
-
-This writes:
-
-- `customers.csv`
-- `customer_latents.csv`
-- `actions.csv`
-- `interactions.csv`
-- `model_state.csv`
-
-It also writes validation artifacts in the same folder:
-
-- `segment_counts.csv`
-- `action_summary.csv`
-- `customer_feature_summary.csv`
-- `latent_feature_correlations.csv`
-- `target_moment_comparison.csv`
-- `monotonicity_checks.csv`
-- `validation_report.txt`
-- `sanity_checks.json`
-- `metadata.json`
-- `calibration.json`
-
-The generator uses latent customer traits to create noisy observable RFM-style
-features, assigns segments from observed features only, and simulates
-action-level conversions and rewards under `random_policy` or a
-`bandit_scaffold` placeholder mode.
-
-The full calibration now lives in `ds/synthetic/config.py`, including:
-
-- latent priors
-- feature-generation coefficients
-- action-response and revenue coefficients
-- target moments for segment mix, mean AOV, conversion rates, and revenue ranges
-- monotonicity thresholds checked during validation and tests
-
-Run the generator regression tests with:
-
-```bash
-python3 -m unittest discover -s tests
-```
-
-Create an initial EDA report from the generated CSVs:
-
-```bash
-python3 generate_eda_report.py --input-dir outputs/synthetic_data
-```
-
-By default this writes summary tables, PNG charts, and a short Markdown report
-to `outputs/synthetic_data/eda/`.
-
-Compare simple baseline policies against the synthetic environment:
-
-```bash
-python3 run_baseline_comparison.py --n-customers 500 --train-rounds 5000 --eval-rounds 5000 --output-dir outputs/baselines
-```
-
-This writes:
-
-- `policy_summary.csv`
-- `policy_action_distribution.csv`
-- `policy_round_traces.csv`
-- `training_action_summary.csv`
-- `policy_mapping.csv`
-- `linear_model_coefficients.csv`
-- `cumulative_reward_by_policy.png`
-- `total_reward_by_policy.png`
-- `action_mix_by_policy.png`
-- `baseline_report.md`
-
----
-
-## Project structure
+## Project Structure
 
 ```
-ds223-1-project/
-├── backend/              FastAPI backend (Victoria)
-│   ├── Dockerfile
-│   ├── main.py
-│   ├── database.py
-│   ├── models.py
-│   ├── schema.py
-│   └── requirements.txt
-├── frontend/             Streamlit frontend (Armine)
-│   ├── Dockerfile
-│   ├── app.py
-│   ├── pages/
-│   │   ├── page1.py
-│   │   ├── page2.py
-│   │   ├── page3.py
-│   │   └── page4.py
-│   └── requirements.txt
-├── db/                   Database (Hayk)
-│   ├── init.sql
-│   └── crud.py
-├── ds/                   Data Science (Davit)
-│   ├── Dockerfile
-│   ├── main.py
-│   ├── etl.py
-│   └── model.py
-├── orchestration/        Prefect flows (shared)
-│   ├── Dockerfile
-│   ├── flows.py
-│   └── requirements.txt
-├── docs/                 MkDocs documentation (Anna)
-├── milestone1/           M1 deliverables
-├── docker-compose.yml
+ds223-1-project/              ← repo root
+├── docker-compose.yml        ← run from here
+├── .env
+├── README.md
 ├── mkdocs.yml
-├── .env                  Local config — never committed
-├── .env.example          # Template for environment variables (committed)
-└── .gitignore          
+├── docs/                     ← MkDocs documentation
+│   ├── index.md
+│   ├── governance.md
+│   ├── database.md
+│   ├── modeling.md
+│   ├── ds_data_spec.md
+│   ├── api.md
+│   └── frontend.md
+└── campx/                    ← product folder
+    ├── .env                  ← all service credentials
+    ├── __init__.py
+    ├── api/                  ← FastAPI backend (Victoria)
+    │   ├── Dockerfile
+    │   ├── main.py
+    │   ├── database.py
+    │   ├── models.py
+    │   ├── schema.py
+    │   ├── requirements.txt
+    │   └── routes/
+    │       ├── customers.py
+    │       ├── bandit.py
+    │       └── simulations.py
+    ├── app/                  ← Streamlit frontend (Armine)
+    │   ├── Dockerfile
+    │   ├── app.py
+    │   ├── bandit_utils.py
+    │   ├── requirements.txt
+    │   └── pages/
+    │       ├── 1_create_simulation.py
+    │       ├── 2_interaction.py
+    │       ├── 3_analytics.py
+    │       └── 4_model.py
+    ├── ds/                   ← Data Science (Davit)
+    │   ├── Dockerfile
+    │   ├── main.py
+    │   ├── etl.py
+    │   ├── eda.py
+    │   ├── baselines.py
+    │   ├── model.py
+    │   ├── experiments.ipynb
+    │   ├── requirements.txt
+    │   └── synthetic/        ← synthetic data generation module
+    ├── db/                   ← DB schema & helpers (Hayk)
+    │   ├── 1_schema.sql
+    │   ├── 2_indexes.sql
+    │   ├── 3_initial_insert.sql
+    │   ├── SQLHandler.py
+    │   └── db_interactions.py
+    ├── etl/                  ← shared ETL utilities
+    │   ├── SQLHandler.py
+    │   └── db_interactions.py
+    └── orchestration/        ← Prefect flows (shared)
+        ├── Dockerfile
+        ├── flows.py
+        └── requirements.txt
 ```
+
+All Dockerfiles use `python:3.13-slim`.
 
 ---
 
-## Branching
+## Branching & Commits
 
 ```
-One branch per role. Push directly to your branch, open one PR to main when ready.
-main  (protected — Anna merges here)
-├── pm
+main  ← protected, PM merges here
 ├── db
 ├── backend
-├── frontend
 ├── ds
+├── front
 └── orchestration
 ```
 
-Commit format: `db: add crud helpers` / `ds: implement linucb` / `backend: add /decide endpoint`
+Commit format: `role: short description`
+Examples: `db: add crud helpers` · `ds: implement linucb` · `backend: add /decide endpoint`
 
-Full contribution rules: `docs/governance.md`
+Full contribution rules: [`docs/governance.md`](docs/governance.md)
+
+---
+
+## Milestone Task Status
+
+### Orchestration (#11–#15)
+
+| # | Task | Status |
+|---|------|--------|
+| 11 | Join repo, review architecture | ✅ |
+| 12 | Research Prefect, propose usage plan | ✅ Five flows planned in `campx/orchestration/flows.py` |
+| 13 | Align with PM/DB/DS on automated steps | ✅ Flow plan references DB schema and DS interaction model |
+| 14 | Orchestration plan — manual vs automated jobs | ✅ M2/M3/M4 TODOs documented per flow |
+| 15 | Draft orchestration folder/service | ✅ `campx/orchestration/` with Dockerfile |
+
+### PM (#16–#22)
+
+| # | Task | Status |
+|---|------|--------|
+| 16 | Install MkDocs, initialize docs structure | ✅ `mkdocs.yml` + 7 pages in `docs/` |
+| 17 | Design ERD, validate with DB and DS | ✅ Approved schema in `campx/db/1_schema.sql` |
+| 18 | Transform repo into service-based structure | ✅ `campx/` with api, app, ds, orchestration |
+| 19 | Define contribution rules | ✅ `docs/governance.md` |
+| 20 | Track team progress across branches | ✅ Ongoing |
+| 21 | Review and merge PRs | ✅ PRs #138, #139, #140 merged |
+| 22 | Delete merged branches | ⚠️ Remote branches `db`, `ds`, `backend`, `front` still exist |
+
+### DB (#23–#31)
+
+| # | Task | Status |
+|---|------|--------|
+| 23 | Create `db` branch | ✅ |
+| 24 | Create `db` database container | ✅ `db` service in `docker-compose.yml` |
+| 25 | Set up PostgreSQL from ERD | ✅ `campx/db/1_schema.sql` |
+| 26 | Tables, keys, relationships, constraints | ✅ 8 tables with FK constraints and CHECK rules |
+| 27 | Python code to connect and verify | ✅ `campx/db/SQLHandler.py` |
+| 28 | Load flat-file data, validate row counts | ✅ `campx/db/3_initial_insert.sql` + `db_interactions.py` |
+| 29 | Reusable insert/update/select/delete helpers | ✅ `campx/db/db_interactions.py` |
+| 30 | Document utilities with docstrings | ✅ |
+| 31 | Push to `db` branch, open PR | ✅ Merged via PR #138 |
+
+### DS (#32–#40)
+
+| # | Task | Status |
+|---|------|--------|
+| 32 | Create `ds` branch | ✅ |
+| 33 | Create `ds` container | ✅ `ds` service in `docker-compose.yml` |
+| 34 | Explore data, identify quality issues | ✅ `campx/ds/eda.py` |
+| 35 | Simulate/generate data, document synthetic sources | ✅ `campx/ds/synthetic/` — fully documented |
+| 36 | Use DB CRUD wherever possible | ✅ Uses `campx/etl/db_interactions.py` |
+| 37 | EDA notebook/script | ✅ `campx/ds/eda.py` + `campx/ds/experiments.ipynb` |
+| 38 | Baseline models and comparison | ✅ `campx/ds/baselines.py` |
+| 39 | Document features, assumptions, target variable | ✅ `docs/ds_data_spec.md` |
+| 40 | Push to `ds` branch, open PR | ✅ Merged |
+
+### Backend (#41–#49)
+
+| # | Task | Status |
+|---|------|--------|
+| 41 | Create `back` branch | ⚠️ Branch named `backend` not `back` |
+| 42 | Create backend container | ✅ `api` service in `docker-compose.yml` |
+| 43 | Coordinate with PM/DB on API structure | ✅ Documented in `campx/app/backend_requirements.md` |
+| 44 | FastAPI with clean folder structure | ✅ `campx/api/` with `routes/` |
+| 45 | Dummy CRUD endpoints (GET, POST, PUT, DELETE) | ✅ customers, bandit, simulations routes |
+| 46 | Placeholder request/response schemas | ⚠️ `campx/api/schema.py` exists but empty |
+| 47 | Test endpoints, verify Swagger at `/docs` | ✅ Swagger auto-generated and accessible |
+| 48 | Document API assumptions | ✅ `docs/api.md` + `campx/app/backend_requirements.md` |
+| 49 | Push to branch, open PR | ✅ Merged |
+
+### Frontend (#50–#57)
+
+| # | Task | Status |
+|---|------|--------|
+| 50 | Create `front` branch | ✅ |
+| 51 | Create frontend container | ✅ `front` service in `docker-compose.yml` |
+| 52 | Coordinate with PM on Streamlit page structure | ✅ `campx/app/backend_requirements.md` |
+| 53 | Build UI skeleton with navigation and layout | ✅ 4 pages in `campx/app/pages/` |
+| 54 | Reusable UI components/helpers | ✅ `campx/app/bandit_utils.py` |
+| 55 | Placeholders for charts, forms, model output | ✅ All 4 pages wired with mock data |
+| 56 | Document data needs from backend | ✅ `campx/app/backend_requirements.md` — comprehensive endpoint spec |
+| 57 | Push to `front` branch, open PR | ✅ Merged via PRs #139, #140 |
 
 ---
 
