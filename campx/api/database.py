@@ -1,5 +1,5 @@
-"""Database connection setup — SQLAlchemy."""
-import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+"""Compatibility shim for backend database helpers."""
+
+from app.config import get_database_settings, load_backend_env
+from app.database import create_db_handler, get_db
 

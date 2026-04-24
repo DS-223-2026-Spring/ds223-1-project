@@ -1,5 +1,3 @@
-"""Pydantic request/response schemas — Owner: Victoria Makaryan."""
-from pydantic import BaseModel
-from typing import Optional, Dict
-from datetime import datetime
+"""Compatibility shim for backend schemas."""
 
+from app.schemas import *  # noqa: F401,F403
