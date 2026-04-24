@@ -1,0 +1,243 @@
+{
+  "latents": {
+    "price_sensitivity": {
+      "alpha": 2.0,
+      "beta": 5.0
+    },
+    "brand_loyalty": {
+      "alpha": 3.0,
+      "beta": 3.0
+    },
+    "impulse_tendency": {
+      "alpha": 2.0,
+      "beta": 4.0
+    }
+  },
+  "features": {
+    "frequency_base": 1.1,
+    "frequency_loyalty_weight": 8.4,
+    "frequency_impulse_weight": 1.5,
+    "frequency_price_relief_weight": 0.9,
+    "frequency_min": 1,
+    "frequency_max": 18,
+    "recency_base": 15.0,
+    "recency_loyalty_curve_weight": 125.0,
+    "recency_price_weight": 34.0,
+    "recency_impulse_weight": 10.0,
+    "recency_gamma_shape": 2.0,
+    "recency_min": 1.0,
+    "recency_max": 240.0,
+    "avg_order_base": 46.0,
+    "avg_order_impulse_weight": 33.0,
+    "avg_order_loyalty_weight": 22.0,
+    "avg_order_price_weight": 15.0,
+    "avg_order_noise": 8.0,
+    "avg_order_min": 15.0,
+    "avg_order_max": 120.0,
+    "basket_diversity_base": 1.35,
+    "basket_diversity_impulse_weight": 4.1,
+    "basket_diversity_loyalty_weight": 1.0,
+    "basket_diversity_noise": 0.75,
+    "basket_diversity_min": 1.0,
+    "basket_diversity_max": 8.0,
+    "regularity_base": 0.18,
+    "regularity_loyalty_weight": 0.68,
+    "regularity_impulse_weight": 0.1,
+    "regularity_noise": 0.08,
+    "regularity_min": 0.02,
+    "regularity_max": 0.99,
+    "monetary_multiplier_base": 0.78,
+    "monetary_multiplier_loyalty_weight": 0.14,
+    "monetary_multiplier_impulse_weight": 0.08,
+    "monetary_multiplier_price_weight": 0.1,
+    "monetary_multiplier_noise": 0.1,
+    "monetary_multiplier_min": 0.55,
+    "monetary_multiplier_max": 1.25,
+    "monetary_min": 20.0,
+    "monetary_max": 2200.0
+  },
+  "segments": {
+    "champion_recency_max": 30,
+    "champion_frequency_min": 8,
+    "champion_monetary_min": 400.0,
+    "loyal_recency_max": 60,
+    "loyal_frequency_min": 4,
+    "at_risk_recency_min": 90,
+    "at_risk_frequency_min": 3
+  },
+  "simulation": {
+    "sampling_frequency_offset": 1.0,
+    "seasonality_amplitude": 0.08,
+    "seasonality_period": 52.0,
+    "basket_noise_mean": 1.0,
+    "basket_noise_sd": 0.1,
+    "basket_noise_min": 0.75,
+    "basket_noise_max": 1.35,
+    "p_convert_min": 0.02,
+    "p_convert_max": 0.9
+  },
+  "targets": {
+    "segment_mix": {
+      "Champion": 0.12,
+      "Loyal": 0.4,
+      "At-Risk": 0.18,
+      "Lost": 0.3
+    },
+    "segment_mix_tolerance": 0.05,
+    "mean_avg_order_size": 65.0,
+    "mean_avg_order_tolerance": 4.0,
+    "conversion_rate_by_action": {
+      "no_action": 0.29,
+      "discount_10": 0.18,
+      "free_shipping": 0.2,
+      "product_recommendation": 0.3,
+      "bundle_offer": 0.28
+    },
+    "conversion_tolerance": 0.06,
+    "converted_revenue_range_by_action": {
+      "no_action": [
+        60.0,
+        78.0
+      ],
+      "discount_10": [
+        65.0,
+        85.0
+      ],
+      "free_shipping": [
+        62.0,
+        82.0
+      ],
+      "product_recommendation": [
+        70.0,
+        92.0
+      ],
+      "bundle_offer": [
+        92.0,
+        125.0
+      ]
+    }
+  },
+  "monotonicity": {
+    "quantile_cutoff": 0.25,
+    "loyalty_recency_gap_min": 25.0,
+    "loyalty_frequency_gap_min": 2.5,
+    "loyalty_monetary_gap_min": 130.0,
+    "loyalty_regularity_gap_min": 0.18,
+    "impulse_basket_gap_min": 1.2,
+    "impulse_avg_order_gap_min": 10.0,
+    "low_price_minus_high_price_aov_gap_min": 6.0,
+    "bundle_minus_no_action_converted_revenue_gap_min": 18.0
+  },
+  "actions": [
+    {
+      "action_id": 0,
+      "action_name": "no_action",
+      "description": "Control group; rely on organic conversion from loyal customers.",
+      "base_cost": 0.0,
+      "non_conversion_cost": 0.0,
+      "converted_cost_floor": 0.0,
+      "converted_cost_rate": 0.0,
+      "conversion_intercept": -2.55,
+      "conversion_price_weight": -0.3,
+      "conversion_loyalty_weight": 3.0,
+      "conversion_impulse_weight": 0.0,
+      "conversion_planner_weight": 0.0,
+      "revenue_base_multiplier": 1.0,
+      "revenue_price_weight": 0.0,
+      "revenue_loyalty_weight": 0.04,
+      "revenue_impulse_weight": 0.0,
+      "revenue_planner_weight": 0.0,
+      "revenue_basket_weight": 0.0,
+      "revenue_noise": 0.1,
+      "max_revenue": 150.0
+    },
+    {
+      "action_id": 1,
+      "action_name": "discount_10",
+      "description": "10% discount for price-sensitive customers; margin-reducing but effective.",
+      "base_cost": 6.5,
+      "non_conversion_cost": 0.1,
+      "converted_cost_floor": 6.5,
+      "converted_cost_rate": 0.1,
+      "conversion_intercept": -1.8,
+      "conversion_price_weight": 3.5,
+      "conversion_loyalty_weight": -1.6,
+      "conversion_impulse_weight": 0.3,
+      "conversion_planner_weight": 0.0,
+      "revenue_base_multiplier": 1.08,
+      "revenue_price_weight": 0.08,
+      "revenue_loyalty_weight": 0.0,
+      "revenue_impulse_weight": 0.0,
+      "revenue_planner_weight": 0.0,
+      "revenue_basket_weight": 0.0,
+      "revenue_noise": 0.13,
+      "max_revenue": 160.0
+    },
+    {
+      "action_id": 2,
+      "action_name": "free_shipping",
+      "description": "Shipping-friction relief for planning-oriented shoppers.",
+      "base_cost": 4.99,
+      "non_conversion_cost": 0.1,
+      "converted_cost_floor": 4.99,
+      "converted_cost_rate": 0.0,
+      "conversion_intercept": -1.75,
+      "conversion_price_weight": 2.6,
+      "conversion_loyalty_weight": 0.3,
+      "conversion_impulse_weight": -1.4,
+      "conversion_planner_weight": 0.0,
+      "revenue_base_multiplier": 1.03,
+      "revenue_price_weight": 0.05,
+      "revenue_loyalty_weight": 0.0,
+      "revenue_impulse_weight": 0.0,
+      "revenue_planner_weight": 0.03,
+      "revenue_basket_weight": 0.0,
+      "revenue_noise": 0.12,
+      "max_revenue": 152.0
+    },
+    {
+      "action_id": 3,
+      "action_name": "product_recommendation",
+      "description": "Low-cost personalization that works best for loyal engaged shoppers.",
+      "base_cost": 0.3,
+      "non_conversion_cost": 0.3,
+      "converted_cost_floor": 0.3,
+      "converted_cost_rate": 0.0,
+      "conversion_intercept": -2.6,
+      "conversion_price_weight": 0.0,
+      "conversion_loyalty_weight": 2.2,
+      "conversion_impulse_weight": 1.6,
+      "conversion_planner_weight": 0.0,
+      "revenue_base_multiplier": 1.1,
+      "revenue_price_weight": 0.0,
+      "revenue_loyalty_weight": 0.07,
+      "revenue_impulse_weight": 0.06,
+      "revenue_planner_weight": 0.0,
+      "revenue_basket_weight": 0.0,
+      "revenue_noise": 0.1,
+      "max_revenue": 165.0
+    },
+    {
+      "action_id": 4,
+      "action_name": "bundle_offer",
+      "description": "Higher-basket bundle promotion for impulse-prone customers.",
+      "base_cost": 9.0,
+      "non_conversion_cost": 0.2,
+      "converted_cost_floor": 9.0,
+      "converted_cost_rate": 0.0,
+      "conversion_intercept": -2.55,
+      "conversion_price_weight": 0.4,
+      "conversion_loyalty_weight": 1.0,
+      "conversion_impulse_weight": 2.5,
+      "conversion_planner_weight": 0.0,
+      "revenue_base_multiplier": 1.38,
+      "revenue_price_weight": 0.0,
+      "revenue_loyalty_weight": 0.05,
+      "revenue_impulse_weight": 0.18,
+      "revenue_planner_weight": 0.0,
+      "revenue_basket_weight": 0.04,
+      "revenue_noise": 0.16,
+      "max_revenue": 220.0
+    }
+  ]
+}

@@ -88,7 +88,7 @@ with n4:
 
 st.divider()
 
-with st.expander("📦 M2 status"):
+with st.expander("M2 status"):
     st.markdown(
         """
         **This is a skeleton build.** All pages use mock data.
