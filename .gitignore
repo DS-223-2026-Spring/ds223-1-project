@@ -39,9 +39,3 @@ data/raw/
 
 *.pyc
 site/
-
-
-# Environment
-#.env
-*.env
-!campx/.env

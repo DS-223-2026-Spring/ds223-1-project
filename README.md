@@ -24,7 +24,6 @@ A contextual bandit system (LinUCB) that selects the optimal promotional action 
 ```bash
 git clone https://github.com/DS-223-2026-Spring/ds223-1-project
 cd ds223-1-project
-cp campx/.env.example campx/.env   # fill in credentials
 docker compose up --build
 ```
 
@@ -33,7 +32,6 @@ docker compose up --build
 | Streamlit dashboard | http://localhost:8501 |
 | FastAPI docs (Swagger) | http://localhost:8000/docs |
 | pgAdmin | http://localhost:5050 |
-| Prefect UI | http://localhost:4200 |
 
 ---
 
@@ -53,8 +51,7 @@ ds223-1-project/              ← repo root
 │   ├── api.md
 │   └── frontend.md
 └── campx/                    ← product folder
-    ├── .env                  ← all service credentials (gitignored — copy from .env.example)
-    ├── .env.example          ← template for credentials (committed)
+    ├── .env                  ← all service credentials
     ├── __init__.py
     ├── api/                  ← FastAPI backend (Victoria)
     │   ├── Dockerfile
