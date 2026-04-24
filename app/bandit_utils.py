@@ -3,8 +3,7 @@ bandit_utils.py — shared logic, theming, mock data, and API client.
 
 Owner: Armine Babajanyan (frontend branch)
 
-Following the instructor's convention (one flat utilities file), this module
-bundles everything shared across pages:
+This module bundles everything shared across pages:
 
   - Theme constants (colors, labels, costs)
   - Mock data generators (M2 only)

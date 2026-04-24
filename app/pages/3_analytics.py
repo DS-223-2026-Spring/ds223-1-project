@@ -154,4 +154,4 @@ st.dataframe(
     },
 )
 
-st.caption("⚠️ M2: mock data. Real computations wire in M3.")
+st.caption("M2: mock data. Real computations wire in M3.")
