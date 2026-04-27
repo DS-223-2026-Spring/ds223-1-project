@@ -20,7 +20,8 @@ LATENT_COLUMNS = [
     "z_impulse_tendency",
 ]
 
-SUPPORTED_POLICY_MODES = {"random_policy", "bandit_scaffold"}
+LINUCB_POLICY_MODES = {"linucb", "bandit_scaffold"}
+SUPPORTED_POLICY_MODES = {"random_policy", *LINUCB_POLICY_MODES}
 
 
 @dataclass(frozen=True, slots=True)

@@ -4,6 +4,7 @@ from .config import (
     FEATURE_COLUMNS,
     LATENT_COLUMNS,
     GeneratorCalibration,
+    LINUCB_POLICY_MODES,
     SyntheticDataConfig,
 )
 from .dbio import DatabasePersistenceResult, persist_pipeline_artifacts_to_db
@@ -14,6 +15,7 @@ __all__ = [
     "LATENT_COLUMNS",
     "DatabasePersistenceResult",
     "GeneratorCalibration",
+    "LINUCB_POLICY_MODES",
     "SyntheticDataConfig",
     "persist_pipeline_artifacts_to_db",
     "run_pipeline",
