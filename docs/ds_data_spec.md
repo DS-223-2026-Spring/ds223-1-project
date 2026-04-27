@@ -35,7 +35,31 @@ models.
 | `avg_order_size` | float | GBP-like currency | Average value per order | Higher suggests larger baskets or premium buying |
 | `purchase_regularity` | float | normalized `0..1` score | How steady the purchase cadence is | Higher suggests more consistent repeat behavior |
 
-These feature names are defined centrally in [ds/synthetic/config.py](/Users/macbookair/Desktop/ds223-project/ds223-1-project/ds/synthetic/config.py:7).
+These feature names and metadata are defined centrally in
+[campx/ds/synthetic/config.py](../campx/ds/synthetic/config.py). The
+executable extraction helper is
+`build_context_matrix(...)` in
+[campx/ds/synthetic/features.py](../campx/ds/synthetic/features.py).
+
+### Executable feature contract
+
+Model-facing feature extraction must go through:
+
+```python
+from campx.ds.synthetic.features import build_context_matrix
+
+x = build_context_matrix(customers)
+```
+
+The helper validates that all six model-visible columns are present, numeric,
+finite, and ordered according to `FEATURE_COLUMNS`. This keeps LinUCB,
+baseline models, and DB context-vector persistence aligned on the same feature
+order.
+
+LinUCB then max-scales the six observed features using the generated customer
+pool. The model state exports this preprocessing as
+`context_encoding = "max_scaled_observed_features"` plus JSON columns for the
+feature order and scale values.
 
 ### Feature availability
 
@@ -111,7 +135,8 @@ Segments are derived from observed features only:
 | `At-Risk` | `recency > 90` and `frequency >= 3` |
 | `Lost` | otherwise |
 
-These segment rules live in [ds/synthetic/config.py](/Users/macbookair/Desktop/ds223-project/ds223-1-project/ds/synthetic/config.py:93).
+These segment rules live in
+[campx/ds/synthetic/config.py](../campx/ds/synthetic/config.py).
 
 ### Action set
 
@@ -126,7 +151,7 @@ The canonical actions are:
 | `4` | `bundle_offer` | Basket-expanding bundle promotion |
 
 The exact action economics and simulator coefficients are defined in
-[ds/synthetic/config.py](/Users/macbookair/Desktop/ds223-project/ds223-1-project/ds/synthetic/config.py:109).
+[campx/ds/synthetic/config.py](../campx/ds/synthetic/config.py).
 
 ---
 
@@ -190,7 +215,7 @@ Some exported columns are for diagnostics rather than model training:
 ## Baseline-model framing
 
 The current baseline comparison script in
-[ds/baselines.py](/Users/macbookair/Desktop/ds223-project/ds223-1-project/ds/baselines.py:1)
+[campx/ds/baselines.py](../campx/ds/baselines.py)
 uses the following framing:
 
 - train on logged random-policy interactions
@@ -240,7 +265,7 @@ contract.
 
 - the environment is calibrated, not learned from real retailer data
 - numeric coefficients are hand-tuned and stored centrally in
-  [ds/synthetic/config.py](/Users/macbookair/Desktop/ds223-project/ds223-1-project/ds/synthetic/config.py:1)
+  [campx/ds/synthetic/config.py](../campx/ds/synthetic/config.py)
 - offline baselines are evaluated in the same synthetic environment that
   generated the logged data
 - current reward is immediate and does not include customer lifetime value
@@ -268,6 +293,7 @@ When training or evaluating models in this repo:
 This document explains the modeling contract in prose. The exact numeric
 calibration lives in:
 
-- [ds/synthetic/config.py](/Users/macbookair/Desktop/ds223-project/ds223-1-project/ds/synthetic/config.py:1)
-- [ds/synthetic/features.py](/Users/macbookair/Desktop/ds223-project/ds223-1-project/ds/synthetic/features.py:1)
-- [ds/synthetic/simulate.py](/Users/macbookair/Desktop/ds223-project/ds223-1-project/ds/synthetic/simulate.py:1)
+- [campx/ds/synthetic/config.py](../campx/ds/synthetic/config.py)
+- [campx/ds/synthetic/features.py](../campx/ds/synthetic/features.py)
+- [campx/ds/synthetic/simulate.py](../campx/ds/synthetic/simulate.py)
+- [campx/ds/linucb.py](../campx/ds/linucb.py)

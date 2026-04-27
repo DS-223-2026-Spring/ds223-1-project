@@ -21,7 +21,7 @@ import pandas as pd
 try:
     from .synthetic.actions import actions_to_frame, get_action_definitions
     from .synthetic.config import FEATURE_COLUMNS, GeneratorCalibration, SyntheticDataConfig
-    from .synthetic.features import generate_observed_features
+    from .synthetic.features import build_context_matrix, generate_observed_features
     from .synthetic.latents import generate_latent_traits
     from .synthetic.simulate import (
         compute_conversion_probabilities,
@@ -33,7 +33,7 @@ try:
 except ImportError:  # pragma: no cover - supports running inside the ds container
     from synthetic.actions import actions_to_frame, get_action_definitions
     from synthetic.config import FEATURE_COLUMNS, GeneratorCalibration, SyntheticDataConfig
-    from synthetic.features import generate_observed_features
+    from synthetic.features import build_context_matrix, generate_observed_features
     from synthetic.latents import generate_latent_traits
     from synthetic.simulate import (
         compute_conversion_probabilities,
@@ -135,7 +135,7 @@ class LinearRewardPolicy:
         rng: np.random.Generator,
     ) -> np.ndarray:
         del rng
-        features = sampled_customers[FEATURE_COLUMNS].to_numpy(dtype=float)
+        features = build_context_matrix(sampled_customers, FEATURE_COLUMNS)
         standardized = (features - self.feature_means) / self.feature_scales
         design = np.column_stack([np.ones(len(standardized)), standardized])
         predictions = design @ self.coefficients.T
@@ -459,7 +459,7 @@ def _fit_linear_reward_policy(
     actions_frame: pd.DataFrame,
     ridge_penalty: float,
 ) -> LinearRewardPolicy:
-    features = training_logged[FEATURE_COLUMNS].to_numpy(dtype=float)
+    features = build_context_matrix(training_logged, FEATURE_COLUMNS)
     feature_means = features.mean(axis=0)
     feature_scales = features.std(axis=0)
     feature_scales = np.where(feature_scales < 1e-8, 1.0, feature_scales)
@@ -474,7 +474,7 @@ def _fit_linear_reward_policy(
             coefficients.append(beta)
             continue
 
-        x = subset[FEATURE_COLUMNS].to_numpy(dtype=float)
+        x = build_context_matrix(subset, FEATURE_COLUMNS)
         y = subset["reward"].to_numpy(dtype=float)
         standardized = (x - feature_means) / feature_scales
         design = np.column_stack([np.ones(len(standardized)), standardized])

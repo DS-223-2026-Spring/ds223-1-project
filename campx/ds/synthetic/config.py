@@ -5,14 +5,77 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-FEATURE_COLUMNS = [
-    "recency",
-    "frequency",
-    "monetary",
-    "basket_diversity",
-    "avg_order_size",
-    "purchase_regularity",
-]
+@dataclass(frozen=True, slots=True)
+class FeatureSpec:
+    """Metadata for one model-facing observed feature."""
+
+    name: str
+    dtype: str
+    unit: str
+    model_role: str
+    scale: str
+    description: str
+    intended_signal: str
+
+
+FEATURE_METADATA = (
+    FeatureSpec(
+        name="recency",
+        dtype="integer",
+        unit="days",
+        model_role="context",
+        scale="1..240 before model scaling",
+        description="Days since the customer's last purchase.",
+        intended_signal="Lower values indicate more recent engagement.",
+    ),
+    FeatureSpec(
+        name="frequency",
+        dtype="integer",
+        unit="purchase count",
+        model_role="context",
+        scale="1..18 before model scaling",
+        description="Number of purchases in the observation window.",
+        intended_signal="Higher values indicate stronger repeat engagement.",
+    ),
+    FeatureSpec(
+        name="monetary",
+        dtype="float",
+        unit="GBP-like currency",
+        model_role="context",
+        scale="20..2200 before model scaling",
+        description="Total observed spend in the observation window.",
+        intended_signal="Higher values indicate greater customer value.",
+    ),
+    FeatureSpec(
+        name="basket_diversity",
+        dtype="float",
+        unit="category breadth score",
+        model_role="context",
+        scale="1..8 before model scaling",
+        description="Approximate breadth of categories or item types in the basket.",
+        intended_signal="Higher values indicate broader shopping behavior.",
+    ),
+    FeatureSpec(
+        name="avg_order_size",
+        dtype="float",
+        unit="GBP-like currency",
+        model_role="context",
+        scale="15..120 before model scaling",
+        description="Average value of one order.",
+        intended_signal="Higher values indicate larger baskets or premium buying.",
+    ),
+    FeatureSpec(
+        name="purchase_regularity",
+        dtype="float",
+        unit="normalized cadence score",
+        model_role="context",
+        scale="0.02..0.99 before model scaling",
+        description="How steady the customer's purchase cadence is.",
+        intended_signal="Higher values indicate more consistent repeat behavior.",
+    ),
+)
+
+FEATURE_COLUMNS = [feature.name for feature in FEATURE_METADATA]
 
 LATENT_COLUMNS = [
     "z_price_sensitivity",

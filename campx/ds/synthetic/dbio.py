@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 
 from .config import FEATURE_COLUMNS, SyntheticDataConfig
+from .features import get_model_feature_frame
 from .pipeline import SyntheticArtifacts
 
 
@@ -129,7 +130,10 @@ def _persist_interactions(
 ) -> None:
     """Insert interactions via CRUD and immediately record observed outcomes."""
 
-    customer_features = customers.set_index("customer_id")[FEATURE_COLUMNS]
+    customer_features = get_model_feature_frame(
+        customers=customers.set_index("customer_id"),
+        feature_columns=FEATURE_COLUMNS,
+    )
 
     for row in interactions.itertuples(index=False):
         synthetic_customer_id = int(row.customer_id)

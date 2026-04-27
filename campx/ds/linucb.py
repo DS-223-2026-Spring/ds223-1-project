@@ -9,6 +9,11 @@ from typing import Sequence
 import numpy as np
 import pandas as pd
 
+try:
+    from .synthetic.features import build_context_matrix
+except ImportError:  # pragma: no cover - supports running inside the ds container
+    from synthetic.features import build_context_matrix
+
 
 @dataclass(frozen=True, slots=True)
 class LinUCBScore:
@@ -46,7 +51,10 @@ class LinUCBPolicy:
     ) -> "LinUCBPolicy":
         """Initialize a policy using observed customer features for scaling."""
 
-        feature_matrix = customer_frame.loc[:, feature_columns].to_numpy(dtype=float)
+        feature_matrix = build_context_matrix(
+            customers=customer_frame,
+            feature_columns=feature_columns,
+        )
         feature_means = np.zeros(feature_matrix.shape[1], dtype=float)
         feature_scales = np.max(np.abs(feature_matrix), axis=0)
         feature_scales = np.where(feature_scales < 1e-8, 1.0, feature_scales)
@@ -79,7 +87,10 @@ class LinUCBPolicy:
     def transform_frame(self, customer_frame: pd.DataFrame) -> np.ndarray:
         """Return scaled context vectors in the configured feature order."""
 
-        features = customer_frame.loc[:, self.feature_columns].to_numpy(dtype=float)
+        features = build_context_matrix(
+            customers=customer_frame,
+            feature_columns=self.feature_columns,
+        )
         return (features - self.feature_means) / self.feature_scales
 
     def score_context(self, context: np.ndarray) -> list[LinUCBScore]:

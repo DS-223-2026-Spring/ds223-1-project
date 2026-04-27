@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from typing import Sequence
+
 import numpy as np
 import pandas as pd
 
-from .config import GeneratorCalibration
+from .config import FEATURE_COLUMNS, FEATURE_METADATA, FeatureSpec, GeneratorCalibration
 
 
 def generate_observed_features(
@@ -137,6 +139,48 @@ def generate_observed_features(
             "purchase_regularity": 3,
         }
     )
+
+
+def get_model_feature_metadata() -> tuple[FeatureSpec, ...]:
+    """Return metadata for the model-visible customer context columns."""
+
+    return FEATURE_METADATA
+
+
+def get_model_feature_frame(
+    customers: pd.DataFrame,
+    feature_columns: Sequence[str] = FEATURE_COLUMNS,
+) -> pd.DataFrame:
+    """Return validated model-visible features in canonical order."""
+
+    columns = list(feature_columns)
+    missing = [column for column in columns if column not in customers.columns]
+    if missing:
+        missing_str = ", ".join(missing)
+        raise ValueError(f"Missing model feature columns: {missing_str}")
+
+    try:
+        features = customers.loc[:, columns].apply(pd.to_numeric, errors="raise")
+    except Exception as exc:
+        raise ValueError("Model feature columns must be numeric") from exc
+
+    values = features.to_numpy(dtype=float)
+    if not np.isfinite(values).all():
+        raise ValueError("Model feature columns must not contain NaN or infinite values")
+
+    return pd.DataFrame(values, columns=columns, index=customers.index)
+
+
+def build_context_matrix(
+    customers: pd.DataFrame,
+    feature_columns: Sequence[str] = FEATURE_COLUMNS,
+) -> np.ndarray:
+    """Return the numeric context matrix used by LinUCB and baselines."""
+
+    return get_model_feature_frame(
+        customers=customers,
+        feature_columns=feature_columns,
+    ).to_numpy(dtype=float)
 
 
 def assign_segments(
