@@ -248,8 +248,8 @@ def _load_db_modules():
 
 
 def _ensure_repo_db_path() -> None:
-    """Expose repo-root db/ modules for local non-Docker runs."""
+    """Expose shared ETL DB modules for local non-Docker runs."""
 
-    db_dir = Path(__file__).resolve().parents[2] / "db"
-    if db_dir.exists() and str(db_dir) not in sys.path:
-        sys.path.insert(0, str(db_dir))
+    etl_dir = Path(__file__).resolve().parents[2] / "etl"
+    if etl_dir.exists() and str(etl_dir) not in sys.path:
+        sys.path.insert(0, str(etl_dir))
