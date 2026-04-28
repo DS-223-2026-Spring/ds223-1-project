@@ -1,7 +1,7 @@
 """Entrypoint for baseline policy comparison."""
 
 try:
-    from ds.baselines import main
+    from .baselines import main
 except ImportError:  # supports running from inside the ds container
     from baselines import main
 

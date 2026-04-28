@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 
 from .config import FEATURE_COLUMNS, SyntheticDataConfig
+from .features import get_model_feature_frame
 from .pipeline import SyntheticArtifacts
 
 
@@ -129,7 +130,10 @@ def _persist_interactions(
 ) -> None:
     """Insert interactions via CRUD and immediately record observed outcomes."""
 
-    customer_features = customers.set_index("customer_id")[FEATURE_COLUMNS]
+    customer_features = get_model_feature_frame(
+        customers=customers.set_index("customer_id"),
+        feature_columns=FEATURE_COLUMNS,
+    )
 
     for row in interactions.itertuples(index=False):
         synthetic_customer_id = int(row.customer_id)
@@ -248,8 +252,8 @@ def _load_db_modules():
 
 
 def _ensure_repo_db_path() -> None:
-    """Expose repo-root db/ modules for local non-Docker runs."""
+    """Expose shared ETL DB modules for local non-Docker runs."""
 
-    db_dir = Path(__file__).resolve().parents[2] / "db"
-    if db_dir.exists() and str(db_dir) not in sys.path:
-        sys.path.insert(0, str(db_dir))
+    etl_dir = Path(__file__).resolve().parents[2] / "etl"
+    if etl_dir.exists() and str(etl_dir) not in sys.path:
+        sys.path.insert(0, str(etl_dir))

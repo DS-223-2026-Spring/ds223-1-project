@@ -7,7 +7,17 @@ import json
 import numpy as np
 import pandas as pd
 
-from .config import ActionCalibration, FEATURE_COLUMNS, SyntheticDataConfig
+from .config import (
+    LINUCB_POLICY_MODES,
+    ActionCalibration,
+    FEATURE_COLUMNS,
+    SyntheticDataConfig,
+)
+
+try:
+    from ..linucb import LinUCBPolicy, LinUCBScore
+except ImportError:  # pragma: no cover - supports running inside the ds container
+    from linucb import LinUCBPolicy, LinUCBScore
 
 
 def simulate_interactions(
@@ -21,6 +31,16 @@ def simulate_interactions(
 
     customer_frame = customers.merge(latents, on="customer_id", how="inner")
     sampled_customers = sample_customer_rounds(customer_frame, config.n_rounds, config, rng)
+
+    if config.policy_mode in LINUCB_POLICY_MODES:
+        return simulate_linucb_interactions(
+            customers=customers,
+            sampled_customers=sampled_customers,
+            actions=actions,
+            config=config,
+            rng=rng,
+        )
+
     action_ids = choose_actions(sampled_customers, actions, config, rng)
     round_numbers = np.arange(1, config.n_rounds + 1, dtype=int)
 
@@ -60,12 +80,172 @@ def simulate_interactions(
             "cost": cost,
             "reward": reward,
             "p_convert": p_convert,
+            "exploit_score": np.full(config.n_rounds, np.nan),
+            "explore_score": np.full(config.n_rounds, np.nan),
+            "ucb_score": np.full(config.n_rounds, np.nan),
             "simulation_id": config.simulation_id,
         }
-    ).round({"revenue": 2, "cost": 2, "reward": 2, "p_convert": 4})
+    ).round(
+        {
+            "revenue": 2,
+            "cost": 2,
+            "reward": 2,
+            "p_convert": 4,
+            "exploit_score": 4,
+            "explore_score": 4,
+            "ucb_score": 4,
+        }
+    )
 
     model_state = initialize_model_state(actions, config)
     return interactions, model_state
+
+
+def simulate_linucb_interactions(
+    customers: pd.DataFrame,
+    sampled_customers: pd.DataFrame,
+    actions: tuple[ActionCalibration, ...],
+    config: SyntheticDataConfig,
+    rng: np.random.Generator,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Simulate interactions under online LinUCB action selection."""
+
+    policy = LinUCBPolicy.from_customer_frame(
+        customer_frame=customers,
+        actions=actions,
+        alpha=config.alpha,
+        feature_columns=FEATURE_COLUMNS,
+    )
+    contexts = policy.transform_frame(sampled_customers)
+    round_numbers = np.arange(1, config.n_rounds + 1, dtype=int)
+    warm_start_action_ids = build_warm_start_action_ids(
+        action_ids=policy.action_ids,
+        n_rounds=config.n_rounds,
+        rng=rng,
+    )
+
+    action_ids = np.zeros(config.n_rounds, dtype=int)
+    p_convert = np.zeros(config.n_rounds, dtype=float)
+    converted = np.zeros(config.n_rounds, dtype=bool)
+    revenue = np.zeros(config.n_rounds, dtype=float)
+    cost = np.zeros(config.n_rounds, dtype=float)
+    reward = np.zeros(config.n_rounds, dtype=float)
+    exploit_scores = np.zeros(config.n_rounds, dtype=float)
+    explore_scores = np.zeros(config.n_rounds, dtype=float)
+    ucb_scores = np.zeros(config.n_rounds, dtype=float)
+
+    for round_index, round_number in enumerate(round_numbers):
+        context = contexts[round_index]
+        if round_index < len(warm_start_action_ids):
+            selected = _score_for_forced_action(
+                policy=policy,
+                context=context,
+                action_id=int(warm_start_action_ids[round_index]),
+            )
+        else:
+            selected = policy.select_action(context)
+        action_id = selected.action_id
+        sample = sampled_customers.iloc[[round_index]]
+        action_id_array = np.array([action_id], dtype=int)
+        converted_array = np.array([False], dtype=bool)
+
+        p_round = compute_conversion_probabilities(
+            action_ids=action_id_array,
+            sampled_customers=sample,
+            actions=actions,
+            config=config,
+        )[0]
+        converted_round = bool(rng.random() < p_round)
+        converted_array[0] = converted_round
+        revenue_round = simulate_revenue(
+            sampled_customers=sample,
+            action_ids=action_id_array,
+            actions=actions,
+            round_numbers=np.array([round_number], dtype=int),
+            converted=converted_array,
+            config=config,
+            rng=rng,
+        )[0]
+        cost_round = compute_realized_costs(
+            action_ids=action_id_array,
+            revenue=np.array([revenue_round], dtype=float),
+            converted=converted_array,
+            actions=actions,
+        )[0]
+        reward_round = revenue_round - cost_round
+
+        policy.update(action_id=action_id, context=context, reward=reward_round)
+
+        action_ids[round_index] = action_id
+        p_convert[round_index] = p_round
+        converted[round_index] = converted_round
+        revenue[round_index] = revenue_round
+        cost[round_index] = cost_round
+        reward[round_index] = reward_round
+        exploit_scores[round_index] = selected.exploit_score
+        explore_scores[round_index] = selected.explore_score
+        ucb_scores[round_index] = selected.ucb_score
+
+    interactions = pd.DataFrame(
+        {
+            "interaction_id": np.arange(1, config.n_rounds + 1, dtype=int),
+            "round_number": round_numbers,
+            "customer_id": sampled_customers["customer_id"].astype(int).to_numpy(),
+            "action_id": action_ids,
+            "converted": converted,
+            "revenue": revenue,
+            "cost": cost,
+            "reward": reward,
+            "p_convert": p_convert,
+            "exploit_score": exploit_scores,
+            "explore_score": explore_scores,
+            "ucb_score": ucb_scores,
+            "simulation_id": config.simulation_id,
+        }
+    ).round(
+        {
+            "revenue": 2,
+            "cost": 2,
+            "reward": 2,
+            "p_convert": 4,
+            "exploit_score": 4,
+            "explore_score": 4,
+            "ucb_score": 4,
+        }
+    )
+    model_state = policy.to_model_state_frame(
+        simulation_id=config.simulation_id,
+        policy_mode=config.policy_mode,
+    )
+    return interactions, model_state
+
+
+def build_warm_start_action_ids(
+    action_ids: np.ndarray,
+    n_rounds: int,
+    rng: np.random.Generator,
+    pulls_per_action: int = 10,
+) -> np.ndarray:
+    """Return an initial shuffled action sequence so each arm has feedback."""
+
+    warm_start_rounds = min(n_rounds, len(action_ids) * pulls_per_action)
+    warm_start_actions: list[int] = []
+    while len(warm_start_actions) < warm_start_rounds:
+        warm_start_actions.extend(rng.permutation(action_ids).astype(int).tolist())
+    return np.array(warm_start_actions[:warm_start_rounds], dtype=int)
+
+
+def _score_for_forced_action(
+    policy: LinUCBPolicy,
+    context: np.ndarray,
+    action_id: int,
+) -> LinUCBScore:
+    """Return current score components for a warm-start action."""
+
+    for score in policy.score_context(context):
+        if score.action_id == action_id:
+            return score
+    raise ValueError(f"Unknown action_id during warm start: {action_id}")
 
 
 def sample_customer_rounds(
@@ -103,8 +283,10 @@ def choose_actions(
     if config.policy_mode == "random_policy":
         return rng.choice(action_ids, size=len(sampled_customers), replace=True)
 
-    # Placeholder until online bandit selection is implemented.
-    return rng.choice(action_ids, size=len(sampled_customers), replace=True)
+    if config.policy_mode in LINUCB_POLICY_MODES:
+        raise ValueError("LinUCB selection is sequential; call simulate_interactions instead.")
+
+    raise ValueError(f"Unsupported policy_mode: {config.policy_mode}")
 
 
 def compute_conversion_probabilities(
@@ -241,7 +423,7 @@ def initialize_model_state(
     actions: tuple[ActionCalibration, ...],
     config: SyntheticDataConfig,
 ) -> pd.DataFrame:
-    """Create a schema-ready placeholder for later LinUCB state persistence."""
+    """Create a schema-ready initial model state."""
 
     context_dim = len(FEATURE_COLUMNS)
     theta = [0.0] * context_dim

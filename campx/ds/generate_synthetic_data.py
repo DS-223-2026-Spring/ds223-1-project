@@ -1,7 +1,7 @@
 """Entrypoint for standalone synthetic data generation."""
 
 try:
-    from ds.synthetic.cli import main
+    from .synthetic.cli import main
 except ImportError:  # supports running from inside the ds container
     from synthetic.cli import main
 

@@ -6,154 +6,236 @@
 
 ## Overview
 
-The core model is **LinUCB** (Linear Upper Confidence Bound), a contextual bandit that:
+The final DS model is **LinUCB**: a contextual bandit that chooses one
+promotion for each customer, observes the realized business reward, and updates
+the selected action arm online.
 
-1. Takes a customer's context vector **x** (6 RFM features)
-2. For each action *a*, computes: **θₐᵀx + α√(xᵀAₐ⁻¹x)**
-3. Selects the action with the highest score
-4. Observes the reward (revenue − cost)
-5. Updates **Aₐ** and **bₐ** matrices for the chosen arm
+For each customer context vector `x` and action `a`, the model computes:
 
-The detailed DS data contract for features, leakage rules, simulator
-assumptions, and reward definition is documented separately in
+```text
+UCB_score(a) = theta_a.T @ x + alpha * sqrt(x.T @ A_a^-1 @ x)
+```
+
+The first term is exploitation: the current reward estimate. The second term is
+exploration: an uncertainty bonus that shrinks as an action receives feedback.
+
+The detailed feature and reward contract is in
 [DS Feature & Reward Spec](ds_data_spec.md).
 
 ---
 
-## Data strategy — fully simulated
+## Implemented Pipeline
 
-No external dataset. All customer data is generated from scratch using
-a latent generative model.
+The DS pipeline is fully synthetic and repeatable from scripts.
 
-**Why simulation?**
-Running a real contextual bandit requires a live system with real customers
-making real purchases in response to real promotions — data no academic
-project can ethically collect. Simulation is the standard evaluation
-approach in bandit research and is how the original LinUCB paper was
-evaluated (Li et al., 2010).
+```text
+campx/ds/synthetic/pipeline.py
+  -> generate_latent_traits(...)
+  -> generate_observed_features(...)
+  -> assign_segments(...)
+  -> simulate_interactions(...)
+       - random_policy: uniform random actions
+       - linucb: online LinUCB action selection and update
+       - bandit_scaffold: backward-compatible alias for linucb
+  -> build_validation_artifacts(...)
+  -> export_artifacts(...)
+```
 
-**What makes this simulation honest:**
-The latent traits that generate observable RFM features are the same
-traits that drive action-specific conversion probability. The model
-never sees the latents — only the noisy RFM proxies. This is what
-makes the learning problem non-trivial and realistic.
+Main entrypoint:
 
----
+```bash
+python -m campx.ds.generate_synthetic_data \
+  --n-customers 500 \
+  --n-rounds 5000 \
+  --policy-mode linucb \
+  --output-dir outputs/synthetic_data
+```
 
-## Latent generative model
-
-Each customer has **L latent traits** drawn once at generation time
-and anchored permanently to their `customer_id`.
-
-In the current implementation L=3:
-
-| Trait | Distribution | Drives |
-|-------|-------------|--------|
-| `z_brand_loyalty` | Beta(α, β) | Purchase frequency, recency, baseline conversion |
-| `z_price_sensitivity` | Beta(α, β) | Response to discount and free shipping |
-| `z_impulse_tendency` | Beta(α, β) | Response to bundle and recommendation |
-
-Distribution parameters are configurable in `.env`.
-
-**Two-channel consistency — the key design rule:**
-The same `z` that generates RFM (channel 1 — observable history) also
-drives conversion probability (channel 2 — action response), bound by
-`customer_id`. Swapping latents between customers breaks both channels
-simultaneously, making the assignment internally verified.
+The same code also works inside the DS container through `python main.py`.
 
 ---
 
-## Customer generation (`ds/etl.py`)
+## Feature Engineering
 
-```python
-# L latent traits drawn ONCE per customer — never re-drawn
-z_loyalty = rng.beta(LOYALTY_ALPHA, LOYALTY_BETA, N)
-z_price   = rng.beta(PRICE_ALPHA,   PRICE_BETA,   N)
-z_impulse = rng.beta(IMPULSE_ALPHA, IMPULSE_BETA, N)
+The model-visible customer context has exactly six observed features, defined
+centrally in [campx/ds/synthetic/config.py](../campx/ds/synthetic/config.py):
 
-# RFM derived from SAME latents — two-channel consistency
-frequency  = rng.poisson(2 + 10 * z_loyalty)
-recency    = rng.exponential(30 / (0.1 + 0.9 * z_loyalty))
-monetary   = frequency * rng.normal(55 + 30 * z_loyalty, 12)
+| Feature | Unit | Model role | Signal |
+|---------|------|------------|--------|
+| `recency` | days | context | Lower means more recent engagement |
+| `frequency` | purchase count | context | Higher means stronger repeat engagement |
+| `monetary` | GBP-like currency | context | Higher means greater customer value |
+| `basket_diversity` | category breadth score | context | Higher means broader shopping behavior |
+| `avg_order_size` | GBP-like currency | context | Higher means larger baskets or premium buying |
+| `purchase_regularity` | normalized cadence score | context | Higher means steadier repeat behavior |
+
+Executable feature helpers live in
+[campx/ds/synthetic/features.py](../campx/ds/synthetic/features.py):
+
+- `get_model_feature_metadata()` returns the feature metadata.
+- `get_model_feature_frame(customers)` validates and orders model-visible
+  columns.
+- `build_context_matrix(customers)` returns the numeric context matrix used by
+  LinUCB and baseline models.
+
+The helper enforces that all model features are present, numeric, finite, and in
+the canonical order. It deliberately excludes identifiers, segments, latent
+traits, conversion probabilities, and realized outcomes.
+
+### Feature Scaling
+
+LinUCB receives the six observed features after max scaling by the generated
+customer pool. This keeps the six-feature context contract intact while
+preventing raw monetary values from dominating the linear algebra.
+
+The exported `model_state.csv` records:
+
+- `feature_columns_json`
+- `feature_means_json`
+- `feature_scales_json`
+- `context_encoding`
+
+For the current model, `context_encoding` is:
+
+```text
+max_scaled_observed_features
 ```
 
 ---
 
-## Conversion model (`ds/model.py`)
+## Synthetic Data Generation
 
-Action-specific sigmoid formulas over latent traits.
-All coefficients are **explicit assumptions** documented here.
+The generator uses two-channel consistency:
 
-| Action | Formula | Primary driver |
-|--------|---------|---------------|
-| `no_action` | σ(2.5·z_l − 2.0) | Brand loyalty |
-| `discount_10` | σ(3.0·z_p − 1.5·z_l − 1.0) | Price sensitivity |
-| `free_shipping` | σ(2.0·z_p·(1−z_i) − 0.5) | Sensitivity × planning |
-| `product_rec` | σ(2.0·z_l + 1.5·z_i − 1.5) | Loyalty + impulse |
-| `bundle_offer` | σ(2.5·z_i + 0.8·z_l − 1.5·(1−z_p)) | Impulse tendency |
+1. latent traits generate observed customer behavior
+2. the same latent traits drive action response
 
----
+Latent traits are stored for validation and debugging only:
 
-## LinUCB algorithm
+| Trait | Prior | Drives |
+|-------|-------|--------|
+| `z_price_sensitivity` | `Beta(2, 5)` | discount and shipping response |
+| `z_brand_loyalty` | `Beta(3, 3)` | repeat behavior and organic conversion |
+| `z_impulse_tendency` | `Beta(2, 4)` | recommendation and bundle response |
 
-Per-action ridge regression with UCB exploration bonus.
-Reference: Li et al. (2010), *A Contextual-Bandit Approach to
-Personalized News Article Recommendation*, WWW 2010.
+The model never receives these latent traits as inputs.
 
-```
-UCB_score(a) = θₐᵀx + α · √(xᵀAₐ⁻¹x)
-──────   ────────────────
-exploit    explore bonus
-(shrinks as Aₐ grows)
-
-Update after observing reward r:
-Aₐ ← Aₐ + xxᵀ
-bₐ ← bₐ + r · x
-θₐ ← Aₐ⁻¹bₐ
-```
+Observed features are generated in
+[campx/ds/synthetic/features.py](../campx/ds/synthetic/features.py), with
+calibration constants in
+[campx/ds/synthetic/config.py](../campx/ds/synthetic/config.py).
 
 ---
 
-## Service pipeline (`ds/`)
+## LinUCB Model
 
-```
-ds/
-├── Dockerfile
-├── main.py
-├── etl.py
-└── model.py
+The LinUCB implementation lives in
+[campx/ds/linucb.py](../campx/ds/linucb.py).
+
+Each action has its own ridge-regression state:
+
+```text
+A_a = identity matrix at initialization
+b_a = zero vector at initialization
+theta_a = A_a^-1 b_a
 ```
 
----
+For every simulated round:
 
-## Baseline policies
+1. sample a customer by purchase propensity
+2. build the six-feature context vector `x`
+3. score all actions with LinUCB
+4. select the highest-UCB action
+5. simulate conversion, revenue, cost, and reward
+6. update only the selected action:
 
-| Policy | Description |
-|--------|-------------|
-| Random | Uniform random — zero-intelligence baseline |
-| Heuristic | Static segment rules — represents traditional marketing |
-| LinUCB | Learned contextual policy — should outperform both |
+```text
+A_a <- A_a + x x.T
+b_a <- b_a + reward * x
+theta_a <- A_a^-1 b_a
+```
 
----
-
-## Key parameters
-
-| Parameter | Env var | Default | Description |
-|-----------|---------|---------|-------------|
-| `alpha` | `ALPHA` | 0.5 | Exploration–exploitation tradeoff |
-| `d` | — | 6 | Context vector dimension (fixed by RFM features) |
-| `N_rounds` | `N_ROUNDS` | 5000 | Simulation rounds per run |
-| `N_customers` | `N_CUSTOMERS` | 500 | Customer pool size |
-| `seed` | `RANDOM_SEED` | 42 | Reproducibility |
+The simulator performs a small warm start so every action receives initial
+feedback before pure UCB selection takes over. This avoids early collapse from
+one lucky first action and gives every arm an initial reward signal.
 
 ---
 
-## Evaluation
+## Reward Target
+
+The optimization target is realized business reward:
+
+```text
+reward = revenue - cost
+```
+
+This is the primary metric because conversion alone ignores margin, and revenue
+alone ignores promotion spend.
+
+---
+
+## Baselines
+
+Baseline comparison logic lives in
+[campx/ds/baselines.py](../campx/ds/baselines.py). It uses the same
+`build_context_matrix(...)` helper for model-facing features.
+
+Implemented baselines:
+
+| Policy | Purpose |
+|--------|---------|
+| `random_uniform` | no-intelligence control |
+| `best_historical_action` | one global best historical action |
+| `segment_heuristic` | hand-written marketing rules |
+| `segment_reward_lookup` | empirical segment-to-action lookup |
+| `linear_reward_model` | supervised per-action ridge reward model |
+
+Run:
+
+```bash
+python -m campx.ds.run_baseline_comparison \
+  --n-customers 500 \
+  --train-rounds 5000 \
+  --eval-rounds 5000 \
+  --output-dir outputs/baselines
+```
+
+---
+
+## Exported Artifacts
+
+A synthetic generation run writes:
+
+| File | Purpose |
+|------|---------|
+| `customers.csv` | observed customer table |
+| `customer_latents.csv` | debug-only latent traits |
+| `actions.csv` | action metadata |
+| `interactions.csv` | decisions, outcomes, rewards, and UCB score components |
+| `model_state.csv` | per-action LinUCB state |
+| `validation_report.txt` | run-level sanity report |
+| `target_moment_comparison.csv` | calibration target checks |
+| `monotonicity_checks.csv` | directional assumption checks |
+
+For LinUCB runs, `interactions.csv` includes:
+
+- `exploit_score`
+- `explore_score`
+- `ucb_score`
+
+For random-policy runs, these score columns are present but empty.
+
+---
+
+## Evaluation Metrics
 
 | Metric | Definition |
-|--------|-----------|
-| Cumulative reward | Sum of (revenue − cost) — primary metric |
-| Per-step regret | Oracle reward minus chosen reward — should decrease |
-| Action distribution | Proportion of each action over time |
-| Conversion rate by action | Validates response heterogeneity learning |
-| θ heatmap | Did the model learn the right feature weights per action? |
+|--------|------------|
+| Total reward | sum of `reward`; primary business metric |
+| Mean reward | average `reward` per round |
+| Conversion rate | average of `converted`; diagnostic |
+| Action distribution | pull count and share per action |
+| Model state | final `theta`, `A`, `b`, and `n_pulls` per action |
+
+On a 500-customer, 5000-round seed-42 run, LinUCB produced total reward
+`140475.41` versus `98783.84` for the same-scale random policy run.

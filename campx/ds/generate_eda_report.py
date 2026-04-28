@@ -1,7 +1,7 @@
 """Entrypoint for synthetic dataset exploratory analysis."""
 
 try:
-    from ds.eda import main
+    from .eda import main
 except ImportError:  # supports running from inside the ds container
     from eda import main
 
