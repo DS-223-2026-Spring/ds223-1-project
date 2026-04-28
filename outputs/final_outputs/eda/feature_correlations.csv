@@ -1,0 +1,7 @@
+,recency,frequency,monetary,basket_diversity,avg_order_size,purchase_regularity
+recency,1.0,-0.278,-0.284,-0.133,-0.236,-0.432
+frequency,-0.278,1.0,0.905,0.209,0.289,0.396
+monetary,-0.284,0.905,1.0,0.32,0.552,0.436
+basket_diversity,-0.133,0.209,0.32,1.0,0.484,0.152
+avg_order_size,-0.236,0.289,0.552,0.484,1.0,0.33
+purchase_regularity,-0.432,0.396,0.436,0.152,0.33,1.0

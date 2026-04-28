@@ -1,0 +1,9 @@
+metric_name,actual_gap,threshold,passed
+high_loyalty_lowers_recency,59.872,25.0,True
+high_loyalty_raises_frequency,4.104,2.5,True
+high_loyalty_raises_monetary,317.1222,130.0,True
+high_loyalty_raises_regularity,0.3314,0.18,True
+high_impulse_raises_basket_diversity,1.8153,1.2,True
+high_impulse_raises_avg_order_size,16.2687,10.0,True
+low_price_sensitivity_raises_avg_order_size,9.8607,6.0,True
+bundle_offer_revenue_exceeds_no_action,56.1455,18.0,True

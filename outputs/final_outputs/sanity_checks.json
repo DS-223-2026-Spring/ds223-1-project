@@ -1,0 +1,12 @@
+{
+  "avg_order_out_of_range_count": 0,
+  "bundle_avg_revenue_gt_no_action_avg_revenue": true,
+  "converted_with_zero_revenue_count": 0,
+  "invalid_probability_count": 0,
+  "negative_cost_count": 0,
+  "negative_monetary_count": 0,
+  "negative_recency_count": 0,
+  "non_positive_frequency_count": 0,
+  "policy_mode": "linucb",
+  "simulation_id": "synthetic_seed42_cust500_rounds5000"
+}

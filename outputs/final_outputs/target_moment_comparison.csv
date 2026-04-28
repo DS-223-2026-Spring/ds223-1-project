@@ -1,0 +1,16 @@
+metric_group,metric_name,target,actual,deviation,within_tolerance
+segment_mix,Champion,0.12,0.174,0.054,False
+segment_mix,Loyal,0.4,0.424,0.024,True
+segment_mix,At-Risk,0.18,0.126,-0.054,False
+segment_mix,Lost,0.3,0.276,-0.024,True
+avg_order_size,mean_avg_order_size,65.0,64.4438,-0.5562,True
+conversion_rate,no_action,0.29,0.0714,-0.2186,False
+conversion_rate,discount_10,0.18,0.0909,-0.0891,False
+conversion_rate,free_shipping,0.2,0.2743,0.0743,False
+conversion_rate,product_recommendation,0.3,0.3239,0.0239,True
+conversion_rate,bundle_offer,0.28,0.3173,0.0373,True
+converted_revenue_range,no_action,69.0,58.04,-10.96,False
+converted_revenue_range,discount_10,75.0,97.32,22.32,False
+converted_revenue_range,free_shipping,72.0,56.1602,-15.8398,False
+converted_revenue_range,product_recommendation,81.0,80.7212,-0.2788,True
+converted_revenue_range,bundle_offer,108.5,114.1855,5.6855,True
