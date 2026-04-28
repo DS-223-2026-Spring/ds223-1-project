@@ -4,13 +4,15 @@ site_author: Group 1, AUA Spring 2026
 
 nav:
   - Home: index.md
+  - Demo: demo.md
   - Governance: governance.md
   - Services:
       - Database: database.md
+      - ETL: etl.md
       - Data Science & Modeling: modeling.md
       - DS Feature & Reward Spec: ds_data_spec.md
-      - Backend API: api.md
-      - Frontend UI: frontend.md
+      - API: api.md
+      - APP: app.md
 
 theme:
   name: material
@@ -27,17 +29,17 @@ theme:
   language: en
   palette:
     - scheme: default
-      primary: indigo
-      accent: indigo
       toggle:
-        icon: material/brightness-7
+        icon: material/toggle-switch-off-outline
         name: Switch to dark mode
+      primary: teal
+      accent: purple
     - scheme: slate
-      primary: indigo
-      accent: indigo
       toggle:
-        icon: material/brightness-4
+        icon: material/toggle-switch
         name: Switch to light mode
+      primary: teal
+      accent: lime
 
 plugins:
   - mkdocstrings:
