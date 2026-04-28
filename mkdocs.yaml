@@ -1,0 +1,52 @@
+site_name: Campaign Optimization Engine
+site_description: LinUCB contextual bandit for promotional action selection — DS223 Group 1
+site_author: Group 1, AUA Spring 2026
+
+nav:
+  - Home: index.md
+  - Governance: governance.md
+  - Services:
+      - Database: database.md
+      - Data Science & Modeling: modeling.md
+      - DS Feature & Reward Spec: ds_data_spec.md
+      - Backend API: api.md
+      - Frontend UI: frontend.md
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.annotation
+    - content.code.copy
+  language: en
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+plugins:
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: ["."]
+          
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - tables
