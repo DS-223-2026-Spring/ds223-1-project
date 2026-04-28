@@ -10,13 +10,17 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .baselines import BaselineComparisonArtifacts, run_baseline_comparison
-    from .synthetic.config import SUPPORTED_POLICY_MODES, SyntheticDataConfig
-    from .synthetic.pipeline import SyntheticArtifacts, run_pipeline
-except ImportError:  # pragma: no cover - supports running inside the ds container
-    from baselines import BaselineComparisonArtifacts, run_baseline_comparison
-    from synthetic.config import SUPPORTED_POLICY_MODES, SyntheticDataConfig
-    from synthetic.pipeline import SyntheticArtifacts, run_pipeline
+    from ._routing import import_ds_module, load_ds_attr
+except ImportError:  # pragma: no cover - supports direct execution in DS container
+    from _routing import import_ds_module, load_ds_attr
+
+_config = import_ds_module("synthetic.config")
+SUPPORTED_POLICY_MODES = _config.SUPPORTED_POLICY_MODES
+SyntheticDataConfig = _config.SyntheticDataConfig
+BaselineComparisonArtifacts = load_ds_attr("baselines", "BaselineComparisonArtifacts")
+run_baseline_comparison = load_ds_attr("baselines", "run_baseline_comparison")
+SyntheticArtifacts = load_ds_attr("synthetic.pipeline", "SyntheticArtifacts")
+run_pipeline = load_ds_attr("synthetic.pipeline", "run_pipeline")
 
 
 @dataclass(slots=True)

@@ -12,11 +12,13 @@ import numpy as np
 import pandas as pd
 
 try:
-    from .synthetic.config import FEATURE_COLUMNS
-    from .synthetic.features import build_context_matrix
-except ImportError:  # pragma: no cover - supports running inside the ds container
-    from synthetic.config import FEATURE_COLUMNS
-    from synthetic.features import build_context_matrix
+    from ._routing import import_ds_module, load_ds_attr
+except ImportError:  # pragma: no cover - supports direct execution in DS container
+    from _routing import import_ds_module, load_ds_attr
+
+_config = import_ds_module("synthetic.config")
+FEATURE_COLUMNS = _config.FEATURE_COLUMNS
+build_context_matrix = load_ds_attr("synthetic.features", "build_context_matrix")
 
 
 @dataclass(slots=True)
@@ -534,10 +536,7 @@ def _run_eda(
     max_scatter_points: int,
     random_seed: int,
 ):
-    try:
-        from .eda import run_eda
-    except ImportError:  # pragma: no cover - supports running inside the ds container
-        from eda import run_eda
+    run_eda = load_ds_attr("eda", "run_eda")
 
     return run_eda(
         input_dir=input_dir,

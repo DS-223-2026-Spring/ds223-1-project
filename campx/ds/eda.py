@@ -19,9 +19,13 @@ import numpy as np
 import pandas as pd
 
 try:
-    from .synthetic.config import FEATURE_COLUMNS, LATENT_COLUMNS
-except ImportError:  # pragma: no cover - supports running inside the ds container
-    from synthetic.config import FEATURE_COLUMNS, LATENT_COLUMNS
+    from ._routing import import_ds_module
+except ImportError:  # pragma: no cover - supports direct execution in DS container
+    from _routing import import_ds_module
+
+_config = import_ds_module("synthetic.config")
+FEATURE_COLUMNS = _config.FEATURE_COLUMNS
+LATENT_COLUMNS = _config.LATENT_COLUMNS
 
 REQUIRED_FILES = ("customers.csv", "actions.csv", "interactions.csv")
 OPTIONAL_LATENT_FILE = "customer_latents.csv"

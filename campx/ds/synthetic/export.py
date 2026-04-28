@@ -31,9 +31,11 @@ def export_artifacts(
     model_state.to_csv(output_dir / "model_state.csv", index=False)
 
     try:
-        from ..final_outputs import build_final_outputs
-    except ImportError:  # pragma: no cover - supports running inside the ds container
-        from final_outputs import build_final_outputs
+        from .._routing import load_ds_attr
+    except ImportError:  # pragma: no cover - supports direct execution in DS container
+        from _routing import load_ds_attr
+
+    build_final_outputs = load_ds_attr("final_outputs", "build_final_outputs")
 
     build_final_outputs(
         customers=customers,

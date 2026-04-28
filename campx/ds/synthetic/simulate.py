@@ -15,9 +15,12 @@ from .config import (
 )
 
 try:
-    from ..linucb import LinUCBPolicy, LinUCBScore
-except ImportError:  # pragma: no cover - supports running inside the ds container
-    from linucb import LinUCBPolicy, LinUCBScore
+    from .._routing import load_ds_attr
+except ImportError:  # pragma: no cover - supports direct execution in DS container
+    from _routing import load_ds_attr
+
+LinUCBPolicy = load_ds_attr("linucb", "LinUCBPolicy")
+LinUCBScore = load_ds_attr("linucb", "LinUCBScore")
 
 
 def simulate_interactions(
