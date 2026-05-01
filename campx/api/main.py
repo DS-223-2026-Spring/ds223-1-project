@@ -11,7 +11,7 @@ try:
     from .SQLHandler import SQLHandler
     from .crud import (
         complete_simulation_record,
-        create_customer_record,
+        upsert_customer_record,
         create_simulation_record,
         delete_customer_record,
         get_customer_record,
@@ -20,8 +20,7 @@ try:
         list_customers,
         list_simulations,
         log_decision,
-        submit_feedback,
-        update_customer_record,
+        submit_feedback
     )
     from .database import get_db
     from .metadata import (
@@ -57,7 +56,7 @@ except ImportError:
     from SQLHandler import SQLHandler
     from crud import (
         complete_simulation_record,
-        create_customer_record,
+        upsert_customer_record,
         create_simulation_record,
         delete_customer_record,
         get_customer_record,
@@ -66,8 +65,7 @@ except ImportError:
         list_customers,
         list_simulations,
         log_decision,
-        submit_feedback,
-        update_customer_record,
+        submit_feedback
     )
     from database import get_db
     from metadata import (
@@ -253,7 +251,7 @@ def create_customer(
     payload: CustomerCreate,
     db: SQLHandler = Depends(get_db),
 ) -> CustomerResponse:
-    customer = create_customer_record(db, payload)
+    customer = upsert_customer_record(db, payload)
     return CustomerResponse(**customer)
 
 
@@ -268,7 +266,7 @@ def update_customer(
     payload: CustomerUpdate,
     db: SQLHandler = Depends(get_db),
 ) -> CustomerResponse:
-    customer = update_customer_record(db, customer_id, payload)
+    customer = upsert_customer_record(db, payload, customer_id)
     if customer is None:
         raise HTTPException(status_code=404, detail=f"Customer {customer_id} was not found.")
     return CustomerResponse(**customer)

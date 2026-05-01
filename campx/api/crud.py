@@ -15,11 +15,7 @@ try:
         complete_simulation,
         create_simulation,
         get_customer_by_id,
-        get_customer_latents,
-        insert_customer,
-        insert_customer_latent,
-        log_interaction,
-        observe_outcome,
+        get_customer_latents
     )
     from .metadata import CUSTOMER_FIELDS, LATENT_FIELDS
     from .schemas import CustomerCreate, CustomerUpdate, DecideRequest, FeedbackRequest, SimulationCreate
@@ -29,11 +25,7 @@ except ImportError:
         complete_simulation,
         create_simulation,
         get_customer_by_id,
-        get_customer_latents,
-        insert_customer,
-        insert_customer_latent,
-        log_interaction,
-        observe_outcome,
+        get_customer_latents
     )
     from metadata import CUSTOMER_FIELDS, LATENT_FIELDS
     from schemas import CustomerCreate, CustomerUpdate, DecideRequest, FeedbackRequest, SimulationCreate
@@ -116,88 +108,62 @@ def get_customer_record(db: SQLHandler, customer_id: int) -> dict[str, Any] | No
 
 def list_customers(db: SQLHandler, limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
     query = """
-        SELECT
-            c.customer_id,
-            c.gender,
-            c.segment_label,
-            c.recency,
-            c.frequency,
-            c.monetary,
-            c.basket_diversity,
-            c.avg_order_size,
-            c.purchase_regularity,
-            c.created_at,
-            l.z_price_sensitivity,
-            l.z_brand_loyalty,
-            l.z_impulse_tendency
-        FROM public.customers AS c
-        LEFT JOIN public.customer_latents AS l
-            ON l.customer_id = c.customer_id
-        ORDER BY c.customer_id
+        SELECT *
+        FROM public.view_customer_with_latents
+        ORDER BY customer_id
         LIMIT %s OFFSET %s
     """
     df = db.select(query, (limit, offset))
     return [_split_customer_row(row) for row in df.to_dict(orient="records")]
 
 
-def create_customer_record(db: SQLHandler, payload: CustomerCreate) -> dict[str, Any]:
-    data = _dump_model(payload)
-    latents = data.pop("latents", None)
+# def create_customer_record(db: SQLHandleobserve_r, payload: CustomerCreate) -> dict[str, Any]:
+#     data = _dump_model(payload)
+#     latents = data.pop("latents", None)
 
-    customer_id = insert_customer(db, **data)
-    if latents:
-        insert_customer_latent(db, customer_id=customer_id, **latents)
+#     customer_id = insert_customer(db, **data)
+#     if latents:
+#         insert_customer_latent(db, customer_id=customer_id, **latents)
 
-    return get_customer_record(db, customer_id)
+#     return get_customer_record(db, customer_id)
 
 
-def update_customer_record(
+def upsert_customer_record(
     db: SQLHandler,
-    customer_id: int,
-    payload: CustomerUpdate,
-) -> dict[str, Any] | None:
-    if get_customer_by_id(db, customer_id) is None:
-        return None
-
+    payload: CustomerCreate | CustomerUpdate,
+    customer_id: int | None = None,
+) -> dict[str, Any]:
     data = _dump_model(payload, exclude_unset=True)
-    latents = data.pop("latents", None)
 
-    customer_fields = [field for field in CUSTOMER_FIELDS if field in data]
-    if customer_fields:
-        assignments = [sql.SQL("{} = %s").format(sql.Identifier(field)) for field in customer_fields]
-        query = sql.SQL("UPDATE public.customers SET {} WHERE customer_id = %s").format(
-            sql.SQL(", ").join(assignments)
-        )
-        values = [data[field] for field in customer_fields] + [customer_id]
-        db.cursor.execute(query, values)
+    latents = data.pop("latents", {}) or {}
 
-    if latents:
-        latent_fields = [field for field in LATENT_FIELDS if field in latents]
-        columns = [sql.Identifier("customer_id")] + [sql.Identifier(field) for field in latent_fields]
-        placeholders = sql.SQL(", ").join([sql.Placeholder()] * (len(latent_fields) + 1))
-        updates = sql.SQL(", ").join(
-            [
-                sql.SQL("{} = EXCLUDED.{}").format(sql.Identifier(field), sql.Identifier(field))
-                for field in latent_fields
-            ]
-        )
-        query = sql.SQL(
-            """
-            INSERT INTO public.customer_latents ({columns})
-            VALUES ({placeholders})
-            ON CONFLICT (customer_id) DO UPDATE SET {updates}
-            """
-        ).format(
-            columns=sql.SQL(", ").join(columns),
-            placeholders=placeholders,
-            updates=updates,
-        )
-        db.cursor.execute(query, [customer_id] + [latents[field] for field in latent_fields])
+    result = _select_one(
+        db,
+        """
+        SELECT sp_upsert_customer(
+            %s, %s, %s, %s, %s, %s, %s, %s, %s,
+            %s, %s, %s
+        ) AS customer_id
+        """,
+        (
+            customer_id,
+            data.get("gender"),
+            data.get("segment_label"),
+            data.get("recency"),
+            data.get("frequency"),
+            data.get("monetary"),
+            data.get("basket_diversity"),
+            data.get("avg_order_size"),
+            data.get("purchase_regularity"),
+            latents.get("z_price_sensitivity"),
+            latents.get("z_brand_loyalty"),
+            latents.get("z_impulse_tendency"),
+        ),
+    )
 
-    if customer_fields or latents:
-        db.commit()
+    db.commit()
 
-    return get_customer_record(db, customer_id)
+    return get_customer_record(db, result["customer_id"])
 
 
 def delete_customer_record(db: SQLHandler, customer_id: int) -> bool:
@@ -221,51 +187,27 @@ def list_actions(db: SQLHandler) -> list[dict[str, Any]]:
     return [_serialize_record(row) for row in df.to_dict(orient="records")]
 
 
-def _simulation_enrichment_sql() -> str:
-    return """
-        CASE
-            WHEN s.completed_at IS NOT NULL THEN 'completed'
-            ELSE 'running'
-        END AS status,
-        COUNT(i.interaction_id)::int AS rounds_completed,
-        CASE
-            WHEN COUNT(*) FILTER (WHERE i.observed_at IS NOT NULL) = 0 THEN NULL
-            ELSE COALESCE(SUM(i.reward) FILTER (WHERE i.observed_at IS NOT NULL), 0.0)
-        END AS cumulative_reward
-    """
+# def _simulation_enrichment_sql() -> str:
+#     return """
+#         CASE
+#             WHEN s.completed_at IS NOT NULL THEN 'completed'
+#             ELSE 'running'
+#         END AS status,
+#         COUNT(i.interaction_id)::int AS rounds_completed,
+#         CASE
+#             WHEN COUNT(*) FILTER (WHERE i.observed_at IS NOT NULL) = 0 THEN NULL
+#             ELSE COALESCE(SUM(i.reward) FILTER (WHERE i.observed_at IS NOT NULL), 0.0)
+#         END AS cumulative_reward
+#     """
 
 
 def _get_simulation_record(db: SQLHandler, simulation_id: int) -> dict[str, Any] | None:
     return _select_one(
         db,
-        f"""
-        SELECT
-            s.simulation_id,
-            s.sim_name,
-            s.num_rounds,
-            s.num_customers,
-            s.alpha,
-            s.context_dim,
-            s.conversion_window_hours,
-            s.notes,
-            s.started_at,
-            s.completed_at,
-            {_simulation_enrichment_sql()}
-        FROM public.simulations AS s
-        LEFT JOIN public.interactions AS i
-            ON i.simulation_id = s.simulation_id
-        WHERE s.simulation_id = %s
-        GROUP BY
-            s.simulation_id,
-            s.sim_name,
-            s.num_rounds,
-            s.num_customers,
-            s.alpha,
-            s.context_dim,
-            s.conversion_window_hours,
-            s.notes,
-            s.started_at,
-            s.completed_at
+        """
+        SELECT *
+        FROM public.view_simulation_summary
+        WHERE simulation_id = %s
         """,
         (simulation_id,),
     )
@@ -273,34 +215,10 @@ def _get_simulation_record(db: SQLHandler, simulation_id: int) -> dict[str, Any]
 
 def list_simulations(db: SQLHandler) -> list[dict[str, Any]]:
     df = db.select(
-        f"""
-        SELECT
-            s.simulation_id,
-            s.sim_name,
-            s.num_rounds,
-            s.num_customers,
-            s.alpha,
-            s.context_dim,
-            s.conversion_window_hours,
-            s.notes,
-            s.started_at,
-            s.completed_at,
-            {_simulation_enrichment_sql()}
-        FROM public.simulations AS s
-        LEFT JOIN public.interactions AS i
-            ON i.simulation_id = s.simulation_id
-        GROUP BY
-            s.simulation_id,
-            s.sim_name,
-            s.num_rounds,
-            s.num_customers,
-            s.alpha,
-            s.context_dim,
-            s.conversion_window_hours,
-            s.notes,
-            s.started_at,
-            s.completed_at
-        ORDER BY s.simulation_id DESC
+        """
+        SELECT *
+        FROM view_simulation_summary
+        ORDER BY simulation_id DESC
         """
     )
     return [_serialize_record(row) for row in df.to_dict(orient="records")]
@@ -333,72 +251,55 @@ def _get_action_cost(db: SQLHandler, action_id: int) -> float | None:
 def log_decision(db: SQLHandler, payload: DecideRequest) -> dict[str, Any] | None:
     data = _dump_model(payload)
 
-    if get_customer_by_id(db, data["customer_id"]) is None:
-        return None
-    if not _simulation_exists(db, data["simulation_id"]):
-        return None
-    if not _action_exists(db, data["action_id"]):
-        return None
-
-    cost = data["cost"]
-    if cost is None:
-        cost = _get_action_cost(db, data["action_id"])
-
-    interaction_id = log_interaction(
-        db=db,
-        simulation_id=data["simulation_id"],
-        customer_id=data["customer_id"],
-        action_id=data["action_id"],
-        round_number=data["round_number"],
-        context_vector_bytes=json.dumps(data["context_vector"]).encode("utf-8"),
-        ucb_score=data["ucb_score"],
-        cost=cost or 0.0,
+    result = _select_one(
+        db,
+        """
+        SELECT sp_log_interaction(
+            %s, %s, %s, %s, %s, %s, %s
+        ) AS interaction_id
+        """,
+        (
+            data["simulation_id"],
+            data["customer_id"],
+            data["action_id"],
+            data["round_number"],
+            json.dumps(data["context_vector"]).encode("utf-8"),
+            data["ucb_score"],
+            data.get("cost"),
+        ),
     )
 
-    return {
-        "interaction_id": interaction_id,
-        "recommended_action_id": data["action_id"],
-        "placeholder": True,
-        "stored_context_encoding": "json-bytes",
-        "note": "This placeholder endpoint logs the caller-supplied action until DS model scoring is integrated.",
-    }
+    if result is None:
+        return None
 
+    return {
+        "interaction_id": result["interaction_id"],
+        "recommended_action_id": data["action_id"],
+    }
 
 def submit_feedback(db: SQLHandler, payload: FeedbackRequest) -> dict[str, Any] | None:
     data = _dump_model(payload)
-    existing = _select_one(
+
+    result = _select_one(
         db,
         """
-        SELECT interaction_id, converted, revenue, reward, observed_at
-        FROM public.interactions
-        WHERE interaction_id = %s
+        SELECT *
+        FROM sp_submit_feedback(%s, %s, %s, %s, %s)
         """,
-        (data["interaction_id"],),
+        (
+            data["interaction_id"],
+            data["converted"],
+            data["revenue"],
+            data.get("converted_at"),
+            data.get("observed_at"),
+        ),
     )
-    if existing is None:
+
+    if result is None:
         return None
 
-    observed_at = data.get("observed_at") or datetime.now(timezone.utc)
-    converted_at = data.get("converted_at") if data["converted"] else None
-
-    observe_outcome(
-        db=db,
-        interaction_id=data["interaction_id"],
-        converted=data["converted"],
-        revenue=data["revenue"],
-        converted_at=converted_at,
-        observed_at=observed_at,
-    )
-
-    return _select_one(
-        db,
-        """
-        SELECT interaction_id, converted, revenue, reward, observed_at
-        FROM public.interactions
-        WHERE interaction_id = %s
-        """,
-        (data["interaction_id"],),
-    )
+    db.commit()
+    return result
 
 
 def get_metrics_snapshot(db: SQLHandler, simulation_id: int) -> dict[str, Any] | None:
