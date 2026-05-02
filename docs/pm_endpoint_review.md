@@ -33,8 +33,7 @@ Current validation context:
 | Endpoint | Frontend / PM expectation | Current backend state | Status | Notes |
 |---|---|---|---|---|
 | `GET /simulations` | List all runs for selectors and tables | Implemented | Aligned | Returns simulation summaries with `status`, `cumulative_reward`, and `rounds_completed` from `view_simulation_summary`. |
-| `POST /simulate` | Create and trigger a simulation run | Not implemented under this exact name | Partial | Backend uses `POST /simulations` instead. PM must decide whether to keep only REST-style naming or add an alias. |
-| `POST /simulations` | Backend alternative to simulation creation | Implemented | Partial | Works for record creation, but frontend spec currently expects `POST /simulate` and orchestration is not triggered yet. |
+| `POST /simulations` | Create and trigger a simulation run | Implemented | Partial | Backend uses `POST /simulations` as the single creation route, but orchestration is not triggered yet. |
 | `GET /metrics` | Return rich dashboard payload for Interaction and Analytics pages | Implemented with limited totals only | Partial | Current shape is too small for UI. Missing series data, pending counts, recent interactions, and per-action aggregates. |
 | `GET /customers` | Return customer list | Implemented | Partial | Exists and is useful, but returns `{items, count}` envelope while frontend spec currently describes a raw array. |
 | `GET /customers/{customer_id}` | Return one customer, optionally with debug latents and interactions | Implemented | Partial | Returns customer plus latents, but not the richer nested shape from the spec and does not support the documented `debug=true` behavior. |
@@ -58,7 +57,6 @@ Needs:
 Assessment:
 - `GET /simulations` is ready enough
 - create flow is only partially ready because:
-  - frontend expects `POST /simulate`
   - backend exposes `POST /simulations`
   - orchestration is not yet wired, so it only creates a DB record
 
@@ -150,12 +148,11 @@ This means the DS side is stronger, but these changes do not by themselves compl
 
 These are the most important unresolved PM decisions:
 
-1. Should simulation creation use only `POST /simulations`, or should backend also expose `POST /simulate` as an alias for frontend compatibility?
-2. Should list endpoints return raw arrays or `{items, count}` envelopes?
-3. Is the Model page in final scope?
+1. Should list endpoints return raw arrays or `{items, count}` envelopes?
+2. Is the Model page in final scope?
    - If yes, `GET /model/state` and preview `POST /decide` are required.
    - If no, those can be explicitly downgraded from must-have to stretch.
-4. Is full orchestration required for the demo, or is “record creation plus documented limitation” acceptable?
+3. Is full orchestration required for the demo, or is “record creation plus documented limitation” acceptable?
 
 ---
 
@@ -314,7 +311,6 @@ Current status:
 - `Active / ongoing`
 
 Known blockers:
-- route naming mismatch: `POST /simulate` vs `POST /simulations`
 - metrics payload incomplete for frontend pages
 - `GET /model/state` missing
 - preview `POST /decide` behavior missing
@@ -436,4 +432,3 @@ After containers are up, check:
 - FastAPI docs load at `/docs`
 - DB/pgAdmin starts
 - API endpoints like `/health` and `/simulations` respond
-

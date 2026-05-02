@@ -168,7 +168,7 @@ Three fields need to be computed:
 
 ---
 
-### 2. POST /simulate
+### 2. POST /simulations
 
 **Who uses it:** The launch form on the Create Simulation page.
 
@@ -559,11 +559,10 @@ Quick reference — the columns each endpoint actually reads:
 
 | Table | Columns | Used by |
 |-------|---------|---------|
-| `simulations` | `simulation_id`, `sim_name`, `num_rounds`, `num_customers`, `alpha`, `context_dim`, `conversion_window_hours`, `notes`, `started_at`, `completed_at` | /simulations, /simulate, /metrics |
+| `simulations` | `simulation_id`, `sim_name`, `num_rounds`, `num_customers`, `alpha`, `context_dim`, `conversion_window_hours`, `notes`, `started_at`, `completed_at` | /simulations, /metrics |
 | `customers` | `customer_id`, `gender`, `segment_label`, all 6 RFM columns | /customers, /customers/{id} |
 | `customer_latents` | `z_price_sensitivity`, `z_brand_loyalty`, `z_impulse_tendency` | /customers/{id}?debug=true only |
 | `actions` | `action_id`, `action_name`, `action_cost` | /metrics, /model/state, /decide |
 | `interactions` | `interaction_id`, `customer_id`, `action_id`, `simulation_id`, `round_number`, `converted`, `revenue`, `cost`, `reward`, `decision_at`, `observed_at` | /metrics, /customers/{id} |
 | `model_state` | `simulation_id`, `action_id`, `theta_vector`, `n_pulls`, `alpha`, `updated_at`, `round_number` | /model/state, /decide |
-
 

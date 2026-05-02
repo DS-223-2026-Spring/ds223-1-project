@@ -23,7 +23,7 @@ RESTful API built with FastAPI, serving the LinUCB model and exposing CRUD opera
 | `POST` | `/interact` | Log an interaction and update model |
 | `GET` | `/actions` | List all available actions |
 | `GET` | `/simulations` | List simulation runs |
-| `POST` | `/simulate` | Trigger a new simulation run |
+| `POST` | `/simulations` | Create a new simulation record |
 | `GET` | `/model/state` | Inspect current LinUCB matrices |
 
 ---

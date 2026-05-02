@@ -67,6 +67,47 @@ class CustomerResponse(BaseModel):
     latents: CustomerLatentsResponse | None = None
 
 
+class CustomerListItem(BaseModel):
+    customer_id: int
+    segment_label: str
+    gender: str
+    recency: float
+    frequency: float
+    monetary: float
+    basket_diversity: float
+    avg_order_size: float
+    purchase_regularity: float
+
+
+class CustomerRfmResponse(BaseModel):
+    recency: float
+    frequency: float
+    monetary: float
+    basket_diversity: float
+    avg_order_size: float
+    purchase_regularity: float
+
+
+class CustomerInteractionResponse(BaseModel):
+    interaction_id: int
+    simulation_id: int
+    action: str
+    converted: bool | None = None
+    revenue: float | None = None
+    reward: float | None = None
+    decision_at: datetime
+    observed_at: datetime | None = None
+
+
+class CustomerDetailResponse(BaseModel):
+    customer_id: int
+    segment_label: str
+    gender: str
+    rfm: CustomerRfmResponse
+    interactions: list[CustomerInteractionResponse]
+    latents: CustomerLatentsPayload | None = None
+
+
 class CustomersResponse(BaseModel):
     items: list[CustomerResponse]
     count: int
@@ -92,9 +133,9 @@ class ActionsResponse(BaseModel):
 
 class SimulationCreate(BaseModel):
     sim_name: str = Field(..., min_length=1, max_length=100)
-    num_rounds: int = Field(..., gt=0)
-    num_customers: int = Field(..., gt=0)
-    alpha: float = Field(default=0.5, ge=0.0)
+    num_rounds: int = Field(..., ge=100, le=50000)
+    num_customers: int = Field(..., ge=50, le=10000)
+    alpha: float = Field(default=0.5, ge=0.0, le=2.0)
     context_dim: int = Field(default=6, gt=0)
     conversion_window_hours: int = Field(default=48, gt=0)
     notes: str | None = Field(default=None, max_length=500)
@@ -121,22 +162,18 @@ class SimulationsResponse(BaseModel):
     count: int
 
 
-class DecideRequest(BaseModel):
-    simulation_id: int = Field(..., gt=0)
-    customer_id: int = Field(..., gt=0)
-    action_id: int = Field(..., gt=0)
-    round_number: int = Field(default=1, gt=0)
-    context_vector: list[float] = Field(default_factory=list)
-    ucb_score: float = 0.0
-    cost: float | None = Field(default=None, ge=0.0)
+class DecisionScoreResponse(BaseModel):
+    action: str
+    exploit: float
+    explore: float
+    ucb_score: float
+    cost: float
 
 
 class DecideResponse(BaseModel):
     interaction_id: int
-    recommended_action_id: int
-    # placeholder: bool
-    # stored_context_encoding: str
-    # note: str
+    recommended_action: str
+    scores: list[DecisionScoreResponse]
 
 
 class FeedbackRequest(BaseModel):
@@ -149,10 +186,9 @@ class FeedbackRequest(BaseModel):
 
 class FeedbackResponse(BaseModel):
     interaction_id: int
-    converted: bool | None = None
-    revenue: float
-    reward: float | None = None
-    observed_at: datetime | None = None
+    reward: float
+    observed_at: datetime
+    model_updated: bool
 
 
 class MetricsResponse(BaseModel):
@@ -162,6 +198,15 @@ class MetricsResponse(BaseModel):
     total_revenue: float
     total_cost: float
     total_reward: float
+
+
+class ModelStateResponse(BaseModel):
+    simulation_id: int
+    alpha: float
+    round_number: int
+    updated_at: datetime | None = None
+    n_pulls: dict[str, int]
+    theta: dict[str, dict[str, float]]
 
 
 class AssumptionsResponse(BaseModel):

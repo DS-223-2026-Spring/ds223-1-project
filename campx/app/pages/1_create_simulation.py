@@ -3,10 +3,10 @@ Page 1 — Create Simulation
 Owner: Armine Babajanyan (frontend branch)
 
 M2: Form layout + past-simulations table with mock data.
-M3: Wire submit → POST /simulate; table → GET /simulations with polling.
+M3: Wire submit → POST /simulations; table → GET /simulations with polling.
 
 Backend endpoints consumed:
-  POST /simulate       : create and trigger a new run
+  POST /simulations    : create and trigger a new run
   GET  /simulations    : list past and running simulations
 """
 import pandas as pd

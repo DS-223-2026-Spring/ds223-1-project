@@ -224,7 +224,7 @@ def list_simulations():
 
 def create_simulation(sim_name: str, num_rounds: int, num_customers: int,
                       alpha: float, notes: str = "") -> dict:
-    """POST /simulate → trigger a new run, returns {simulation_id, status}."""
+    """POST /simulations → trigger a new run, returns the created simulation record."""
     if USE_MOCKS:
         return {
             "simulation_id": 999,

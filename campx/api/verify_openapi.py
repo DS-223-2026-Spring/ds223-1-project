@@ -58,30 +58,47 @@ SAMPLE_ACTION = {
 SAMPLE_SIMULATION = {
     "simulation_id": 1,
     "sim_name": "Milestone 2 Verification",
-    "num_rounds": 10,
-    "num_customers": 5,
+    "num_rounds": 100,
+    "num_customers": 50,
     "alpha": 0.5,
     "context_dim": 6,
     "conversion_window_hours": 48,
     "notes": "Local verification record",
     "started_at": FIXED_TIME,
     "completed_at": FIXED_TIME,
+    "status": "completed",
+    "cumulative_reward": 12.5,
+    "rounds_completed": 4,
 }
+
+SAMPLE_DECISION_SCORES = [
+    {
+        "action": "discount_10",
+        "exploit": 2.1,
+        "explore": 0.9,
+        "ucb_score": 3.0,
+        "cost": 6.5,
+    },
+    {
+        "action": "product_recommendation",
+        "exploit": 1.8,
+        "explore": 0.7,
+        "ucb_score": 2.5,
+        "cost": 0.3,
+    },
+]
 
 SAMPLE_DECISION = {
     "interaction_id": 1,
-    "recommended_action_id": 1,
-    "placeholder": True,
-    "stored_context_encoding": "json-bytes",
-    "note": "Local verification path",
+    "recommended_action": "discount_10",
+    "scores": SAMPLE_DECISION_SCORES,
 }
 
 SAMPLE_FEEDBACK = {
     "interaction_id": 1,
-    "converted": True,
-    "revenue": 15.0,
     "reward": 12.5,
     "observed_at": FIXED_TIME,
+    "model_updated": True,
 }
 
 SAMPLE_METRICS = {
@@ -91,6 +108,64 @@ SAMPLE_METRICS = {
     "total_revenue": 21.5,
     "total_cost": 9.0,
     "total_reward": 12.5,
+}
+
+SAMPLE_MODEL_STATE = {
+    "simulation_id": 1,
+    "alpha": 0.5,
+    "round_number": 4,
+    "updated_at": FIXED_TIME,
+    "n_pulls": {
+        "no_action": 1,
+        "discount_10": 2,
+        "free_shipping": 0,
+        "product_recommendation": 1,
+        "bundle_offer": 0,
+    },
+    "theta": {
+        "recency": {
+            "no_action": 0.0,
+            "discount_10": 0.1,
+            "free_shipping": 0.0,
+            "product_recommendation": 0.2,
+            "bundle_offer": 0.0,
+        },
+        "frequency": {
+            "no_action": 0.0,
+            "discount_10": 0.1,
+            "free_shipping": 0.0,
+            "product_recommendation": 0.2,
+            "bundle_offer": 0.0,
+        },
+        "monetary": {
+            "no_action": 0.0,
+            "discount_10": 0.1,
+            "free_shipping": 0.0,
+            "product_recommendation": 0.2,
+            "bundle_offer": 0.0,
+        },
+        "basket_diversity": {
+            "no_action": 0.0,
+            "discount_10": 0.1,
+            "free_shipping": 0.0,
+            "product_recommendation": 0.2,
+            "bundle_offer": 0.0,
+        },
+        "avg_order_size": {
+            "no_action": 0.0,
+            "discount_10": 0.1,
+            "free_shipping": 0.0,
+            "product_recommendation": 0.2,
+            "bundle_offer": 0.0,
+        },
+        "purchase_regularity": {
+            "no_action": 0.0,
+            "discount_10": 0.1,
+            "free_shipping": 0.0,
+            "product_recommendation": 0.2,
+            "bundle_offer": 0.0,
+        },
+    },
 }
 
 
@@ -112,20 +187,44 @@ def _install_endpoint_stubs() -> dict[str, object]:
     def list_customers_stub(db, limit=100, offset=0):
         return [dict(SAMPLE_CUSTOMER)]
 
-    def get_customer_record_stub(db, customer_id):
+    def get_customer_detail_record_stub(db, customer_id, debug=False):
         if customer_id != 1:
             return None
-        return dict(SAMPLE_CUSTOMER)
-
-    def create_customer_record_stub(db, payload):
-        record = dict(SAMPLE_CUSTOMER)
-        record.update(payload.model_dump(exclude_none=True, exclude_unset=True))
-        if payload.latents is not None:
-            record["latents"] = {"customer_id": 1, **payload.latents.model_dump()}
+        record = {
+            "customer_id": 1,
+            "segment_label": "Champion",
+            "gender": "F",
+            "rfm": {
+                "recency": 10.0,
+                "frequency": 4.0,
+                "monetary": 120.5,
+                "basket_diversity": 3.0,
+                "avg_order_size": 30.125,
+                "purchase_regularity": 0.8,
+            },
+            "interactions": [
+                {
+                    "interaction_id": 1,
+                    "simulation_id": 1,
+                    "action": "discount_10",
+                    "converted": True,
+                    "revenue": 15.0,
+                    "reward": 12.5,
+                    "decision_at": FIXED_TIME,
+                    "observed_at": FIXED_TIME,
+                }
+            ],
+        }
+        if debug:
+            record["latents"] = {
+                "z_price_sensitivity": 0.2,
+                "z_brand_loyalty": 0.7,
+                "z_impulse_tendency": 0.4,
+            }
         return record
 
-    def update_customer_record_stub(db, customer_id, payload):
-        if customer_id != 1:
+    def upsert_customer_record_stub(db, payload, customer_id=None):
+        if customer_id not in (None, 1):
             return None
         record = dict(SAMPLE_CUSTOMER)
         record.update(payload.model_dump(exclude_none=True, exclude_unset=True))
@@ -153,15 +252,25 @@ def _install_endpoint_stubs() -> dict[str, object]:
             return None
         return dict(SAMPLE_SIMULATION)
 
-    def log_decision_stub(db, payload):
-        if payload.customer_id != 1 or payload.simulation_id != 1:
+    def score_customer_actions_stub(db, simulation_id, customer_id):
+        if simulation_id != 1 or customer_id != 1:
             return None
-        return dict(SAMPLE_DECISION, recommended_action_id=payload.action_id or 1)
+        return [dict(item) for item in SAMPLE_DECISION_SCORES]
+
+    def log_scored_decision_stub(db, simulation_id, customer_id, round_number=None):
+        if simulation_id != 1 or customer_id != 1:
+            return None
+        return dict(SAMPLE_DECISION)
 
     def submit_feedback_stub(db, payload):
         if payload.interaction_id != 1:
             return None
         return dict(SAMPLE_FEEDBACK, interaction_id=payload.interaction_id)
+
+    def get_model_state_snapshot_stub(db, simulation_id):
+        if simulation_id != 1:
+            return None
+        return dict(SAMPLE_MODEL_STATE)
 
     def get_metrics_snapshot_stub(db, simulation_id):
         if simulation_id != 1:
@@ -170,16 +279,17 @@ def _install_endpoint_stubs() -> dict[str, object]:
 
     replacements = {
         "list_customers": list_customers_stub,
-        "get_customer_record": get_customer_record_stub,
-        "create_customer_record": create_customer_record_stub,
-        "update_customer_record": update_customer_record_stub,
+        "get_customer_detail_record": get_customer_detail_record_stub,
+        "upsert_customer_record": upsert_customer_record_stub,
         "delete_customer_record": delete_customer_record_stub,
         "list_actions": list_actions_stub,
         "list_simulations": list_simulations_stub,
         "create_simulation_record": create_simulation_record_stub,
         "complete_simulation_record": complete_simulation_record_stub,
-        "log_decision": log_decision_stub,
+        "score_customer_actions": score_customer_actions_stub,
+        "log_scored_decision": log_scored_decision_stub,
         "submit_feedback": submit_feedback_stub,
+        "get_model_state_snapshot": get_model_state_snapshot_stub,
         "get_metrics_snapshot": get_metrics_snapshot_stub,
     }
 
@@ -258,8 +368,8 @@ def _verify_endpoints(client: TestClient) -> bool:
                 "/simulations",
                 json={
                     "sim_name": "Local Verify",
-                    "num_rounds": 10,
-                    "num_customers": 5,
+                    "num_rounds": 100,
+                    "num_customers": 50,
                     "alpha": 0.5,
                     "context_dim": 6,
                     "conversion_window_hours": 48,
@@ -269,20 +379,15 @@ def _verify_endpoints(client: TestClient) -> bool:
             201,
         ),
         ("PUT /simulations/1/complete", client.put("/simulations/1/complete"), 200),
+        ("GET /model/state", client.get("/model/state?simulation_id=1"), 200),
         (
-            "POST /decide",
-            client.post(
-                "/decide",
-                json={
-                    "simulation_id": 1,
-                    "customer_id": 1,
-                    "action_id": 1,
-                    "round_number": 1,
-                    "context_vector": [0.1, 0.2, 0.3],
-                    "ucb_score": 0.9,
-                    "cost": 1.5,
-                },
-            ),
+            "POST /decide preview",
+            client.post("/decide?simulation_id=1&customer_id=1&preview=true"),
+            200,
+        ),
+        (
+            "POST /decide live",
+            client.post("/decide?simulation_id=1&customer_id=1"),
             200,
         ),
         (
@@ -309,6 +414,9 @@ def _verify_endpoints(client: TestClient) -> bool:
         return False
     if client.put("/simulations/999/complete").status_code != 404:
         print("PUT /simulations/999/complete did not return 404")
+        return False
+    if client.get("/model/state?simulation_id=999").status_code != 404:
+        print("GET /model/state?simulation_id=999 did not return 404")
         return False
     if client.get("/metrics?simulation_id=999").status_code != 404:
         print("GET /metrics?simulation_id=999 did not return 404")
