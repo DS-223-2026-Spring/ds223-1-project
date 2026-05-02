@@ -14,6 +14,9 @@ CREATE INDEX IF NOT EXISTS idx_interactions_pending
 CREATE INDEX IF NOT EXISTS idx_interactions_observed_at
     ON interactions(observed_at);
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_simulations_name_unique
+    ON simulations(sim_name);
+
 CREATE INDEX IF NOT EXISTS idx_model_state_sim_action
     ON model_state(simulation_id, action_id);
 
