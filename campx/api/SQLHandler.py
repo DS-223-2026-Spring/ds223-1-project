@@ -6,7 +6,32 @@ from psycopg2.extras import execute_values
 
 
 class SQLHandler:
+    """
+    PostgreSQL database handler using psycopg2 + pandas.
+
+    Responsibilities:
+        - Manage DB connection lifecycle
+        - Execute SELECT queries safely (read-only guard)
+        - Perform bulk inserts via execute_values
+        - Provide schema/table context helpers
+
+    Non-responsibilities:
+        - Business logic
+        - Schema validation
+        - Query building safety beyond basic SELECT restriction
+    """
     def __init__(self, host, dbname, user, password, port=5432, schema="public"):
+        """
+        Initialize database connection.
+
+        Args:
+            host (str): DB host
+            dbname (str): database name
+            user (str): username
+            password (str): password
+            port (int): DB port
+            schema (str): default schema (default = public)
+        """
         self.schema = schema
         self.table_name = None
 
@@ -22,24 +47,45 @@ class SQLHandler:
         logger.info(f"Connected to PostgreSQL: {dbname}@{host}:{port}")
 
     def set_schema(self, schema_name: str):
+        """
+        Set active schema for future operations.
+        """
         self.schema = schema_name
         logger.info(f"Using schema: {self.schema}")
 
     def set_table(self, table_name: str):
+        """
+        Set active table reference.
+
+        This builds:
+            self.table_ref = schema.table
+        """
         self.table_name = table_name
         self.table_ref = f"{self.schema}.{self.table_name}"
         logger.info(f"Using table: {self.table_ref}")
 
     def commit(self):
+        """
+        Commit current transaction.
+        """
         self.conn.commit()
         logger.info("Transaction committed")
 
     def close(self):
+        """
+        Close DB connection and cursor.
+        """
         self.cursor.close()
         self.conn.close()
         logger.info("Connection closed")
 
     def get_columns(self):
+        """
+        Get column names for current schema.table.
+
+        Returns:
+            list[str]
+        """
         query = """
             SELECT column_name
             FROM information_schema.columns
@@ -49,16 +95,39 @@ class SQLHandler:
         return [column[0] for column in self.cursor.fetchall()]
 
     def delete_rows(self, condition: str):
+        """
+        Delete rows using raw SQL condition.
+
+        Example:
+            delete_rows("customer_id = 5")
+        """
         query = f"DELETE FROM {self.table_ref} WHERE {condition}"
         self.cursor.execute(query)
         logger.info(query)
 
     def from_sql(self, query: str, parse_dates=None, dtypes=None) -> pd.DataFrame:
+        """
+        Execute arbitrary SQL and return DataFrame.
+        """
         df = pd.read_sql_query(query, self.conn, parse_dates=parse_dates, dtype=dtypes)
         logger.info(f"Fetched shape: {df.shape}")
         return df
 
     def select(self, query: str, params: tuple = None) -> pd.DataFrame:
+        """
+        Execute SELECT query safely.
+
+        Safety:
+            - Only allows queries starting with SELECT
+            - Prevents accidental writes
+
+        Args:
+            query: SQL SELECT query
+            params: query parameters
+
+        Returns:
+            pandas.DataFrame
+        """
         if not query.strip().lower().startswith("select"):
             raise ValueError("Only SELECT queries are allowed")
 
@@ -73,6 +142,22 @@ class SQLHandler:
             raise
 
     def insert_dataframe(self, df: pd.DataFrame, table: str):
+        """
+        Bulk insert a pandas DataFrame into a table.
+
+        Args:
+            df: DataFrame to insert
+            table: target table name (without schema)
+
+        Behavior:
+            - NaN → None conversion
+            - column names forced to lowercase
+            - uses execute_values for performance
+
+        Assumptions:
+            - table exists in schema
+            - dataframe columns match DB schema
+        """
         if df.empty:
             logger.warning("Empty DataFrame. Nothing to insert.")
             return

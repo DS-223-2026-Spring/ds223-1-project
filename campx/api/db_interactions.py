@@ -13,11 +13,30 @@ except ImportError:
 
 
 def get_all_customers(db: SQLHandler):
+    """
+    Retrieve all customers from the database.
+
+    Returns:
+        List of customer rows (as pandas DataFrame or dicts depending on SQLHandler config)
+
+    Assumptions:
+        - Table: public.customers exists
+        - No pagination applied (use carefully in production)
+    """
     logger.info("Fetching all customers")
     return db.select("SELECT * FROM public.customers")
 
 
 def get_customer_by_id(db: SQLHandler, customer_id: int):
+    """
+    Fetch a single customer by ID.
+
+    Args:
+        customer_id: Primary key of customer
+
+    Returns:
+        dict if found, else None
+    """
     logger.info(f"Fetching customer_id={customer_id}")
     df = db.select(
         "SELECT * FROM public.customers WHERE customer_id = %s",
@@ -27,6 +46,15 @@ def get_customer_by_id(db: SQLHandler, customer_id: int):
 
 
 def get_customer_latents(db: SQLHandler, customer_id: int):
+    """
+    Fetch latent attributes associated with a customer.
+
+    Assumptions:
+        - One-to-one relationship: customer_latents.customer_id is unique
+
+    Returns:
+        dict or None
+    """
     logger.info(f"Fetching latents for customer_id={customer_id}")
     df = db.select(
         "SELECT * FROM public.customer_latents WHERE customer_id = %s",
@@ -34,141 +62,20 @@ def get_customer_latents(db: SQLHandler, customer_id: int):
     )
     return df.iloc[0].to_dict() if not df.empty else None
 
-
-def insert_customer(
-    db: SQLHandler,
-    gender,
-    segment_label,
-    recency,
-    frequency,
-    monetary,
-    basket_diversity,
-    avg_order_size,
-    purchase_regularity,
-):
-    logger.info("Inserting new customer")
-    db.cursor.execute(
-        """
-        INSERT INTO public.customers
-        (gender, segment_label, recency, frequency, monetary,
-         basket_diversity, avg_order_size, purchase_regularity)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-        RETURNING customer_id
-        """,
-        (
-            gender,
-            segment_label,
-            recency,
-            frequency,
-            monetary,
-            basket_diversity,
-            avg_order_size,
-            purchase_regularity,
-        ),
-    )
-
-    customer_id = db.cursor.fetchone()[0]
-    db.commit()
-    logger.success(f"Inserted customer_id={customer_id}")
-    return customer_id
-
-
-def insert_customer_latent(
-    db: SQLHandler,
-    customer_id,
-    z_price_sensitivity,
-    z_brand_loyalty,
-    z_impulse_tendency,
-):
-    logger.info(f"Inserting latents for customer_id={customer_id}")
-    db.cursor.execute(
-        """
-        INSERT INTO public.customer_latents
-        (customer_id, z_price_sensitivity, z_brand_loyalty, z_impulse_tendency)
-        VALUES (%s,%s,%s,%s)
-        """,
-        (
-            customer_id,
-            z_price_sensitivity,
-            z_brand_loyalty,
-            z_impulse_tendency,
-        ),
-    )
-    db.commit()
-    logger.success("Latents inserted")
-
-
-def log_interaction(
-    db: SQLHandler,
-    simulation_id,
-    customer_id,
-    action_id,
-    round_number,
-    context_vector_bytes,
-    ucb_score,
-    cost,
-):
-    logger.info(
-        f"Logging interaction sim={simulation_id}, customer={customer_id}, action={action_id}"
-    )
-    db.cursor.execute(
-        """
-        INSERT INTO public.interactions
-        (simulation_id, customer_id, action_id, round_number,
-         context_vector, ucb_score, cost)
-        VALUES (%s,%s,%s,%s,%s,%s,%s)
-        RETURNING interaction_id
-        """,
-        (
-            simulation_id,
-            customer_id,
-            action_id,
-            round_number,
-            context_vector_bytes,
-            ucb_score,
-            cost,
-        ),
-    )
-
-    interaction_id = db.cursor.fetchone()[0]
-    db.commit()
-    logger.success(f"Interaction logged id={interaction_id}")
-    return interaction_id
-
-
-def observe_outcome(
-    db: SQLHandler,
-    interaction_id,
-    converted: bool,
-    revenue: float,
-    converted_at,
-    observed_at,
-):
-    logger.info(f"Updating outcome for interaction_id={interaction_id}")
-    db.cursor.execute(
-        """
-        UPDATE public.interactions
-        SET converted = %s,
-            revenue = %s,
-            converted_at = %s,
-            observed_at = %s,
-            reward = %s - cost
-        WHERE interaction_id = %s
-        """,
-        (
-            converted,
-            revenue,
-            converted_at,
-            observed_at,
-            revenue,
-            interaction_id,
-        ),
-    )
-    db.commit()
-    logger.success("Outcome updated")
-
-
 def get_pending_interactions(db: SQLHandler, older_than_hours=48):
+    """
+    Retrieve interactions that have not been observed yet.
+
+    Args:
+        older_than_hours: threshold for filtering stale interactions
+
+    Returns:
+        DataFrame of pending interactions
+
+    Assumptions:
+        - interactions.observed_at is NULL until feedback is recorded
+        - decision_at exists and is timestamp
+    """
     logger.info(f"Fetching pending interactions older than {older_than_hours}h")
     return db.select(
         """
@@ -182,6 +89,15 @@ def get_pending_interactions(db: SQLHandler, older_than_hours=48):
 
 
 def get_model_state(db: SQLHandler, simulation_id: int, action_id: int):
+    """
+    Retrieve latest model state for a given simulation-action pair.
+
+    Returns:
+        dict or None
+
+    Assumptions:
+        - model_state stores sequential updates per round
+    """
     logger.info(f"Fetching model state sim={simulation_id}, action={action_id}")
     df = db.select(
         """
@@ -207,6 +123,16 @@ def upsert_model_state(
     b_bytes,
     alpha,
 ):
+    """
+    Insert or update model state for a bandit / learning system.
+
+    Behavior:
+        - Uses ON CONFLICT (simulation_id, action_id, round_number)
+        - Stores serialized matrix/vector state as bytes
+
+    Assumptions:
+        - Primary key constraint exists on (simulation_id, action_id, round_number)
+    """
     logger.info(f"Upserting model state sim={simulation_id}, action={action_id}")
     db.cursor.execute(
         """
@@ -248,6 +174,16 @@ def create_simulation(
     conversion_window_hours=48,
     notes=None,
 ):
+    """
+    Create a new simulation run.
+
+    Returns:
+        simulation_id (int)
+
+    Assumptions:
+        - simulations table exists
+        - simulation_name is not necessarily unique
+    """
     logger.info(f"Creating simulation {sim_name}")
     db.cursor.execute(
         """
@@ -275,6 +211,15 @@ def create_simulation(
 
 
 def complete_simulation(db: SQLHandler, simulation_id: int):
+    """
+    Mark simulation as completed.
+
+    Behavior:
+        - Sets completed_at = NOW()
+
+    Returns:
+        None
+    """
     logger.info(f"Completing simulation id={simulation_id}")
     db.cursor.execute(
         """

@@ -134,9 +134,9 @@ class DecideRequest(BaseModel):
 class DecideResponse(BaseModel):
     interaction_id: int
     recommended_action_id: int
-    placeholder: bool
-    stored_context_encoding: str
-    note: str
+    # placeholder: bool
+    # stored_context_encoding: str
+    # note: str
 
 
 class FeedbackRequest(BaseModel):
