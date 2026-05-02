@@ -36,10 +36,8 @@ models.
 | `purchase_regularity` | float | normalized `0..1` score | How steady the purchase cadence is | Higher suggests more consistent repeat behavior |
 
 These feature names and metadata are defined centrally in
-[campx/ds/synthetic/config.py](../campx/ds/synthetic/config.py). The
-executable extraction helper is
-`build_context_matrix(...)` in
-[campx/ds/synthetic/features.py](../campx/ds/synthetic/features.py).
+`campx/ds/synthetic/config.py`. The executable extraction helper is
+`build_context_matrix(...)` in `campx/ds/synthetic/features.py`.
 
 ### Executable feature contract
 
@@ -135,8 +133,7 @@ Segments are derived from observed features only:
 | `At-Risk` | `recency > 90` and `frequency >= 3` |
 | `Lost` | otherwise |
 
-These segment rules live in
-[campx/ds/synthetic/config.py](../campx/ds/synthetic/config.py).
+These segment rules live in `campx/ds/synthetic/config.py`.
 
 ### Action set
 
@@ -151,7 +148,7 @@ The canonical actions are:
 | `4` | `bundle_offer` | Basket-expanding bundle promotion |
 
 The exact action economics and simulator coefficients are defined in
-[campx/ds/synthetic/config.py](../campx/ds/synthetic/config.py).
+`campx/ds/synthetic/config.py`.
 
 ---
 
@@ -214,9 +211,8 @@ Some exported columns are for diagnostics rather than model training:
 
 ## Baseline-model framing
 
-The current baseline comparison script in
-[campx/ds/baselines.py](../campx/ds/baselines.py)
-uses the following framing:
+The current baseline comparison script in `campx/ds/baselines.py` uses the
+following framing:
 
 - train on logged random-policy interactions
 - use observed customer features plus chosen action
@@ -265,7 +261,7 @@ contract.
 
 - the environment is calibrated, not learned from real retailer data
 - numeric coefficients are hand-tuned and stored centrally in
-  [campx/ds/synthetic/config.py](../campx/ds/synthetic/config.py)
+  `campx/ds/synthetic/config.py`
 - offline baselines are evaluated in the same synthetic environment that
   generated the logged data
 - current reward is immediate and does not include customer lifetime value
@@ -293,7 +289,7 @@ When training or evaluating models in this repo:
 This document explains the modeling contract in prose. The exact numeric
 calibration lives in:
 
-- [campx/ds/synthetic/config.py](../campx/ds/synthetic/config.py)
-- [campx/ds/synthetic/features.py](../campx/ds/synthetic/features.py)
-- [campx/ds/synthetic/simulate.py](../campx/ds/synthetic/simulate.py)
-- [campx/ds/linucb.py](../campx/ds/linucb.py)
+- `campx/ds/synthetic/config.py`
+- `campx/ds/synthetic/features.py`
+- `campx/ds/synthetic/simulate.py`
+- `campx/ds/linucb.py`

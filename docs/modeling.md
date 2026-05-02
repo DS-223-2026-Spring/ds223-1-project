@@ -86,7 +86,7 @@ The same code also works inside the DS container through `python main.py`.
 ## Feature Engineering
 
 The model-visible customer context has exactly six observed features, defined
-centrally in [campx/ds/synthetic/config.py](../campx/ds/synthetic/config.py):
+centrally in `campx/ds/synthetic/config.py`:
 
 | Feature | Unit | Model role | Signal |
 |---------|------|------------|--------|
@@ -98,7 +98,7 @@ centrally in [campx/ds/synthetic/config.py](../campx/ds/synthetic/config.py):
 | `purchase_regularity` | normalized cadence score | context | Higher means steadier repeat behavior |
 
 Executable feature helpers live in
-[campx/ds/synthetic/features.py](../campx/ds/synthetic/features.py):
+`campx/ds/synthetic/features.py`:
 
 - `get_model_feature_metadata()` returns the feature metadata.
 - `get_model_feature_frame(customers)` validates and orders model-visible
@@ -149,16 +149,14 @@ Latent traits are stored for validation and debugging only:
 The model never receives these latent traits as inputs.
 
 Observed features are generated in
-[campx/ds/synthetic/features.py](../campx/ds/synthetic/features.py), with
-calibration constants in
-[campx/ds/synthetic/config.py](../campx/ds/synthetic/config.py).
+`campx/ds/synthetic/features.py`, with calibration constants in
+`campx/ds/synthetic/config.py`.
 
 ---
 
 ## LinUCB Model
 
-The LinUCB implementation lives in
-[campx/ds/linucb.py](../campx/ds/linucb.py).
+The LinUCB implementation lives in `campx/ds/linucb.py`.
 
 Each action has its own ridge-regression state:
 
@@ -204,8 +202,7 @@ alone ignores promotion spend.
 
 ## Baselines
 
-Baseline comparison logic lives in
-[campx/ds/baselines.py](../campx/ds/baselines.py). It uses the same
+Baseline comparison logic lives in `campx/ds/baselines.py`. It uses the same
 `build_context_matrix(...)` helper for model-facing features.
 
 Implemented baselines:
