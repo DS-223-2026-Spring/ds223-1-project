@@ -1,6 +1,0 @@
-pandas
-numpy
-psycopg2-binary
-sqlalchemy
-loguru
-python-dotenv

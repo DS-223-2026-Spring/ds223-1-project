@@ -46,11 +46,11 @@ RESOURCE_STRUCTURE = (
     {
         "resource": "interactions",
         "table": "interactions",
-        "paths": ("/decide", "/feedback"),
-        "methods": ("POST",),
+        "paths": ("/decide", "/feedback", "/model/state"),
+        "methods": ("GET", "POST"),
         "owner_notes": (
-            "Interaction logging is exposed through decision and feedback endpoints "
-            "rather than raw table CRUD so the API matches the bandit workflow."
+            "Decision scoring, feedback submission, and model inspection are exposed "
+            "through workflow-specific endpoints rather than raw table CRUD."
         ),
     },
     {
@@ -86,15 +86,14 @@ API_ASSUMPTIONS = (
     "The `customers` resource is the primary milestone-2 CRUD surface because the schema and helper layer already support it end to end.",
     "Public resource names are `customers`, `actions`, `simulations`, `interactions`, and `metrics`, matching the shared API structure exposed by the backend.",
     "The backend reuses DB-facing helper logic copied from `etl/` into the backend container so imports work without changing the ETL codebase.",
-    "The `decide` endpoint is a placeholder integration point: the caller supplies `action_id` and optional scoring context until the DS-owned LinUCB selector is wired in.",
-    "Context vectors are stored in `interactions.context_vector` as UTF-8 encoded JSON bytes so the API can exercise the BYTEA column without introducing a separate model serializer.",
+    "Simulation creation is exposed through `POST /simulations` as the single public write route for simulation records.",
+    "The `decide` endpoint now computes LinUCB-style exploit and explore scores from database-backed model state reconstructed from observed interactions.",
+    "Context vectors are stored in `interactions.context_vector` as float64 binary feature arrays so feedback updates can reproduce the learning state.",
     "The frontend should reach the service at `http://backend:8000` inside docker-compose.",
 )
 
 PENDING_DEPENDENCIES = (
-    "PM confirmation that the public resource names remain `customers`, `actions`, `simulations`, and `interactions` for the M3 frontend contract.",
-    "PM/frontend confirmation on whether list endpoints should keep the current `{items, count}` envelope or switch to raw arrays before the mock client is flipped off.",
-    "DS integration for automatic action selection and model-state updates behind `/decide`.",
+    "Full metrics payload expansion is still required before the Interaction and Analytics pages can fully replace mock data.",
     "Orchestration wiring that turns simulation creation into Prefect flow runs rather than a database-only placeholder write.",
 )
 

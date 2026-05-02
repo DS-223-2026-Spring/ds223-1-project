@@ -163,21 +163,35 @@ RETURNS TABLE (
 BEGIN
     -- Ensure interaction exists
     IF NOT EXISTS (
-    SELECT 1
-    FROM interactions i
-    WHERE i.interaction_id = p_interaction_id
-)THEN
+        SELECT 1
+        FROM interactions i
+        WHERE i.interaction_id = p_interaction_id
+    ) THEN
         RAISE EXCEPTION 'Interaction % not found', p_interaction_id;
     END IF;
 
-    -- Update
-    UPDATE interactions
+    -- Prevent overwriting an already observed outcome
+    IF EXISTS (
+        SELECT 1
+        FROM interactions i
+        WHERE i.interaction_id = p_interaction_id
+          AND i.observed_at IS NOT NULL
+    ) THEN
+        RAISE EXCEPTION 'Interaction % already has feedback', p_interaction_id;
+    END IF;
+
+    -- Update and compute realized reward inside the same write
+    UPDATE interactions AS i
     SET
         converted = p_converted,
         revenue = COALESCE(p_revenue, 0.0),
-        converted_at = CASE WHEN p_converted THEN p_converted_at ELSE NULL END,
-        observed_at = COALESCE(p_observed_at, CURRENT_TIMESTAMP)
-    WHERE interaction_id = p_interaction_id;
+        converted_at = CASE
+            WHEN p_converted THEN COALESCE(p_converted_at, p_observed_at, CURRENT_TIMESTAMP)
+            ELSE NULL
+        END,
+        observed_at = COALESCE(p_observed_at, CURRENT_TIMESTAMP),
+        reward = COALESCE(p_revenue, 0.0) - cost
+    WHERE i.interaction_id = p_interaction_id;
 
     -- Return updated row
     RETURN QUERY

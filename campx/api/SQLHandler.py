@@ -71,6 +71,13 @@ class SQLHandler:
         self.conn.commit()
         logger.info("Transaction committed")
 
+    def rollback(self):
+        """
+        Roll back current transaction.
+        """
+        self.conn.rollback()
+        logger.info("Transaction rolled back")
+
     def close(self):
         """
         Close DB connection and cursor.

@@ -10,17 +10,20 @@ from fastapi.responses import JSONResponse
 try:
     from .SQLHandler import SQLHandler
     from .crud import (
+        ConflictError,
         complete_simulation_record,
-        upsert_customer_record,
         create_simulation_record,
         delete_customer_record,
-        get_customer_record,
+        get_customer_detail_record,
         get_metrics_snapshot,
+        get_model_state_snapshot,
         list_actions,
         list_customers,
         list_simulations,
-        log_decision,
-        submit_feedback
+        log_scored_decision,
+        score_customer_actions,
+        submit_feedback,
+        upsert_customer_record,
     )
     from .database import get_db
     from .metadata import (
@@ -38,34 +41,38 @@ try:
         ApiStructureResponse,
         AssumptionsResponse,
         CustomerCreate,
+        CustomerDetailResponse,
+        CustomerListItem,
         CustomerResponse,
-        CustomersResponse,
         CustomerUpdate,
-        DecideRequest,
+        DecisionScoreResponse,
         DecideResponse,
         DeleteResponse,
         FeedbackRequest,
         FeedbackResponse,
         HealthResponse,
         MetricsResponse,
+        ModelStateResponse,
         SimulationCreate,
         SimulationResponse,
-        SimulationsResponse,
     )
 except ImportError:
     from SQLHandler import SQLHandler
     from crud import (
+        ConflictError,
         complete_simulation_record,
-        upsert_customer_record,
         create_simulation_record,
         delete_customer_record,
-        get_customer_record,
+        get_customer_detail_record,
         get_metrics_snapshot,
+        get_model_state_snapshot,
         list_actions,
         list_customers,
         list_simulations,
-        log_decision,
-        submit_feedback
+        log_scored_decision,
+        score_customer_actions,
+        submit_feedback,
+        upsert_customer_record,
     )
     from database import get_db
     from metadata import (
@@ -83,19 +90,20 @@ except ImportError:
         ApiStructureResponse,
         AssumptionsResponse,
         CustomerCreate,
+        CustomerDetailResponse,
+        CustomerListItem,
         CustomerResponse,
-        CustomersResponse,
         CustomerUpdate,
-        DecideRequest,
+        DecisionScoreResponse,
         DecideResponse,
         DeleteResponse,
         FeedbackRequest,
         FeedbackResponse,
         HealthResponse,
         MetricsResponse,
+        ModelStateResponse,
         SimulationCreate,
         SimulationResponse,
-        SimulationsResponse,
     )
 
 
@@ -143,7 +151,7 @@ def _error_response(status_code: int, message: str) -> JSONResponse:
 app = FastAPI(
     title="Campaign Optimization Engine Backend",
     description=build_description(),
-    version="0.3.0",
+    version="0.4.0",
     openapi_tags=API_TAGS,
 )
 
@@ -173,6 +181,8 @@ async def unhandled_exception_handler(_: Request, exc: Exception) -> JSONRespons
 
 @app.get("/health", response_model=HealthResponse, tags=["system"], summary="Health check")
 def health_check() -> HealthResponse:
+    """Confirm that the FastAPI service is running."""
+
     return HealthResponse(status="ok", service=SERVICE_NAME)
 
 
@@ -183,6 +193,8 @@ def health_check() -> HealthResponse:
     summary="Document API assumptions and pending dependencies",
 )
 def get_assumptions() -> AssumptionsResponse:
+    """Expose the current backend contract notes used during milestone work."""
+
     return AssumptionsResponse(
         resource_names=list(RESOURCE_NAMES),
         api_assumptions=list(API_ASSUMPTIONS),
@@ -197,6 +209,8 @@ def get_assumptions() -> AssumptionsResponse:
     summary="Show agreed resource names and API structure",
 )
 def get_api_structure() -> ApiStructureResponse:
+    """Return a machine-readable summary of the API surface."""
+
     return ApiStructureResponse(
         service=SERVICE_NAME,
         resources=[
@@ -214,7 +228,7 @@ def get_api_structure() -> ApiStructureResponse:
 
 @app.get(
     "/customers",
-    response_model=CustomersResponse,
+    response_model=list[CustomerListItem],
     tags=["customers"],
     summary="List customers",
 )
@@ -222,22 +236,44 @@ def get_customers(
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     db: SQLHandler = Depends(get_db),
-) -> CustomersResponse:
+) -> list[CustomerListItem]:
+    """Return customer RFM profiles as a raw array for frontend filtering."""
+
     items = list_customers(db, limit=limit, offset=offset)
-    return CustomersResponse(items=items, count=len(items))
+    return [
+        CustomerListItem(
+            customer_id=item["customer_id"],
+            segment_label=item["segment_label"],
+            gender=item["gender"],
+            recency=item["recency"],
+            frequency=item["frequency"],
+            monetary=item["monetary"],
+            basket_diversity=item["basket_diversity"],
+            avg_order_size=item["avg_order_size"],
+            purchase_regularity=item["purchase_regularity"],
+        )
+        for item in items
+    ]
 
 
 @app.get(
     "/customers/{customer_id}",
-    response_model=CustomerResponse,
+    response_model=CustomerDetailResponse,
+    response_model_exclude_none=True,
     tags=["customers"],
-    summary="Fetch a single customer",
+    summary="Fetch a single customer with interaction history",
 )
-def get_customer(customer_id: int, db: SQLHandler = Depends(get_db)) -> CustomerResponse:
-    customer = get_customer_record(db, customer_id)
+def get_customer(
+    customer_id: int,
+    debug: bool = Query(default=False),
+    db: SQLHandler = Depends(get_db),
+) -> CustomerDetailResponse:
+    """Return one customer profile, interaction history, and optional debug latents."""
+
+    customer = get_customer_detail_record(db, customer_id, debug=debug)
     if customer is None:
         raise HTTPException(status_code=404, detail=f"Customer {customer_id} was not found.")
-    return CustomerResponse(**customer)
+    return CustomerDetailResponse(**customer)
 
 
 @app.post(
@@ -251,6 +287,8 @@ def create_customer(
     payload: CustomerCreate,
     db: SQLHandler = Depends(get_db),
 ) -> CustomerResponse:
+    """Create a customer row and optional latent debug values."""
+
     customer = upsert_customer_record(db, payload)
     return CustomerResponse(**customer)
 
@@ -266,6 +304,8 @@ def update_customer(
     payload: CustomerUpdate,
     db: SQLHandler = Depends(get_db),
 ) -> CustomerResponse:
+    """Update mutable customer fields and latent debug values."""
+
     customer = upsert_customer_record(db, payload, customer_id)
     if customer is None:
         raise HTTPException(status_code=404, detail=f"Customer {customer_id} was not found.")
@@ -279,6 +319,8 @@ def update_customer(
     summary="Delete a customer",
 )
 def delete_customer(customer_id: int, db: SQLHandler = Depends(get_db)) -> DeleteResponse:
+    """Delete one customer row and any cascading dependent records."""
+
     deleted = delete_customer_record(db, customer_id)
     if not deleted:
         raise HTTPException(status_code=404, detail=f"Customer {customer_id} was not found.")
@@ -292,19 +334,22 @@ def delete_customer(customer_id: int, db: SQLHandler = Depends(get_db)) -> Delet
     summary="List seeded action definitions",
 )
 def get_actions(db: SQLHandler = Depends(get_db)) -> ActionsResponse:
+    """Return the static promotion/action catalog from the database."""
+
     items = list_actions(db)
     return ActionsResponse(items=items, count=len(items))
 
 
 @app.get(
     "/simulations",
-    response_model=SimulationsResponse,
+    response_model=list[SimulationResponse],
     tags=["simulations"],
     summary="List simulation records",
 )
-def get_simulations(db: SQLHandler = Depends(get_db)) -> SimulationsResponse:
-    items = list_simulations(db)
-    return SimulationsResponse(items=items, count=len(items))
+def get_simulations(db: SQLHandler = Depends(get_db)) -> list[SimulationResponse]:
+    """Return simulation summaries as a raw array ordered from newest to oldest."""
+
+    return [SimulationResponse(**item) for item in list_simulations(db)]
 
 
 @app.post(
@@ -318,7 +363,12 @@ def create_simulation(
     payload: SimulationCreate,
     db: SQLHandler = Depends(get_db),
 ) -> SimulationResponse:
-    simulation = create_simulation_record(db, payload)
+    """Create a simulation record through the REST-style resource endpoint."""
+
+    try:
+        simulation = create_simulation_record(db, payload)
+    except ConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     return SimulationResponse(**simulation)
 
 
@@ -332,26 +382,71 @@ def complete_simulation(
     simulation_id: int,
     db: SQLHandler = Depends(get_db),
 ) -> SimulationResponse:
+    """Mark a simulation record as completed in the database."""
+
     simulation = complete_simulation_record(db, simulation_id)
     if simulation is None:
         raise HTTPException(status_code=404, detail=f"Simulation {simulation_id} was not found.")
     return SimulationResponse(**simulation)
 
 
+@app.get(
+    "/model/state",
+    response_model=ModelStateResponse,
+    tags=["interactions"],
+    summary="Inspect the current LinUCB model state",
+)
+def get_model_state(
+    simulation_id: int = Query(..., ge=1),
+    db: SQLHandler = Depends(get_db),
+) -> ModelStateResponse:
+    """Return theta weights, pull counts, and update metadata for one simulation."""
+
+    state = get_model_state_snapshot(db, simulation_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail=f"Simulation {simulation_id} was not found.")
+    return ModelStateResponse(**state)
+
+
 @app.post(
     "/decide",
-    response_model=DecideResponse,
+    response_model=list[DecisionScoreResponse] | DecideResponse,
     tags=["interactions"],
-    summary="Log a placeholder action decision",
+    summary="Score actions for a customer and optionally log the chosen decision",
 )
-def decide(payload: DecideRequest, db: SQLHandler = Depends(get_db)) -> DecideResponse:
-    decision = log_decision(db, payload)
+def decide(
+    simulation_id: int = Query(..., ge=1),
+    customer_id: int = Query(..., ge=1),
+    preview: bool = Query(default=False),
+    round_number: int | None = Query(default=None, ge=1),
+    db: SQLHandler = Depends(get_db),
+) -> list[DecisionScoreResponse] | DecideResponse:
+    """Preview UCB scores or persist the highest-scoring action for one customer."""
+
+    if preview:
+        scores = score_customer_actions(db, simulation_id, customer_id)
+        if scores is None:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "Decision preview could not be computed because the referenced "
+                    "simulation or customer record does not exist."
+                ),
+            )
+        return [DecisionScoreResponse(**score) for score in scores]
+
+    decision = log_scored_decision(
+        db,
+        simulation_id,
+        customer_id,
+        round_number=round_number,
+    )
     if decision is None:
         raise HTTPException(
             status_code=404,
             detail=(
-                "Decision could not be logged because the referenced simulation, "
-                "customer, or action record does not exist."
+                "Decision could not be logged because the referenced simulation "
+                "or customer record does not exist."
             ),
         )
     return DecideResponse(**decision)
@@ -364,7 +459,12 @@ def decide(payload: DecideRequest, db: SQLHandler = Depends(get_db)) -> DecideRe
     summary="Record interaction feedback",
 )
 def feedback(payload: FeedbackRequest, db: SQLHandler = Depends(get_db)) -> FeedbackResponse:
-    response = submit_feedback(db, payload)
+    """Close one interaction after its conversion window and update model state."""
+
+    try:
+        response = submit_feedback(db, payload)
+    except ConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     if response is None:
         raise HTTPException(
             status_code=404,
@@ -383,6 +483,8 @@ def get_metrics(
     simulation_id: int = Query(..., ge=1),
     db: SQLHandler = Depends(get_db),
 ) -> MetricsResponse:
+    """Return the currently implemented aggregate interaction counters."""
+
     metrics = get_metrics_snapshot(db, simulation_id)
     if metrics is None:
         raise HTTPException(status_code=404, detail=f"Simulation {simulation_id} was not found.")
