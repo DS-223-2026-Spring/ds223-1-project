@@ -19,29 +19,33 @@ import numpy as np
 import pandas as pd
 
 try:
-    from .synthetic.actions import actions_to_frame, get_action_definitions
-    from .synthetic.config import FEATURE_COLUMNS, GeneratorCalibration, SyntheticDataConfig
-    from .synthetic.features import build_context_matrix, generate_observed_features
-    from .synthetic.latents import generate_latent_traits
-    from .synthetic.simulate import (
-        compute_conversion_probabilities,
-        compute_realized_costs,
-        sample_customer_rounds,
-        simulate_interactions,
-        simulate_revenue,
-    )
-except ImportError:  # pragma: no cover - supports running inside the ds container
-    from synthetic.actions import actions_to_frame, get_action_definitions
-    from synthetic.config import FEATURE_COLUMNS, GeneratorCalibration, SyntheticDataConfig
-    from synthetic.features import build_context_matrix, generate_observed_features
-    from synthetic.latents import generate_latent_traits
-    from synthetic.simulate import (
-        compute_conversion_probabilities,
-        compute_realized_costs,
-        sample_customer_rounds,
-        simulate_interactions,
-        simulate_revenue,
-    )
+    from ._routing import import_ds_module, load_ds_attr
+except ImportError:  # pragma: no cover - supports direct execution in DS container
+    from _routing import import_ds_module, load_ds_attr
+
+_config = import_ds_module("synthetic.config")
+FEATURE_COLUMNS = _config.FEATURE_COLUMNS
+GeneratorCalibration = _config.GeneratorCalibration
+SyntheticDataConfig = _config.SyntheticDataConfig
+actions_to_frame = load_ds_attr("synthetic.actions", "actions_to_frame")
+get_action_definitions = load_ds_attr("synthetic.actions", "get_action_definitions")
+build_context_matrix = load_ds_attr("synthetic.features", "build_context_matrix")
+generate_observed_features = load_ds_attr(
+    "synthetic.features",
+    "generate_observed_features",
+)
+generate_latent_traits = load_ds_attr("synthetic.latents", "generate_latent_traits")
+compute_conversion_probabilities = load_ds_attr(
+    "synthetic.simulate",
+    "compute_conversion_probabilities",
+)
+compute_realized_costs = load_ds_attr(
+    "synthetic.simulate",
+    "compute_realized_costs",
+)
+sample_customer_rounds = load_ds_attr("synthetic.simulate", "sample_customer_rounds")
+simulate_interactions = load_ds_attr("synthetic.simulate", "simulate_interactions")
+simulate_revenue = load_ds_attr("synthetic.simulate", "simulate_revenue")
 
 HEURISTIC_SEGMENT_ACTIONS = {
     "Champion": 0,

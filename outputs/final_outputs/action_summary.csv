@@ -1,0 +1,6 @@
+action_id,action_name,observations,mean_conversion_rate,mean_revenue,mean_cost,mean_reward,mean_p_convert
+0,no_action,14,0.0714,4.15,0.0,4.15,0.19
+1,discount_10,11,0.0909,8.85,0.98,7.87,0.2106
+2,free_shipping,401,0.2743,15.41,1.44,13.96,0.2922
+3,product_recommendation,2343,0.3239,26.15,0.3,25.85,0.3214
+4,bundle_offer,2231,0.3173,36.24,2.99,33.24,0.3042

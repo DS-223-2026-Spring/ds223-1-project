@@ -41,7 +41,23 @@ campx/ds/synthetic/pipeline.py
   -> export_artifacts(...)
 ```
 
-Main entrypoint:
+Full repeatable workflow entrypoint:
+
+```bash
+python -m campx.ds.run_workflow \
+  --n-customers 500 \
+  --n-rounds 5000 \
+  --random-seed 42 \
+  --policy-mode linucb \
+  --output-dir outputs/final_outputs
+```
+
+This single command regenerates the synthetic dataset, LinUCB model state,
+customer-level final recommendations, EDA tables and plots, baseline
+comparison artifacts, and a `workflow_manifest.json` describing the run.
+
+Individual entrypoints are also available when only one stage needs to be
+rerun:
 
 ```bash
 python -m campx.ds.generate_synthetic_data \
@@ -49,6 +65,18 @@ python -m campx.ds.generate_synthetic_data \
   --n-rounds 5000 \
   --policy-mode linucb \
   --output-dir outputs/synthetic_data
+```
+
+```bash
+python -m campx.ds.generate_final_outputs \
+  --input-dir outputs/synthetic_data \
+  --output-dir outputs/final_outputs
+```
+
+```bash
+python -m campx.ds.generate_eda_report \
+  --input-dir outputs/final_outputs \
+  --output-dir outputs/final_outputs/eda
 ```
 
 The same code also works inside the DS container through `python main.py`.

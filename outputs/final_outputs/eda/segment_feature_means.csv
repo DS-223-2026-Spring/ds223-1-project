@@ -1,0 +1,5 @@
+segment,recency,frequency,monetary,basket_diversity,avg_order_size,purchase_regularity
+At-Risk,138.302,5.825,308.207,3.026,60.343,0.379
+Champion,16.77,10.218,633.619,3.582,69.596,0.598
+Lost,69.094,4.645,248.849,2.936,61.311,0.413
+Loyal,33.283,6.599,370.674,3.346,65.587,0.515

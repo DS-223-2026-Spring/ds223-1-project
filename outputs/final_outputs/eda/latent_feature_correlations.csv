@@ -1,0 +1,4 @@
+,recency,frequency,monetary,basket_diversity,avg_order_size,purchase_regularity
+z_price_sensitivity,0.121,-0.1,-0.207,-0.054,-0.277,-0.029
+z_brand_loyalty,-0.494,0.502,0.553,0.269,0.418,0.854
+z_impulse_tendency,-0.073,0.121,0.277,0.674,0.559,-0.047

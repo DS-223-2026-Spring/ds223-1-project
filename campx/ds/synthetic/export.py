@@ -30,6 +30,20 @@ def export_artifacts(
     interactions.to_csv(output_dir / "interactions.csv", index=False)
     model_state.to_csv(output_dir / "model_state.csv", index=False)
 
+    try:
+        from .._routing import load_ds_attr
+    except ImportError:  # pragma: no cover - supports direct execution in DS container
+        from _routing import load_ds_attr
+
+    build_final_outputs = load_ds_attr("final_outputs", "build_final_outputs")
+
+    build_final_outputs(
+        customers=customers,
+        actions=actions,
+        model_state=model_state,
+        output_dir=output_dir,
+    )
+
     validation.segment_counts.to_csv(output_dir / "segment_counts.csv", index=False)
     validation.action_summary.to_csv(output_dir / "action_summary.csv", index=False)
     validation.customer_summary.to_csv(output_dir / "customer_feature_summary.csv")

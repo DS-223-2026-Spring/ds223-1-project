@@ -19,9 +19,13 @@ import numpy as np
 import pandas as pd
 
 try:
-    from .synthetic.config import FEATURE_COLUMNS, LATENT_COLUMNS
-except ImportError:  # pragma: no cover - supports running inside the ds container
-    from synthetic.config import FEATURE_COLUMNS, LATENT_COLUMNS
+    from ._routing import import_ds_module
+except ImportError:  # pragma: no cover - supports direct execution in DS container
+    from _routing import import_ds_module
+
+_config = import_ds_module("synthetic.config")
+FEATURE_COLUMNS = _config.FEATURE_COLUMNS
+LATENT_COLUMNS = _config.LATENT_COLUMNS
 
 REQUIRED_FILES = ("customers.csv", "actions.csv", "interactions.csv")
 OPTIONAL_LATENT_FILE = "customer_latents.csv"
@@ -159,7 +163,6 @@ def run_eda(
     report_path = eda_output_dir / "eda_report.md"
     report_path.write_text(
         _render_report(
-            input_dir=dataset_dir,
             customers=inputs.customers,
             interactions=inputs.interactions,
             segment_counts=segment_counts,
@@ -429,7 +432,6 @@ def _plot_heatmap(
 
 
 def _render_report(
-    input_dir: Path,
     customers: pd.DataFrame,
     interactions: pd.DataFrame,
     segment_counts: pd.DataFrame,
@@ -447,11 +449,12 @@ def _render_report(
     ]
 
     simulation_count = interactions["simulation_id"].nunique() if "simulation_id" in interactions else 0
+    simulation_id = _unique_label(interactions, "simulation_id")
     return "\n".join(
         [
             "# Initial EDA Report",
             "",
-            f"- Input dataset: `{input_dir}`",
+            f"- Simulation ID: `{simulation_id}`",
             f"- Customers: {len(customers)}",
             f"- Interactions: {len(interactions)}",
             f"- Distinct simulations: {simulation_count}",
@@ -485,3 +488,14 @@ def _render_report(
             ),
         ]
     )
+
+
+def _unique_label(frame: pd.DataFrame, column: str) -> str:
+    if column not in frame.columns:
+        return "unknown"
+    values = frame[column].dropna().astype(str).unique()
+    if len(values) == 0:
+        return "unknown"
+    if len(values) == 1:
+        return values[0]
+    return "multiple"

@@ -1,0 +1,6 @@
+action_id,action_name,description,base_cost
+0,no_action,Control group; rely on organic conversion from loyal customers.,0.0
+1,discount_10,10% discount for price-sensitive customers; margin-reducing but effective.,6.5
+2,free_shipping,Shipping-friction relief for planning-oriented shoppers.,4.99
+3,product_recommendation,Low-cost personalization that works best for loyal engaged shoppers.,0.3
+4,bundle_offer,Higher-basket bundle promotion for impulse-prone customers.,9.0

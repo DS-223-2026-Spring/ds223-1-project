@@ -75,6 +75,7 @@ ds223-1-project/              ← repo root
     │       ├── 3_analytics.py
     │       └── 4_model.py
     ├── ds/                   ← Data Science (Davit)
+    │   ├── _routing.py
     │   ├── Dockerfile
     │   ├── main.py
     │   ├── etl.py
@@ -83,8 +84,10 @@ ds223-1-project/              ← repo root
     │   ├── model.py
     │   ├── experiments.ipynb
     │   ├── generate_eda_report.py
+    │   ├── generate_final_outputs.py
     │   ├── generate_synthetic_data.py
     │   ├── run_baseline_comparison.py
+    │   ├── run_workflow.py
     │   ├── requirements.txt
     │   └── synthetic/        ← synthetic data generation module
     ├── db/                   ← DB schema & helpers (Hayk)

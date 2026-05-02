@@ -10,9 +10,11 @@ import numpy as np
 import pandas as pd
 
 try:
-    from .synthetic.features import build_context_matrix
-except ImportError:  # pragma: no cover - supports running inside the ds container
-    from synthetic.features import build_context_matrix
+    from ._routing import load_ds_attr
+except ImportError:  # pragma: no cover - supports direct execution in DS container
+    from _routing import load_ds_attr
+
+build_context_matrix = load_ds_attr("synthetic.features", "build_context_matrix")
 
 
 @dataclass(frozen=True, slots=True)

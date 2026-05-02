@@ -33,6 +33,11 @@ pgadmin_data/
 *.xlsx
 data/raw/
 
+# Milestone 3 DS final deliverables are intentionally tracked.
+!outputs/
+!outputs/final_outputs/
+!outputs/final_outputs/**
+
 # Jupyter
 .ipynb_checkpoints/
 
