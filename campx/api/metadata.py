@@ -10,6 +10,7 @@ RESOURCE_NAMES = (
     "simulations",
     "interactions",
     "metrics",
+    "ds-artifacts",
 )
 
 RESOURCE_STRUCTURE = (
@@ -63,6 +64,20 @@ RESOURCE_STRUCTURE = (
             "for PM review and experiment monitoring."
         ),
     },
+    {
+        "resource": "ds-artifacts",
+        "table": "simulation_artifacts",
+        "paths": (
+            "/ds/artifacts",
+            "/ds/artifacts/{simulation_id}",
+            "/ds/artifacts/{simulation_id}/{artifact_name}",
+        ),
+        "methods": ("GET", "POST"),
+        "owner_notes": (
+            "Generated DS data-file payloads are imported into relational tables "
+            "and retained as JSON/text artifacts keyed by simulation."
+        ),
+    },
 )
 
 CUSTOMER_FIELDS = (
@@ -89,6 +104,7 @@ API_ASSUMPTIONS = (
     "Simulation creation is exposed through `POST /simulations` as the single public write route for simulation records.",
     "The `decide` endpoint now computes LinUCB-style exploit and explore scores from database-backed model state reconstructed from observed interactions.",
     "Context vectors are stored in `interactions.context_vector` as float64 binary feature arrays so feedback updates can reproduce the learning state.",
+    "Generated DS CSV-style outputs are stored in PostgreSQL through `/ds/artifacts` instead of relying on local output directories.",
     "The frontend should reach the service at `http://backend:8000` inside docker-compose.",
 )
 
@@ -118,5 +134,9 @@ API_TAGS = [
     {
         "name": "metrics",
         "description": "Read-only aggregated metrics derived from logged interactions.",
+    },
+    {
+        "name": "ds-artifacts",
+        "description": "Generated DS artifact import and retrieval endpoints.",
     },
 ]

@@ -1,8 +1,10 @@
-"""
-CRUD layer (stateless Data Access Layer).
+"""CRUD layer (stateless Data Access Layer).
 
 All functions require an SQLHandler instance.
 """
+
+import json
+from typing import Any
 
 from loguru import logger
 
@@ -61,6 +63,218 @@ def get_customer_latents(db: SQLHandler, customer_id: int):
         (customer_id,),
     )
     return df.iloc[0].to_dict() if not df.empty else None
+
+
+def insert_customer(
+    db: SQLHandler,
+    gender,
+    segment_label,
+    recency,
+    frequency,
+    monetary,
+    basket_diversity,
+    avg_order_size,
+    purchase_regularity,
+):
+    """Insert one customer through the shared stored procedure."""
+
+    return upsert_customer(
+        db,
+        customer_id=None,
+        gender=gender,
+        segment_label=segment_label,
+        recency=recency,
+        frequency=frequency,
+        monetary=monetary,
+        basket_diversity=basket_diversity,
+        avg_order_size=avg_order_size,
+        purchase_regularity=purchase_regularity,
+    )
+
+
+def insert_customer_latent(
+    db: SQLHandler,
+    customer_id,
+    z_price_sensitivity,
+    z_brand_loyalty,
+    z_impulse_tendency,
+):
+    """Insert or replace latent debug attributes for one customer."""
+
+    logger.info(f"Upserting customer latents customer_id={customer_id}")
+    db.cursor.execute(
+        """
+        INSERT INTO public.customer_latents (
+            customer_id,
+            z_price_sensitivity,
+            z_brand_loyalty,
+            z_impulse_tendency
+        )
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (customer_id) DO UPDATE
+        SET
+            z_price_sensitivity = EXCLUDED.z_price_sensitivity,
+            z_brand_loyalty = EXCLUDED.z_brand_loyalty,
+            z_impulse_tendency = EXCLUDED.z_impulse_tendency
+        """,
+        (
+            customer_id,
+            z_price_sensitivity,
+            z_brand_loyalty,
+            z_impulse_tendency,
+        ),
+    )
+    db.commit()
+
+
+def upsert_customer(
+    db: SQLHandler,
+    customer_id,
+    gender,
+    segment_label,
+    recency,
+    frequency,
+    monetary,
+    basket_diversity,
+    avg_order_size,
+    purchase_regularity,
+    z_price_sensitivity=None,
+    z_brand_loyalty=None,
+    z_impulse_tendency=None,
+):
+    """Insert or update one customer and optional latents through sp_upsert_customer."""
+
+    logger.info(f"Upserting customer customer_id={customer_id}")
+    db.cursor.execute(
+        """
+        SELECT public.sp_upsert_customer(
+            %s, %s, %s, %s, %s, %s, %s, %s, %s,
+            %s, %s, %s
+        ) AS customer_id
+        """,
+        (
+            customer_id,
+            gender,
+            segment_label,
+            recency,
+            frequency,
+            monetary,
+            basket_diversity,
+            avg_order_size,
+            purchase_regularity,
+            z_price_sensitivity,
+            z_brand_loyalty,
+            z_impulse_tendency,
+        ),
+    )
+    new_customer_id = db.cursor.fetchone()[0]
+    db.commit()
+    return new_customer_id
+
+
+def upsert_action(
+    db: SQLHandler,
+    action_id,
+    action_name,
+    action_cost,
+    target_latent,
+    description,
+):
+    """Insert or update one seeded/generated action definition."""
+
+    logger.info(f"Upserting action action_id={action_id}")
+    db.cursor.execute(
+        """
+        INSERT INTO public.actions (
+            action_id,
+            action_name,
+            action_cost,
+            target_latent,
+            description
+        )
+        VALUES (%s, %s, %s, %s, %s)
+        ON CONFLICT (action_id) DO UPDATE
+        SET
+            action_name = EXCLUDED.action_name,
+            action_cost = EXCLUDED.action_cost,
+            target_latent = EXCLUDED.target_latent,
+            description = EXCLUDED.description
+        """,
+        (
+            action_id,
+            action_name,
+            action_cost,
+            target_latent,
+            description,
+        ),
+    )
+    db.commit()
+
+
+def log_interaction(
+    db: SQLHandler,
+    simulation_id,
+    customer_id,
+    action_id,
+    round_number,
+    context_vector_bytes,
+    ucb_score,
+    cost,
+):
+    """Log one interaction through sp_log_interaction."""
+
+    logger.info(
+        f"Logging interaction sim={simulation_id}, customer={customer_id}, action={action_id}"
+    )
+    db.cursor.execute(
+        """
+        SELECT public.sp_log_interaction(%s, %s, %s, %s, %s, %s, %s)
+        AS interaction_id
+        """,
+        (
+            simulation_id,
+            customer_id,
+            action_id,
+            round_number,
+            context_vector_bytes,
+            ucb_score,
+            cost,
+        ),
+    )
+    interaction_id = db.cursor.fetchone()[0]
+    db.commit()
+    return interaction_id
+
+
+def observe_outcome(
+    db: SQLHandler,
+    interaction_id,
+    converted,
+    revenue,
+    converted_at=None,
+    observed_at=None,
+):
+    """Record one realized outcome through sp_submit_feedback."""
+
+    logger.info(f"Observing outcome interaction_id={interaction_id}")
+    db.cursor.execute(
+        """
+        SELECT *
+        FROM public.sp_submit_feedback(%s, %s, %s, %s, %s)
+        """,
+        (
+            interaction_id,
+            converted,
+            revenue,
+            converted_at,
+            observed_at,
+        ),
+    )
+    row = db.cursor.fetchone()
+    columns = [column.name for column in db.cursor.description]
+    db.commit()
+    return dict(zip(columns, row, strict=True))
+
 
 def get_pending_interactions(db: SQLHandler, older_than_hours=48):
     """
@@ -231,3 +445,96 @@ def complete_simulation(db: SQLHandler, simulation_id: int):
     )
     db.commit()
     logger.success("Simulation completed")
+
+
+
+def upsert_simulation_artifact(
+    db: SQLHandler,
+    simulation_id: int,
+    artifact_name: str,
+    artifact_type: str,
+    content_type: str,
+    payload_json: Any | None = None,
+    payload_text: str | None = None,
+) -> int:
+    """Insert or update one generated DS artifact payload for a simulation."""
+
+    if payload_json is None and payload_text is None:
+        raise ValueError("simulation artifact payload cannot be empty")
+
+    logger.info(f"Upserting simulation artifact sim={simulation_id}, name={artifact_name}")
+    db.cursor.execute(
+        """
+        INSERT INTO public.simulation_artifacts (
+            simulation_id,
+            artifact_name,
+            artifact_type,
+            content_type,
+            payload_json,
+            payload_text
+        )
+        VALUES (%s, %s, %s, %s, %s::jsonb, %s)
+        ON CONFLICT (simulation_id, artifact_name) DO UPDATE
+        SET
+            artifact_type = EXCLUDED.artifact_type,
+            content_type = EXCLUDED.content_type,
+            payload_json = EXCLUDED.payload_json,
+            payload_text = EXCLUDED.payload_text,
+            created_at = NOW()
+        RETURNING artifact_id
+        """,
+        (
+            simulation_id,
+            artifact_name,
+            artifact_type,
+            content_type,
+            json.dumps(payload_json) if payload_json is not None else None,
+            payload_text,
+        ),
+    )
+    artifact_id = db.cursor.fetchone()[0]
+    db.commit()
+    return artifact_id
+
+
+def list_simulation_artifacts(db: SQLHandler, simulation_id: int):
+    """List stored generated artifact payloads for one simulation."""
+
+    return db.select(
+        """
+        SELECT
+            artifact_id,
+            simulation_id,
+            artifact_name,
+            artifact_type,
+            content_type,
+            created_at
+        FROM public.simulation_artifacts
+        WHERE simulation_id = %s
+        ORDER BY artifact_name
+        """,
+        (simulation_id,),
+    )
+
+
+def get_simulation_artifact(db: SQLHandler, simulation_id: int, artifact_name: str):
+    """Fetch one generated artifact payload for a simulation."""
+
+    df = db.select(
+        """
+        SELECT
+            artifact_id,
+            simulation_id,
+            artifact_name,
+            artifact_type,
+            content_type,
+            payload_json,
+            payload_text,
+            created_at
+        FROM public.simulation_artifacts
+        WHERE simulation_id = %s
+          AND artifact_name = %s
+        """,
+        (simulation_id, artifact_name),
+    )
+    return df.iloc[0].to_dict() if not df.empty else None

@@ -168,6 +168,28 @@ SAMPLE_MODEL_STATE = {
     },
 }
 
+SAMPLE_DS_IMPORT = {
+    "simulation_id": 1,
+    "sim_name": "Local Verify",
+    "customers_inserted": 1,
+    "actions_upserted": 1,
+    "interactions_inserted": 1,
+    "model_state_rows_upserted": 1,
+    "artifacts_stored": 5,
+    "completed": True,
+}
+
+SAMPLE_DS_ARTIFACT = {
+    "artifact_id": 1,
+    "simulation_id": 1,
+    "artifact_name": "customers.csv",
+    "artifact_type": "records",
+    "content_type": "application/json",
+    "payload_json": [SAMPLE_CUSTOMER],
+    "payload_text": None,
+    "created_at": FIXED_TIME,
+}
+
 
 def _registered_api_paths() -> dict[str, set[str]]:
     paths: dict[str, set[str]] = {}
@@ -277,6 +299,24 @@ def _install_endpoint_stubs() -> dict[str, object]:
             return None
         return dict(SAMPLE_METRICS)
 
+    def import_ds_artifact_bundle_stub(db, payload):
+        record = dict(SAMPLE_DS_IMPORT)
+        record["sim_name"] = payload.simulation.sim_name
+        return record
+
+    def list_ds_artifacts_stub(db, simulation_id):
+        if simulation_id != 1:
+            return None
+        item = dict(SAMPLE_DS_ARTIFACT)
+        item.pop("payload_json")
+        item.pop("payload_text")
+        return [item]
+
+    def get_ds_artifact_stub(db, simulation_id, artifact_name):
+        if simulation_id != 1 or artifact_name != "customers.csv":
+            return None
+        return dict(SAMPLE_DS_ARTIFACT)
+
     replacements = {
         "list_customers": list_customers_stub,
         "get_customer_detail_record": get_customer_detail_record_stub,
@@ -291,6 +331,9 @@ def _install_endpoint_stubs() -> dict[str, object]:
         "submit_feedback": submit_feedback_stub,
         "get_model_state_snapshot": get_model_state_snapshot_stub,
         "get_metrics_snapshot": get_metrics_snapshot_stub,
+        "import_ds_artifact_bundle": import_ds_artifact_bundle_stub,
+        "list_ds_artifacts": list_ds_artifacts_stub,
+        "get_ds_artifact": get_ds_artifact_stub,
     }
 
     for name, replacement in replacements.items():
@@ -379,6 +422,86 @@ def _verify_endpoints(client: TestClient) -> bool:
             201,
         ),
         ("PUT /simulations/1/complete", client.put("/simulations/1/complete"), 200),
+        (
+            "POST /ds/artifacts",
+            client.post(
+                "/ds/artifacts",
+                json={
+                    "simulation": {
+                        "sim_name": "Local Verify",
+                        "num_rounds": 100,
+                        "num_customers": 50,
+                        "alpha": 0.5,
+                        "context_dim": 6,
+                        "conversion_window_hours": 48,
+                        "notes": "verification import",
+                    },
+                    "customers": [
+                        {
+                            "customer_id": 1,
+                            "gender": "F",
+                            "segment": "Champion",
+                            "recency": 9.5,
+                            "frequency": 3.0,
+                            "monetary": 100.0,
+                            "basket_diversity": 2.5,
+                            "avg_order_size": 25.0,
+                            "purchase_regularity": 0.7,
+                        }
+                    ],
+                    "customer_latents": [
+                        {
+                            "customer_id": 1,
+                            "z_price_sensitivity": 0.1,
+                            "z_brand_loyalty": 0.8,
+                            "z_impulse_tendency": 0.3,
+                        }
+                    ],
+                    "actions": [
+                        {
+                            "action_id": 1,
+                            "action_name": "discount_10",
+                            "action_cost": 6.5,
+                            "target_latent": "price_sensitivity",
+                            "description": "verification action",
+                        }
+                    ],
+                    "interactions": [
+                        {
+                            "round_number": 1,
+                            "customer_id": 1,
+                            "action_id": 1,
+                            "converted": True,
+                            "revenue": 15.0,
+                            "cost": 6.5,
+                            "ucb_score": 0.4,
+                        }
+                    ],
+                    "model_state": [
+                        {
+                            "action_id": 1,
+                            "round_number": 0,
+                            "n_pulls": 1,
+                            "theta_json": "[0, 0, 0, 0, 0, 0]",
+                            "a_json": (
+                                "[[1, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], "
+                                "[0, 0, 1, 0, 0, 0], [0, 0, 0, 1, 0, 0], "
+                                "[0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 1]]"
+                            ),
+                            "b_json": "[0, 0, 0, 0, 0, 0]",
+                            "alpha": 0.5,
+                        }
+                    ],
+                },
+            ),
+            201,
+        ),
+        ("GET /ds/artifacts/1", client.get("/ds/artifacts/1"), 200),
+        (
+            "GET /ds/artifacts/1/customers.csv",
+            client.get("/ds/artifacts/1/customers.csv"),
+            200,
+        ),
         ("GET /model/state", client.get("/model/state?simulation_id=1"), 200),
         (
             "POST /decide preview",
@@ -414,6 +537,12 @@ def _verify_endpoints(client: TestClient) -> bool:
         return False
     if client.put("/simulations/999/complete").status_code != 404:
         print("PUT /simulations/999/complete did not return 404")
+        return False
+    if client.get("/ds/artifacts/999").status_code != 404:
+        print("GET /ds/artifacts/999 did not return 404")
+        return False
+    if client.get("/ds/artifacts/1/missing.csv").status_code != 404:
+        print("GET /ds/artifacts/1/missing.csv did not return 404")
         return False
     if client.get("/model/state?simulation_id=999").status_code != 404:
         print("GET /model/state?simulation_id=999 did not return 404")
