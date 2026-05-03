@@ -2,29 +2,21 @@
 Page 3 — Analytics
 Owner: Armine Babajanyan (frontend branch)
 
-The summary / results page — for interpreting what a simulation produced.
-  - champion action (highest cumulative reward)
-  - action distribution
-  - conversion rate per action
-  - cumulative reward curve for completed runs
+Result analysis: champion action, action distribution,
+conversion rate per action, policy comparison.
 
-M2: Layout + charts with mock data.
-M3: Connect to GET /metrics, GET /customers for filtering by segment.
+Wired to:
+  GET /simulations
+  GET /metrics?simulation_id=...
 
-Backend endpoints consumed:
-  GET /simulations                  : selector
-  GET /metrics?simulation_id=...    : aggregates
+Built-in Streamlit components only.
 """
 import pandas as pd
-import plotly.express as px
 import streamlit as st
 
 import bandit_utils as bu
 
-st.set_page_config(
-    page_title="Analytics · CampX",
-    layout="wide",
-)
+st.set_page_config(page_title="Analytics · CampX", layout="wide")
 
 st.title("Analytics")
 st.caption("Results, action distributions, and policy comparison.")
@@ -35,33 +27,44 @@ if sim_id is None:
     st.info("No simulations yet. Launch one on **Create Simulation**.")
     st.stop()
 
-metrics = bu.get_metrics(sim_id)
+# ── Fetch metrics ──────────────────────────────────────────────
+try:
+    metrics = bu.get_metrics(sim_id)
+except bu.APIError as exc:
+    bu.render_api_error(exc)
+    st.stop()
 
-# ── Headline: champion action ──────────────────────────────────
-conv = metrics["conversion_by_action"].copy()
-conv["label"] = conv["action"].map(bu.ACTION_LABELS)
-conv["cost"] = conv["action"].map(bu.ACTION_COSTS)
-# approximate reward potential per pull
-conv["est_reward_per_pull"] = conv["conversion_rate"] * 65 - conv["cost"]
-
-champion = conv.sort_values("est_reward_per_pull", ascending=False).iloc[0]
-
-st.success(
-    f"**Champion action:** {champion['label']}  ·  "
-    f"conversion rate {bu.format_pct(champion['conversion_rate'])}  ·  "
-    f"{int(champion['n_pulls'])} pulls"
-)
-
-# ── Summary tiles ──────────────────────────────────────────────
+# ── Summary tiles (always available) ───────────────────────────
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Total rounds", f"{metrics['rounds_completed']:,}")
 k2.metric("Cumulative reward",
           bu.format_currency(metrics["cumulative_reward"]))
 k3.metric("Avg reward / round",
           f"£{metrics['avg_reward_per_round']:.2f}")
-k4.metric("Pending observations", metrics["pending_observations"])
+k4.metric("Conversions", f"{metrics['conversions']:,}")
 
 st.divider()
+
+# ── Headline: champion action ──────────────────────────────────
+conv_raw = metrics.get("conversion_by_action")
+if conv_raw is None or conv_raw.empty:
+    st.info(
+        "Champion-action analysis is unavailable until `/metrics` returns "
+        "the `conversion_by_action` array."
+    )
+    conv = pd.DataFrame()
+else:
+    conv = conv_raw.copy()
+    conv["label"] = conv["action"].map(bu.ACTION_LABELS).fillna(conv["action"])
+    conv["cost"] = conv["action"].map(bu.ACTION_COSTS).fillna(0.0)
+    # Approximate reward potential per pull (avg basket × conv − cost)
+    conv["est_reward_per_pull"] = conv["conversion_rate"] * 65 - conv["cost"]
+    champion = conv.sort_values("est_reward_per_pull", ascending=False).iloc[0]
+    st.success(
+        f"**Champion action:** {champion['label']}  ·  "
+        f"conversion rate {bu.format_pct(champion['conversion_rate'])}  ·  "
+        f"{int(champion['n_pulls'])} pulls"
+    )
 
 # ── Action distribution + conversion ───────────────────────────
 left, right = st.columns(2)
@@ -69,42 +72,23 @@ left, right = st.columns(2)
 with left:
     st.subheader("Action distribution")
     st.caption("Which arm LinUCB chose, and how often.")
-    dist = metrics["action_distribution"]
-    counts = dist["action"].value_counts().reset_index()
-    counts.columns = ["action", "count"]
-    counts["label"] = counts["action"].map(bu.ACTION_LABELS)
-    fig_d = px.bar(
-        counts, x="label", y="count",
-        labels={"label": "Action", "count": "Times chosen"},
-    )
-    fig_d.update_traces(marker_color="#6495ED")  # single muted slate
-    fig_d.update_layout(
-        showlegend=False, height=380,
-        margin=dict(t=20, b=20),
-        plot_bgcolor="white",
-        yaxis=dict(showgrid=False),
-        xaxis=dict(showgrid=False),
-    )
-    st.plotly_chart(fig_d, width='stretch')
-    st.caption("M3: upgrade to stacked-area over time.")
+    dist_raw = metrics.get("action_distribution")
+    if dist_raw is None or dist_raw.empty:
+        st.info("Awaiting `action_distribution` from `/metrics`.")
+    else:
+        counts = dist_raw["action"].value_counts().rename_axis("action").reset_index(name="count")
+        counts["Action"] = counts["action"].map(bu.ACTION_LABELS).fillna(counts["action"])
+        chart = counts.set_index("Action")[["count"]]
+        st.bar_chart(chart, height=380, y_label="Times chosen")
 
 with right:
     st.subheader("Conversion rate by action")
     st.caption("Did the action actually win the customer?")
-    fig_c = px.bar(
-        conv, x="label", y="conversion_rate",
-        labels={"label": "Action", "conversion_rate": "Conversion rate"},
-    )
-    fig_c.update_traces(marker_color="#6495ED")
-    fig_c.update_layout(
-        showlegend=False, height=380,
-        yaxis_tickformat=".0%",
-        margin=dict(t=20, b=20),
-        plot_bgcolor="white",
-        yaxis=dict(showgrid=False),
-        xaxis=dict(showgrid=False),
-    )
-    st.plotly_chart(fig_c, width='stretch')
+    if conv.empty:
+        st.info("Awaiting `conversion_by_action` from `/metrics`.")
+    else:
+        conv_chart = conv.set_index("label")[["conversion_rate"]]
+        st.bar_chart(conv_chart, height=380, y_label="Conversion rate")
 
 st.divider()
 
@@ -112,52 +96,49 @@ st.divider()
 st.subheader("Policy comparison — LinUCB vs baselines")
 st.caption(
     "Cumulative reward over time. LinUCB should pull ahead as it learns; "
-    "Random and Heuristic represent zero-intelligence and static-rule "
-    "baselines."
+    "Random and Heuristic are the zero-intelligence and static-rule baselines."
 )
 
-cum = metrics["cumulative_reward_series"]
-finals = pd.DataFrame({
-    "Policy": ["LinUCB", "Heuristic", "Random"],
-    "Final cumulative reward": [
-        cum["linucb"].iloc[-1],
-        cum["heuristic"].iloc[-1],
-        cum["random"].iloc[-1],
-    ],
-})
-fig_f = px.bar(
-    finals, x="Policy", y="Final cumulative reward",
-)
-fig_f.update_traces(marker_color="#6495ED")
-fig_f.update_layout(
-    showlegend=False, height=320, yaxis_title="£",
-    margin=dict(t=20, b=20),
-    plot_bgcolor="white",
-    yaxis=dict(showgrid=False),
-    xaxis=dict(showgrid=False),
-)
-st.plotly_chart(fig_f, width='stretch')
+cum_raw = metrics.get("cumulative_reward_series")
+if cum_raw is None or cum_raw.empty:
+    st.info(
+        "Awaiting `cumulative_reward_series` from `/metrics` "
+        "(needs the LinUCB run + baselines from DS)."
+    )
+else:
+    chart_df = cum_raw.copy()
+    if "round" in chart_df.columns:
+        chart_df = chart_df.set_index("round")
+    st.line_chart(chart_df, height=380, y_label="Cumulative reward (£)", x_label="Round")
+
+    # Final-value bar comparison
+    finals = pd.DataFrame({
+        "Policy": list(chart_df.columns),
+        "Final cumulative reward": [chart_df[c].iloc[-1] for c in chart_df.columns],
+    }).set_index("Policy")
+    st.bar_chart(finals, height=280, y_label="£")
 
 st.divider()
 
 # ── Detailed results table ────────────────────────────────────
 st.subheader("Per-action detail")
-detail = conv[["label", "n_pulls", "conversion_rate", "cost",
-               "est_reward_per_pull"]].copy()
-detail["conversion_rate"] = detail["conversion_rate"].map(bu.format_pct)
-detail["cost"] = detail["cost"].map(bu.format_currency)
-detail["est_reward_per_pull"] = detail["est_reward_per_pull"].map(
-    lambda x: f"£{x:+.2f}"
-)
-st.dataframe(
-    detail, hide_index=True, width='stretch',
-    column_config={
-        "label": "Action",
-        "n_pulls": "Pulls",
-        "conversion_rate": "Conversion",
-        "cost": "Cost",
-        "est_reward_per_pull": "Est. reward/pull",
-    },
-)
-
-st.caption("M2: mock data. Real computations wire in M3.")
+if conv.empty:
+    st.info("Awaiting `conversion_by_action` from `/metrics`.")
+else:
+    detail = conv[["label", "n_pulls", "conversion_rate", "cost",
+                   "est_reward_per_pull"]].copy()
+    detail["conversion_rate"] = detail["conversion_rate"].map(bu.format_pct)
+    detail["cost"] = detail["cost"].map(bu.format_currency)
+    detail["est_reward_per_pull"] = detail["est_reward_per_pull"].map(
+        lambda x: f"£{x:+.2f}"
+    )
+    st.dataframe(
+        detail, hide_index=True, width="stretch",
+        column_config={
+            "label": "Action",
+            "n_pulls": "Pulls",
+            "conversion_rate": "Conversion",
+            "cost": "Cost",
+            "est_reward_per_pull": "Est. reward/pull",
+        },
+    )

@@ -2,26 +2,28 @@
 Page 2 — Interaction
 Owner: Armine Babajanyan (frontend branch)
 
-This page is the live bandit loop — where LinUCB is actively assigning
-actions to customers and accumulating reward.
+Live bandit loop — LinUCB picking actions for customers.
 
-M2: Layout + chart placeholders using mock data.
-M3: Connect to GET /metrics, 30s auto-refresh while status == "running".
+Wired to:
+  GET /simulations
+  GET /metrics?simulation_id=...
 
-Backend endpoints consumed:
-  GET /simulations                  : selector
-  GET /metrics?simulation_id=...    : all live aggregates
+Built-in Streamlit components only (st.line_chart, st.bar_chart,
+st.dataframe, st.metric, st.toggle).
+
+NOTE on /metrics: backend currently returns lightweight counters
+(total_interactions, total_reward, total_revenue, total_cost,
+conversions). The chart sections gracefully degrade when richer
+arrays (cumulative_reward_series, recent_interactions, …) are missing.
 """
-import plotly.express as px
-import plotly.graph_objects as go
+import time
+
+import pandas as pd
 import streamlit as st
 
 import bandit_utils as bu
 
-st.set_page_config(
-    page_title="Interaction · CampX",
-    layout="wide",
-)
+st.set_page_config(page_title="Interaction · CampX", layout="wide")
 
 st.title("Live Interaction")
 st.caption("LinUCB is picking actions for customers. Watch it learn.")
@@ -36,83 +38,146 @@ if sim_id is None:
 c1, c2 = st.columns([1, 1])
 with c1:
     auto_refresh = st.toggle(
-        "Auto-refresh", value=False,
-        help="Re-fetch metrics every 30s (active in M3).",
+        "Auto-refresh (30s)", value=False,
+        help="Re-fetch metrics every 30 seconds.",
     )
 with c2:
     if st.button("🔄 Refresh now"):
-        st.cache_data.clear()
+        bu.get_metrics.clear()
         st.rerun()
 
-metrics = bu.get_metrics(sim_id)
+# ── Fetch metrics ──────────────────────────────────────────────
+try:
+    metrics = bu.get_metrics(sim_id)
+except bu.APIError as exc:
+    bu.render_api_error(exc)
+    st.stop()
 
 # ── KPI tiles ──────────────────────────────────────────────────
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Rounds completed", f"{metrics['rounds_completed']:,}")
 k2.metric("Cumulative reward",
           bu.format_currency(metrics["cumulative_reward"]))
-k3.metric("Avg reward / round", f"£{metrics['avg_reward_per_round']:.2f}")
+k3.metric("Avg reward / round",
+          f"£{metrics['avg_reward_per_round']:.2f}")
+pending = metrics.get("pending_observations")
 k4.metric(
-    "Pending observations", metrics["pending_observations"],
+    "Pending observations",
+    "—" if pending is None else f"{pending:,}",
     help="Interactions still inside the conversion window.",
 )
+
+# Secondary tiles using fields the backend reliably returns today
+k5, k6, k7, k8 = st.columns(4)
+k5.metric("Conversions", f"{metrics['conversions']:,}")
+k6.metric("Total revenue", bu.format_currency(metrics["total_revenue"]))
+k7.metric("Total cost", bu.format_currency(metrics["total_cost"]))
+conv_rate = (metrics["conversions"] / metrics["rounds_completed"]
+             if metrics["rounds_completed"] else 0.0)
+k8.metric("Overall conversion rate", bu.format_pct(conv_rate))
 
 st.divider()
 
 # ── Cumulative reward chart ────────────────────────────────────
 st.subheader("Cumulative reward")
-st.caption("LinUCB versus baselines over rounds. Higher = better.")
+cum = metrics.get("cumulative_reward_series")
+if cum is None or cum.empty:
+    st.info(
+        "Cumulative reward series not yet available from `/metrics`. "
+        "This chart will populate once the backend ships the "
+        "`cumulative_reward_series` array."
+    )
+else:
+    # Expect columns: round, linucb, [random, heuristic, …]
+    chart_df = cum.copy()
+    if "round" in chart_df.columns:
+        chart_df = chart_df.set_index("round")
+    st.line_chart(
+        chart_df,
+        height=380,
+        y_label="Cumulative reward (£)",
+        x_label="Round",
+    )
 
-cum = metrics["cumulative_reward_series"]
-fig = go.Figure()
-fig.add_scatter(x=cum["round"], y=cum["linucb"],
-                mode="lines", name="LinUCB",
-                line=dict(width=2.5, color="#1E293B"))
-fig.add_scatter(x=cum["round"], y=cum["heuristic"],
-                mode="lines", name="Heuristic",
-                line=dict(width=1.5, dash="dash", color="#94A3B8"))
-fig.add_scatter(x=cum["round"], y=cum["random"],
-                mode="lines", name="Random",
-                line=dict(width=1.5, dash="dot", color="#CBD5E1"))
-fig.update_layout(
-    xaxis_title="Round",
-    yaxis_title="Cumulative reward (£)",
-    height=400,
-    hovermode="x unified",
-    legend=dict(orientation="h", yanchor="bottom", y=1.02),
-    margin=dict(t=20, b=20),
-    plot_bgcolor="white",
-    yaxis=dict(showgrid=False),
-    xaxis=dict(showgrid=False),
-)
-st.plotly_chart(fig, width='stretch')
+st.divider()
+
+# ── Action distribution over time ──────────────────────────────
+st.subheader("Action distribution over time")
+dist = metrics.get("action_distribution")
+if dist is None or dist.empty:
+    st.info(
+        "Action distribution not yet available from `/metrics`. "
+        "Will appear once the backend ships the "
+        "`action_distribution` array."
+    )
+else:
+    # Expect rows: {round, action}. Bin into buckets and stack-area chart.
+    df = dist.copy()
+    if "round" in df.columns:
+        df["bucket"] = (df["round"] // 100) * 100
+    else:
+        df["bucket"] = df.index // 100 * 100
+    counts = (
+        df.groupby(["bucket", "action"]).size().unstack(fill_value=0).sort_index()
+    )
+    # Map technical names to friendly labels for display
+    counts.columns = [bu.ACTION_LABELS.get(c, c) for c in counts.columns]
+    st.area_chart(
+        counts,
+        height=320,
+        stack=True,
+        x_label="Round (binned by 100)",
+        y_label="Times chosen",
+    )
 
 st.divider()
 
 # ── Recent interactions table ──────────────────────────────────
 st.subheader("Recent interactions")
-st.caption("The last 20 decisions LinUCB has made.")
+ri = metrics.get("recent_interactions")
+if ri is None or ri.empty:
+    st.info(
+        "Recent interactions not yet available from `/metrics`. "
+        "Will appear once the backend ships the "
+        "`recent_interactions` array."
+    )
+else:
+    table = ri.copy()
+    if "action" in table:
+        table["action"] = table["action"].map(
+            lambda a: bu.ACTION_LABELS.get(a, a)
+        )
+    if "decision_at" in table:
+        table["decision_at"] = table["decision_at"].dt.strftime("%Y-%m-%d %H:%M:%S")
+    if "revenue" in table:
+        table["revenue"] = table["revenue"].apply(
+            lambda x: f"£{x:.2f}" if pd.notna(x) else "—"
+        )
+    if "reward" in table:
+        table["reward"] = table["reward"].apply(
+            lambda x: f"£{x:+.2f}" if pd.notna(x) else "—"
+        )
+    cols = [c for c in [
+        "interaction_id", "decision_at", "customer_id",
+        "action", "converted", "revenue", "reward",
+    ] if c in table.columns]
+    st.dataframe(
+        table[cols],
+        hide_index=True,
+        width="stretch",
+        column_config={
+            "interaction_id": "ID",
+            "decision_at": "Time",
+            "customer_id": "Customer",
+            "action": "Action",
+            "converted": "Converted",
+            "revenue": "Revenue",
+            "reward": "Reward",
+        },
+    )
 
-ri = metrics["recent_interactions"].copy()
-ri["action"] = ri["action"].map(bu.ACTION_LABELS)
-ri["decision_at"] = ri["decision_at"].dt.strftime("%H:%M:%S")
-ri["revenue"] = ri["revenue"].map(lambda x: f"£{x:.2f}")
-ri["reward"] = ri["reward"].map(lambda x: f"£{x:+.2f}")
-
-st.dataframe(
-    ri[["interaction_id", "decision_at", "customer_id",
-        "action", "converted", "revenue", "reward"]],
-    hide_index=True,
-    width='stretch',
-    column_config={
-        "interaction_id": "ID",
-        "decision_at": "Time",
-        "customer_id": "Customer",
-        "action": "Action",
-        "converted": "Converted",
-        "revenue": "Revenue",
-        "reward": "Reward",
-    },
-)
-
-st.caption("⚠️ M2: values from mock generator. Wired to /metrics in M3.")
+# ── Auto-refresh ───────────────────────────────────────────────
+if auto_refresh:
+    time.sleep(30)
+    bu.get_metrics.clear()
+    st.rerun()

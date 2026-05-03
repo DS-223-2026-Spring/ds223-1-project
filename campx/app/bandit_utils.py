@@ -1,33 +1,29 @@
 """
-bandit_utils.py — shared logic, theming, mock data, and API client.
+bandit_utils.py — shared API client, theme constants, and formatters.
 
 Owner: Armine Babajanyan (frontend branch)
 
-This module bundles everything shared across pages:
+M3: Fully wired to the FastAPI backend. No mock generators, no Plotly.
+All HTTP calls go through this module so pages stay thin.
 
-  - Theme constants (colors, labels, costs)
-  - Mock data generators (M2 only)
-  - API client wrappers with USE_MOCKS toggle
-
-When M3 lands, flip USE_MOCKS = False and implement the real `requests` calls.
-Response shapes of every mock match the backend contract in docs/frontend.md.
+Only built-in Streamlit components and pandas/numpy are used downstream.
 """
+from __future__ import annotations
+
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
+from typing import Any
 
 import numpy as np
 import pandas as pd
+import requests
 import streamlit as st
 
 # ═════════════════════════════════════════════════════════════
 # Configuration
 # ═════════════════════════════════════════════════════════════
-API_BASE = os.getenv("API_URL", "http://api:8000")
-
-# M2 kill-switch. Set to False in M3.
-USE_MOCKS = True
-
-RNG = np.random.default_rng(42)
+API_BASE = os.getenv("API_URL", "http://backend:8000").rstrip("/")
+HTTP_TIMEOUT = float(os.getenv("API_TIMEOUT_SECONDS", "10"))
 
 
 # ═════════════════════════════════════════════════════════════
@@ -67,246 +63,279 @@ RFM_FEATURES = [
 ]
 
 
-def format_currency(value):
-    if value is None or pd.isna(value):
+def format_currency(value) -> str:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
         return "—"
     return f"£{value:,.2f}"
 
 
-def format_pct(value):
-    if value is None or pd.isna(value):
+def format_pct(value) -> str:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
         return "—"
     return f"{value * 100:.1f}%"
 
 
 # ═════════════════════════════════════════════════════════════
-# Mock data generators (M2 only — remove in M3)
+# Low-level HTTP helpers
 # ═════════════════════════════════════════════════════════════
-def _mock_simulations(n: int = 4) -> pd.DataFrame:
-    rows = []
-    for i in range(n):
-        started = datetime.now() - timedelta(
-            days=n - i, hours=int(RNG.integers(0, 12))
-        )
-        is_running = i == n - 1
-        completed = None if is_running else started + timedelta(
-            hours=int(RNG.integers(1, 8))
-        )
-        rows.append({
-            "simulation_id": i + 1,
-            "sim_name": f"run_{i+1:03d}",
-            "num_rounds": int(RNG.choice([1000, 2500, 5000])),
-            "num_customers": 500,
-            "alpha": float(RNG.choice([0.1, 0.3, 0.5])),
-            "started_at": started,
-            "completed_at": completed,
-            "status": "running" if is_running else "completed",
-            "cumulative_reward": None if is_running else float(
-                RNG.uniform(2000, 8000)
-            ),
-        })
-    return pd.DataFrame(rows)
+class APIError(RuntimeError):
+    """Raised when the backend returns a non-2xx response or is unreachable."""
+
+    def __init__(self, message: str, status_code: int | None = None):
+        super().__init__(message)
+        self.status_code = status_code
 
 
-def _mock_cumulative_reward(n_rounds: int = 1000) -> pd.DataFrame:
-    rounds = np.arange(1, n_rounds + 1)
-    return pd.DataFrame({
-        "round":     rounds,
-        "linucb":    np.cumsum(RNG.normal(3.5, 2.0, n_rounds)),
-        "heuristic": np.cumsum(RNG.normal(2.5, 2.0, n_rounds)),
-        "random":    np.cumsum(RNG.normal(1.5, 2.0, n_rounds)),
-    })
+def _request(method: str, path: str, **kwargs) -> Any:
+    """Single entry point for every backend call. Raises APIError on failure."""
+    url = f"{API_BASE}{path}"
+    try:
+        resp = requests.request(method, url, timeout=HTTP_TIMEOUT, **kwargs)
+    except requests.RequestException as exc:
+        raise APIError(f"Could not reach backend at {url}: {exc}") from exc
+
+    if not resp.ok:
+        # Try to surface the structured error from the backend
+        try:
+            payload = resp.json()
+            detail = payload.get("detail") or payload.get("message") or payload
+        except ValueError:
+            detail = resp.text or resp.reason
+        raise APIError(f"{method} {path} → {resp.status_code}: {detail}",
+                       status_code=resp.status_code)
+
+    if resp.status_code == 204 or not resp.content:
+        return None
+    return resp.json()
 
 
-def _mock_action_distribution(n_rounds: int = 1000) -> pd.DataFrame:
-    """Exploration narrowing into exploitation."""
-    actions = list(ACTION_LABELS.keys())
-    data = []
-    for r in range(1, n_rounds + 1):
-        phase = min(r / n_rounds, 1.0)
-        start_w = np.ones(5) * 0.20
-        end_w = np.array([0.10, 0.35, 0.15, 0.25, 0.15])  # order matches ACTION_LABELS keys
-        weights = start_w * (1 - phase) + end_w * phase
-        weights /= weights.sum()
-        data.append({"round": r, "action": RNG.choice(actions, p=weights)})
-    return pd.DataFrame(data)
-
-
-def _mock_conversion_by_action() -> pd.DataFrame:
-    return pd.DataFrame([
-        {
-            "action": k,
-            "conversion_rate": float(RNG.uniform(0.05, 0.35)),
-            "n_pulls": int(RNG.integers(100, 500)),
-        }
-        for k in ACTION_LABELS
-    ])
-
-
-def _mock_recent_interactions(n: int = 20) -> pd.DataFrame:
-    actions = list(ACTION_LABELS.keys())
-    rows = []
-    for i in range(n):
-        action = RNG.choice(actions)
-        converted = bool(RNG.random() < 0.2)
-        revenue = float(RNG.normal(65, 15)) if converted else 0.0
-        cost = ACTION_COSTS[action]
-        rows.append({
-            "interaction_id": 10000 + i,
-            "customer_id": int(RNG.integers(1, 500)),
-            "action": action,
-            "converted": converted,
-            "revenue": revenue,
-            "reward": revenue - cost,
-            "decision_at": datetime.now() - timedelta(
-                minutes=int(RNG.integers(1, 180))
-            ),
-        })
-    return pd.DataFrame(rows)
-
-
-def _mock_customers(n: int = 200) -> pd.DataFrame:
-    # Must match CHECK constraint in db/1_schema.sql
-    segments = ["Champion", "Loyal", "At-Risk", "Lost"]
-    genders = ["F", "M"]
-    rows = []
-    for i in range(n):
-        rows.append({
-            "customer_id": i + 1,
-            "segment_label": str(RNG.choice(segments)),
-            "gender": str(RNG.choice(genders)),
-            "recency": float(RNG.exponential(20)),
-            "frequency": float(RNG.poisson(8)),
-            "monetary": float(max(50, RNG.normal(450, 150))),
-            "basket_diversity": float(RNG.uniform(1, 8)),
-            "avg_order_size": float(max(1, RNG.normal(3, 1))),
-            "purchase_regularity": float(RNG.uniform(0, 30)),
-        })
-    return pd.DataFrame(rows)
-
-
-def _mock_theta_matrix() -> pd.DataFrame:
-    return pd.DataFrame(
-        RNG.normal(0, 0.5, (6, 5)),
-        index=RFM_FEATURES,
-        columns=list(ACTION_LABELS.keys()),
-    )
-
-
-def _mock_ucb_breakdown(customer_id: int) -> pd.DataFrame:
-    rows = []
-    for a in ACTION_LABELS:
-        exploit = float(RNG.uniform(-1, 5))
-        explore = float(RNG.uniform(0, 2))
-        rows.append({
-            "action": a,
-            "exploit": exploit,
-            "explore": explore,
-            "ucb_score": exploit + explore,
-            "cost": ACTION_COSTS[a],
-        })
-    return pd.DataFrame(rows).sort_values("ucb_score", ascending=False)
+def _to_datetime(series: pd.Series) -> pd.Series:
+    """Parse ISO-8601 strings into pandas datetimes; pass through if already typed."""
+    return pd.to_datetime(series, errors="coerce", utc=True).dt.tz_localize(None)
 
 
 # ═════════════════════════════════════════════════════════════
-# API client — all HTTP calls go through here
+# Health / status
 # ═════════════════════════════════════════════════════════════
-@st.cache_data(ttl=10)
-def list_simulations():
-    """GET /simulations → DataFrame of all simulation runs."""
-    if USE_MOCKS:
-        return _mock_simulations()
-    # TODO M3:
-    # import requests
-    # return pd.DataFrame(requests.get(f"{API_BASE}/simulations").json())
-    raise NotImplementedError
+def backend_health() -> dict:
+    """GET /health — used by the landing page status banner."""
+    return _request("GET", "/health")
 
 
-def create_simulation(sim_name: str, num_rounds: int, num_customers: int,
+# ═════════════════════════════════════════════════════════════
+# Simulations
+# ═════════════════════════════════════════════════════════════
+@st.cache_data(ttl=10, show_spinner=False)
+def list_simulations() -> pd.DataFrame:
+    """GET /simulations → DataFrame of every run, newest first."""
+    payload = _request("GET", "/simulations")
+    if not payload:
+        return pd.DataFrame(columns=[
+            "simulation_id", "sim_name", "num_rounds", "num_customers",
+            "alpha", "started_at", "completed_at", "status",
+            "cumulative_reward",
+        ])
+    df = pd.DataFrame(payload)
+    if "started_at" in df.columns:
+        df["started_at"] = _to_datetime(df["started_at"])
+    if "completed_at" in df.columns:
+        df["completed_at"] = _to_datetime(df["completed_at"])
+    return df
+
+
+def create_simulation(sim_name: str, num_rounds: float, num_customers: float,
                       alpha: float, notes: str = "") -> dict:
-    """POST /simulations → trigger a new run, returns the created simulation record."""
-    if USE_MOCKS:
-        return {
-            "simulation_id": 999,
-            "status": "queued",
-            "sim_name": sim_name,
-        }
-    raise NotImplementedError
-
-
-@st.cache_data(ttl=30)
-def get_metrics(simulation_id: int) -> dict:
-    """GET /metrics?simulation_id=... → all dashboard aggregates."""
-    if USE_MOCKS:
-        return {
-            "rounds_completed": 847,
-            "cumulative_reward": 3214.55,
-            "avg_reward_per_round": 3.79,
-            "pending_observations": 22,
-            "cumulative_reward_series": _mock_cumulative_reward(),
-            "action_distribution": _mock_action_distribution(),
-            "conversion_by_action": _mock_conversion_by_action(),
-            "recent_interactions": _mock_recent_interactions(),
-        }
-    raise NotImplementedError
-
-
-@st.cache_data(ttl=60)
-def list_customers():
-    """GET /customers → DataFrame with RFM features."""
-    if USE_MOCKS:
-        return _mock_customers(n=200)
-    raise NotImplementedError
-
-
-@st.cache_data(ttl=60)
-def get_customer(customer_id: int) -> dict:
-    """GET /customers/{id} → one customer profile + interactions + latents."""
-    if USE_MOCKS:
-        df = _mock_customers(n=1)
-        return df.iloc[0].to_dict()
-    raise NotImplementedError
-
-
-@st.cache_data(ttl=30)
-def get_model_state(simulation_id: int) -> dict:
-    """GET /model/state?simulation_id=... → θ, n_pulls, alpha."""
-    if USE_MOCKS:
-        conv = _mock_conversion_by_action()
-        return {
-            "theta": _mock_theta_matrix(),
-            "n_pulls": dict(zip(conv["action"], conv["n_pulls"])),
-            "alpha": 0.5,
-        }
-    raise NotImplementedError
-
-
-def predict_for_customer(customer_id: int):
-    """POST /decide?customer_id=...&preview=true → per-action UCB breakdown."""
-    if USE_MOCKS:
-        return _mock_ucb_breakdown(customer_id)
-    raise NotImplementedError
+    """POST /simulations — returns the created simulation record."""
+    body = {
+        "sim_name": sim_name,
+        "num_rounds": float(num_rounds),
+        "num_customers": float(num_customers),
+        "alpha": float(alpha),
+        "notes": notes or None,
+    }
+    return _request("POST", "/simulations", json=body)
 
 
 # ═════════════════════════════════════════════════════════════
-# UI helpers — shared widget builders (instructor-style)
+# Metrics — partial backend support, normalised here
+# ═════════════════════════════════════════════════════════════
+@st.cache_data(ttl=15, show_spinner=False)
+def get_metrics(simulation_id: int) -> dict:
+    """
+    GET /metrics?simulation_id=...
+
+    Backend currently returns the lightweight shape:
+      {simulation_id, total_interactions, conversions,
+       total_revenue, total_cost, total_reward}
+
+    The Interaction/Analytics pages also expect:
+      rounds_completed, cumulative_reward, avg_reward_per_round,
+      pending_observations, cumulative_reward_series (DataFrame),
+      action_distribution (DataFrame), conversion_by_action (DataFrame),
+      recent_interactions (DataFrame).
+
+    This function fills in what it can and returns sentinel `None` /
+    empty DataFrames for fields the backend has not implemented yet.
+    The pages render gracefully around missing pieces.
+    """
+    raw = _request("GET", "/metrics", params={"simulation_id": simulation_id})
+    if raw is None:
+        raw = {}
+
+    total_interactions = int(raw.get("total_interactions", 0) or 0)
+    total_reward = float(raw.get("total_reward", 0.0) or 0.0)
+
+    # Synthesised KPI fields (cheap, safe to compute here)
+    avg_reward = (total_reward / total_interactions) if total_interactions else 0.0
+
+    # Pass through richer fields if/when the backend starts emitting them.
+    cum_series = pd.DataFrame(raw.get("cumulative_reward_series") or [])
+    action_dist = pd.DataFrame(raw.get("action_distribution") or [])
+    conv_by_action = pd.DataFrame(raw.get("conversion_by_action") or [])
+    recent = pd.DataFrame(raw.get("recent_interactions") or [])
+    if not recent.empty and "decision_at" in recent.columns:
+        recent["decision_at"] = _to_datetime(recent["decision_at"])
+
+    return {
+        "simulation_id": raw.get("simulation_id", simulation_id),
+        "status": raw.get("status"),
+        "rounds_completed": raw.get("rounds_completed", total_interactions),
+        "cumulative_reward": raw.get("cumulative_reward", total_reward),
+        "avg_reward_per_round": raw.get("avg_reward_per_round", avg_reward),
+        "pending_observations": raw.get("pending_observations"),
+        "total_revenue": float(raw.get("total_revenue", 0.0) or 0.0),
+        "total_cost": float(raw.get("total_cost", 0.0) or 0.0),
+        "conversions": int(raw.get("conversions", 0) or 0),
+        # Optional richer arrays — empty for now, will populate when backend ships
+        "cumulative_reward_series": cum_series,
+        "action_distribution": action_dist,
+        "conversion_by_action": conv_by_action,
+        "recent_interactions": recent,
+    }
+
+
+# ═════════════════════════════════════════════════════════════
+# Customers
+# ═════════════════════════════════════════════════════════════
+@st.cache_data(ttl=60, show_spinner=False)
+def list_customers() -> pd.DataFrame:
+    """GET /customers → DataFrame with RFM features."""
+    payload = _request("GET", "/customers")
+    df = pd.DataFrame(payload or [])
+    if df.empty:
+        return df
+    # Normalise dtypes for safer filtering downstream
+    for col in RFM_FEATURES:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def get_customer(customer_id: int, debug: bool = False) -> dict:
+    """GET /customers/{id} → profile + interactions (+ optional latents)."""
+    params = {"debug": "true"} if debug else None
+    return _request("GET", f"/customers/{int(customer_id)}", params=params)
+
+
+# ═════════════════════════════════════════════════════════════
+# Model state
+# ═════════════════════════════════════════════════════════════
+@st.cache_data(ttl=15, show_spinner=False)
+def get_model_state(simulation_id: int) -> dict:
+    """
+    GET /model/state?simulation_id=...
+
+    Backend shape:
+      {
+        simulation_id: int,
+        alpha: float,
+        round_number: int,
+        updated_at: datetime | null,
+        n_pulls: {action_name: int, ...},
+        theta: {action_name: {feature_name: float, ...}, ...}
+      }
+
+    Returned shape (for page convenience):
+      {alpha, round_number, updated_at, n_pulls (dict),
+       theta (DataFrame indexed by feature, cols by action)}
+    """
+    raw = _request("GET", "/model/state", params={"simulation_id": simulation_id})
+    n_pulls = dict(raw.get("n_pulls") or {})
+    # Ensure every action shows up even when never pulled
+    for action_name in ACTION_LABELS:
+        n_pulls.setdefault(action_name, 0)
+
+    theta_raw = raw.get("theta") or {}
+    if theta_raw:
+        # Backend shape: theta[feature_name][action_name] -> float
+        # Use orient='index' so outer keys (features) become rows, inner
+        # keys (actions) become columns.
+        theta_df = pd.DataFrame.from_dict(theta_raw, orient="index").reindex(
+            index=RFM_FEATURES
+        )
+    else:
+        theta_df = pd.DataFrame(
+            np.zeros((len(RFM_FEATURES), len(ACTION_LABELS))),
+            index=RFM_FEATURES,
+            columns=list(ACTION_LABELS.keys()),
+        )
+    # Ensure column order matches ACTION_LABELS for stable rendering
+    theta_df = theta_df.reindex(columns=list(ACTION_LABELS.keys()), fill_value=0.0)
+
+    return {
+        "alpha": float(raw.get("alpha", 0.0) or 0.0),
+        "round_number": int(raw.get("round_number", 0) or 0),
+        "updated_at": raw.get("updated_at"),
+        "n_pulls": n_pulls,
+        "theta": theta_df,
+    }
+
+
+def predict_for_customer(simulation_id: int, customer_id: int) -> pd.DataFrame:
+    """POST /decide?preview=true — per-action UCB breakdown for one customer."""
+    payload = _request(
+        "POST",
+        "/decide",
+        params={
+            "simulation_id": int(simulation_id),
+            "customer_id": int(customer_id),
+            "preview": "true",
+        },
+    )
+    df = pd.DataFrame(payload or [])
+    if df.empty:
+        return df
+    # Sort best-action-first (defensive — backend already does this)
+    return df.sort_values("ucb_score", ascending=False).reset_index(drop=True)
+
+
+# ═════════════════════════════════════════════════════════════
+# Shared widgets
 # ═════════════════════════════════════════════════════════════
 def select_simulation_widget(key: str = "sim_select"):
     """
-    Dropdown that picks a simulation. Respects st.session_state
-    for cross-page consistency.
+    Sidebar/page selector that picks a simulation. Persists choice in
+    st.session_state so navigating between pages keeps the same run selected.
     """
-    sims = list_simulations()
+    try:
+        sims = list_simulations()
+    except APIError as exc:
+        st.error(f"Could not load simulations: {exc}")
+        return None, pd.DataFrame()
+
     if sims.empty:
         return None, sims
 
-    default_sim = st.session_state.get(
-        "selected_simulation_id", int(sims["simulation_id"].max())
-    )
+    options = sims["simulation_id"].tolist()
+    default_sim = st.session_state.get("selected_simulation_id", options[0])
+    if default_sim not in options:
+        default_sim = options[0]
+
     sim_id = st.selectbox(
         "Simulation",
-        options=sims["simulation_id"].tolist(),
-        index=sims["simulation_id"].tolist().index(default_sim),
+        options=options,
+        index=options.index(default_sim),
         format_func=lambda x: (
             f"#{x} · {sims.loc[sims.simulation_id == x, 'sim_name'].iloc[0]}"
         ),
@@ -314,3 +343,13 @@ def select_simulation_widget(key: str = "sim_select"):
     )
     st.session_state["selected_simulation_id"] = sim_id
     return sim_id, sims
+
+
+def render_api_error(exc: APIError) -> None:
+    """Friendly error banner for failed backend calls."""
+    if exc.status_code == 404:
+        st.warning(str(exc))
+    elif exc.status_code in (400, 422):
+        st.error(f"Bad request: {exc}")
+    else:
+        st.error(f"Backend error: {exc}")
