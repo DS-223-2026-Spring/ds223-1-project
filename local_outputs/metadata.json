@@ -1,8 +1,0 @@
-{
-  "simulation_id": "synthetic_seed42_cust500_rounds5000",
-  "policy_mode": "random_policy",
-  "n_customers": 500,
-  "n_rounds": 5000,
-  "random_seed": 42,
-  "alpha": 0.5
-}
