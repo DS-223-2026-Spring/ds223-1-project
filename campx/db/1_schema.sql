@@ -104,3 +104,18 @@ CREATE TABLE IF NOT EXISTS model_state (
     alpha          DOUBLE PRECISION NOT NULL DEFAULT 0.5,
     updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS simulation_artifacts (
+    artifact_id     SERIAL PRIMARY KEY,
+    simulation_id   INTEGER NOT NULL
+                    REFERENCES simulations(simulation_id) ON DELETE CASCADE,
+    artifact_name   VARCHAR(150) NOT NULL,
+    artifact_type   VARCHAR(30) NOT NULL DEFAULT 'json',
+    content_type    VARCHAR(100) NOT NULL DEFAULT 'application/json',
+    payload_json    JSONB,
+    payload_text    TEXT,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CHECK (payload_json IS NOT NULL OR payload_text IS NOT NULL),
+    UNIQUE (simulation_id, artifact_name)
+);
