@@ -28,7 +28,11 @@ class SyntheticArtifacts:
     validation: ValidationArtifacts
 
 
-def run_pipeline(config: SyntheticDataConfig) -> SyntheticArtifacts:
+def run_pipeline(
+    config: SyntheticDataConfig,
+    *,
+    export_to_disk: bool = True,
+) -> SyntheticArtifacts:
     """Run the standalone synthetic dataset generation pipeline."""
 
     rng = np.random.default_rng(config.random_seed)
@@ -60,16 +64,17 @@ def run_pipeline(config: SyntheticDataConfig) -> SyntheticArtifacts:
         interactions=interactions,
         config=config,
     )
-    export_artifacts(
-        output_dir=config.output_dir,
-        config=config,
-        customers=customers,
-        customer_latents=customer_latents,
-        actions=actions,
-        interactions=interactions,
-        model_state=model_state,
-        validation=validation,
-    )
+    if export_to_disk:
+        export_artifacts(
+            output_dir=config.output_dir,
+            config=config,
+            customers=customers,
+            customer_latents=customer_latents,
+            actions=actions,
+            interactions=interactions,
+            model_state=model_state,
+            validation=validation,
+        )
 
     return SyntheticArtifacts(
         customers=customers,
