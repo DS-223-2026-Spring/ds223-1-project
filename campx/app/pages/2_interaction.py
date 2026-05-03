@@ -66,13 +66,14 @@ st.caption("LinUCB versus baselines over rounds. Higher = better.")
 cum = metrics["cumulative_reward_series"]
 fig = go.Figure()
 fig.add_scatter(x=cum["round"], y=cum["linucb"],
-                mode="lines", name="LinUCB", line=dict(width=3))
+                mode="lines", name="LinUCB",
+                line=dict(width=2.5, color="#1E293B"))
 fig.add_scatter(x=cum["round"], y=cum["heuristic"],
                 mode="lines", name="Heuristic",
-                line=dict(width=1.5, dash="dash"))
+                line=dict(width=1.5, dash="dash", color="#94A3B8"))
 fig.add_scatter(x=cum["round"], y=cum["random"],
                 mode="lines", name="Random",
-                line=dict(width=1.5, dash="dot"))
+                line=dict(width=1.5, dash="dot", color="#CBD5E1"))
 fig.update_layout(
     xaxis_title="Round",
     yaxis_title="Cumulative reward (£)",
@@ -80,6 +81,9 @@ fig.update_layout(
     hovermode="x unified",
     legend=dict(orientation="h", yanchor="bottom", y=1.02),
     margin=dict(t=20, b=20),
+    plot_bgcolor="white",
+    yaxis=dict(showgrid=False),
+    xaxis=dict(showgrid=False),
 )
 st.plotly_chart(fig, width='stretch')
 

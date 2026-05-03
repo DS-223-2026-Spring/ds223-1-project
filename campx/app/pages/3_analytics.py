@@ -74,12 +74,17 @@ with left:
     counts.columns = ["action", "count"]
     counts["label"] = counts["action"].map(bu.ACTION_LABELS)
     fig_d = px.bar(
-        counts, x="label", y="count", color="action",
-        color_discrete_map=bu.ACTION_COLORS,
+        counts, x="label", y="count",
         labels={"label": "Action", "count": "Times chosen"},
     )
-    fig_d.update_layout(showlegend=False, height=380,
-                        margin=dict(t=20, b=20))
+    fig_d.update_traces(marker_color="#6495ED")  # single muted slate
+    fig_d.update_layout(
+        showlegend=False, height=380,
+        margin=dict(t=20, b=20),
+        plot_bgcolor="white",
+        yaxis=dict(showgrid=False),
+        xaxis=dict(showgrid=False),
+    )
     st.plotly_chart(fig_d, width='stretch')
     st.caption("M3: upgrade to stacked-area over time.")
 
@@ -87,14 +92,17 @@ with right:
     st.subheader("Conversion rate by action")
     st.caption("Did the action actually win the customer?")
     fig_c = px.bar(
-        conv, x="label", y="conversion_rate", color="action",
-        color_discrete_map=bu.ACTION_COLORS,
+        conv, x="label", y="conversion_rate",
         labels={"label": "Action", "conversion_rate": "Conversion rate"},
     )
+    fig_c.update_traces(marker_color="#6495ED")
     fig_c.update_layout(
         showlegend=False, height=380,
         yaxis_tickformat=".0%",
         margin=dict(t=20, b=20),
+        plot_bgcolor="white",
+        yaxis=dict(showgrid=False),
+        xaxis=dict(showgrid=False),
     )
     st.plotly_chart(fig_c, width='stretch')
 
@@ -119,16 +127,14 @@ finals = pd.DataFrame({
 })
 fig_f = px.bar(
     finals, x="Policy", y="Final cumulative reward",
-    color="Policy",
-    color_discrete_map={
-        "LinUCB": "#10B981",
-        "Heuristic": "#F59E0B",
-        "Random": "#6B7280",
-    },
 )
+fig_f.update_traces(marker_color="#6495ED")
 fig_f.update_layout(
     showlegend=False, height=320, yaxis_title="£",
     margin=dict(t=20, b=20),
+    plot_bgcolor="white",
+    yaxis=dict(showgrid=False),
+    xaxis=dict(showgrid=False),
 )
 st.plotly_chart(fig_f, width='stretch')
 

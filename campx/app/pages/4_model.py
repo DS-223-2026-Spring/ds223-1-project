@@ -78,12 +78,15 @@ pulls_df = pd.DataFrame([
     for k, v in state["n_pulls"].items()
 ])
 fig_p = px.bar(
-    pulls_df, x="label", y="n_pulls", color="action",
-    color_discrete_map=bu.ACTION_COLORS,
+    pulls_df, x="label", y="n_pulls",
     labels={"label": "Action", "n_pulls": "Times chosen"},
 )
+fig_p.update_traces(marker_color="#6495ED")  # single muted slate
 fig_p.update_layout(
     showlegend=False, height=350, margin=dict(t=20, b=20),
+    plot_bgcolor="white",
+    yaxis=dict(showgrid=False),
+    xaxis=dict(showgrid=False),
 )
 st.plotly_chart(fig_p, width='stretch')
 
