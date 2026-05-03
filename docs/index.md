@@ -1,86 +1,57 @@
-# CampX — Campaign Optimization Engine
+# DS223 Group Project
 
-**DS 223 · Marketing Analytics · Group 1 · Spring 2026 · AUA**
+## Product
 
-A contextual bandit system (LinUCB) that selects the optimal promotional action
-for each fashion retail customer — learning which offer maximises net profit for
-which customer profile, updating automatically after every interaction.
+CampX is a contextual bandit system for marketing decision-making in fashion retail.
+The product chooses one of five promotional actions for each customer and updates
+its decision logic from observed outcomes.
 
----
+## Stack
 
-## The problem
+| Layer | Technology |
+|------|------------|
+| Database | PostgreSQL |
+| Frontend | Streamlit |
+| Backend | FastAPI |
+| Documentation | MkDocs |
 
-Fashion retailers send the same promotion to every customer. Champions who buy
-regardless get a 10% discount they didn't need. Lost customers get free shipping
-on a product they don't want. Budget is wasted. Margin is destroyed. Nothing learns.
+## Problem
 
-## The solution
+Sending the same promotion to every customer wastes budget and hurts margin.
+Different customer profiles respond to different actions, so the system needs to
+learn which action is best for each context.
 
-Match the right promotional action to the right customer at the right moment —
-and improve automatically as interactions accumulate. No human rewrites rules.
-No retraining cycles. The model updates itself after every single decision.
+## Solution
 
-## Domain
+The project uses LinUCB to choose among five actions:
 
-Online fashion retail — men and women, mid-market price range (avg order £65).
+- no action
+- 10% discount
+- free shipping
+- product recommendation
+- bundle offer
 
-| Action | Cost to brand | Works on |
-|--------|--------------|----------|
-| No action | £0.00 | Champions — buy regardless |
-| 10% discount | £6.50 | Price-sensitive, lapsed customers |
-| Free shipping | £4.99 | Moderate-basket planners |
-| Product recommendation | £0.30 | Loyal, engaged browsers |
-| Bundle offer | £9.00 | Impulse buyers with basket diversity |
-
----
-
-## Data strategy
-
-Fully simulated — no external dataset. Three latent traits per customer
-(price sensitivity, brand loyalty, impulse tendency) are drawn once at
-generation time and drive both observable RFM features and action-specific
-conversion probability. LinUCB observes only RFM — never the latents.
-This is what makes the learning problem genuinely non-trivial.
-
----
-
-## Team
-
-| Role | Member | Branch |
-|------|--------|--------|
-| PM | Anna Asatryan | `pm` |
-| DB Developer | Hayk Alekyan | `db` |
-| Backend | Victoria Makaryan | `backend` |
-| Frontend | Armine Babajanyan | `frontend` |
-| Data Scientist | Davit Badalyan | `ds` |
-| Orchestration | *(shared)* | `orchestration` |
-
----
+The model observes customer RFM-style features and updates after interactions.
 
 ## Quick start
 
-
-1. **Launch services:**
 ```bash
 docker compose up --build
 ```
 
-
 | Service | URL |
 |---------|-----|
-| Streamlit dashboard | http://localhost:8501 |
-| FastAPI docs | http://localhost:8000/docs |
-| pgAdmin | http://localhost:5050 |
-| Prefect UI | http://localhost:4200 |
+| Streamlit dashboard | `http://localhost:8501` |
+| FastAPI docs | `http://localhost:8000/docs` |
+| pgAdmin | `http://localhost:5050` |
 
----
+## Team
 
-## Milestones
-
-| Milestone | Due | Focus |
-|-----------|-----|-------|
-| M1 | Apr 12 | Problem definition, roles, roadmap, prototype |
-| M2 | Apr 21 | DB schema, customer generation, LinUCB |
-| M3 | May 1 | API, Streamlit, Prefect integration |
-| M4 | May 8 | Testing, documentation, polish |
-| Demo | May 14 | Live demonstration |
+| Role | Branch |
+|------|--------|
+| PM | `pm` |
+| Database | `db` |
+| Backend | `backend` |
+| Frontend | `frontend` |
+| Data Science | `ds` |
+| Orchestration | `orch` |

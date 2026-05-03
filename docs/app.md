@@ -1,33 +1,33 @@
-# Frontend UI — Streamlit
-
-**Owner:** Armine Babajanyan · Branch: `frontend`
-
----
+# Frontend | Streamlit
 
 ## Overview
 
-Interactive dashboard built with Streamlit, consuming the FastAPI backend.
+The frontend is a Streamlit app for simulation launch, interaction monitoring,
+analytics, and model inspection.
 
-**URL:** `http://localhost:8501`
+App URL:
 
----
-
-## Planned pages
-
-| Page | Description |
-|------|-------------|
-| Home / Overview | Project summary, key metrics |
-| Customer Explorer | Browse customer profiles and RFM features |
-| Simulation Runner | Trigger and monitor simulation runs |
-| Analytics Dashboard | Cumulative reward, action distribution, conversion rates |
-| Model Inspector | View LinUCB θ vectors and UCB scores per action |
-
----
-
-## Setup
-
-```bash
-docker-compose up app
+```text
+http://localhost:8501
 ```
 
-*(Full implementation — M3)*
+## Main pages
+
+| Page | Purpose |
+|------|---------|
+| Home | Project overview and navigation |
+| Create Simulation | Launch and review simulation runs |
+| Interaction | Watch reward and recent decisions |
+| Analytics | Review distributions and policy results |
+| Model | Inspect learned weights and action scores |
+
+## Frontend reference
+
+### `bandit_utils.py`
+
+::: campx.app.bandit_utils
+
+## Notes
+
+- The current UI structure is in place.
+- The main remaining frontend work is full live API integration and removal of mock-only behavior.

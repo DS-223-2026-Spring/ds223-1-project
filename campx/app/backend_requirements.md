@@ -12,9 +12,9 @@ If there is ever a conflict between this document and the frontend code, this do
 
 ## How the frontend talks to the backend
 
-The frontend is a Streamlit app running in the `front` container. The backend is a FastAPI app running in the `api` container. They communicate over HTTP inside the Docker network.
+The frontend is a Streamlit app running in the `front` container. The backend is a FastAPI app running in the `backend` container. They communicate over HTTP inside the Docker network.
 
-- Base URL from inside Docker: `http://api:8000`
+- Base URL from inside Docker: `http://backend:8000`
 - Base URL from your host machine (for testing in the browser): `http://localhost:8000`
 
 The frontend reads the base URL from an environment variable called `API_URL`.
@@ -212,6 +212,8 @@ If anything fails validation, return 422 with `error: "validation_error"`. If th
 1. Insert a row into `simulations` with `completed_at = NULL` and `started_at = now()`.
 2. Trigger the Prefect `decision_loop_flow` for the new `simulation_id`, asynchronously.
 3. Return 201 immediately, without waiting for the simulation to finish.
+
+**Current implementation note:** the backend route now exists as `POST /simulations` and enforces the validation rules above, but it currently creates the simulation record only. Orchestration-triggered execution is still a follow-up integration step.
 
 
 **Tables touched:** `simulations`.
@@ -430,7 +432,9 @@ Reminder: per `db/1_schema.sql`, `segment_label` is always one of `"Champion"`, 
 recency, frequency, monetary, basket_diversity, avg_order_size, purchase_regularity
 ```
 
-**The theta_vector bytea column:** this is stored as raw numpy bytes. To deserialize, do:
+**Current implementation note:** the backend now serves this route, but the current implementation reconstructs model state from observed interactions in the database and the stored action metadata. It does not rely only on reading a fully prebuilt DS-side snapshot.
+
+**The theta_vector bytea column:** when persisted in `model_state`, it is stored as raw numpy bytes. To deserialize, do:
 
 ```python
 import numpy as np
@@ -440,7 +444,7 @@ theta = np.frombuffer(row["theta_vector"], dtype="<f8")
 
 If the DS team is using a different dtype or byte order, this bit needs to change. Worth confirming with Davit before you wire this up.
 
-**Tables touched:** `model_state`, `simulations`, `actions`.
+**Tables touched:** `simulations`, `customers`, `actions`, `interactions`, and `model_state` for persisted snapshots.
 
 ---
 
@@ -452,7 +456,7 @@ If the DS team is using a different dtype or byte order, this bit needs to chang
 
 **Request:** `POST /decide?customer_id=42&simulation_id=3&preview=true`
 
-**Response:** An array of 5 objects, sorted by `ucb_score` descending (best action first):
+**Response in preview mode (`preview=true`):** an array of 5 objects, sorted by `ucb_score` descending (best action first):
 
 ```json
 [
@@ -474,14 +478,28 @@ If the DS team is using a different dtype or byte order, this bit needs to chang
 **Preview vs. production mode:**
 
 - `preview=true`: just compute and return. Don't modify any table. Used on the Model page.
-- `preview=false` (the default): compute, pick the highest-scoring action, insert a row into `interactions` with `decision_at = now()` and `observed_at = NULL`, then return the same array plus an `interaction_id` field with the newly-created ID.
+- `preview=false` (the default): compute, pick the highest-scoring action, insert a row into `interactions` with `decision_at = now()` and `observed_at = NULL`, then return:
+
+```json
+{
+  "interaction_id": 10001,
+  "recommended_action": "discount_10",
+  "scores": [
+    { "action": "discount_10", "exploit": 2.1, "explore": 0.9, "ucb_score": 3.0, "cost": 6.50 }
+  ]
+}
+```
+
+This is the shape used by the current backend implementation.
+
+**Current implementation note:** the backend now supports both preview and live behavior. The current scoring path reconstructs LinUCB-style state from observed interactions already stored in the database.
 
 **Tables touched:**
 
 - `customers` (to read the context vector)
-- `model_state` (to read θ and A for each action)
 - `actions` (for costs)
-- `interactions` (INSERT only in non-preview mode)
+- `interactions` (to reconstruct learned state and to INSERT in non-preview mode)
+- `model_state` (persisted via `/feedback`, not required for preview reads in the current implementation)
 
 ---
 
@@ -563,6 +581,5 @@ Quick reference — the columns each endpoint actually reads:
 | `customers` | `customer_id`, `gender`, `segment_label`, all 6 RFM columns | /customers, /customers/{id} |
 | `customer_latents` | `z_price_sensitivity`, `z_brand_loyalty`, `z_impulse_tendency` | /customers/{id}?debug=true only |
 | `actions` | `action_id`, `action_name`, `action_cost` | /metrics, /model/state, /decide |
-| `interactions` | `interaction_id`, `customer_id`, `action_id`, `simulation_id`, `round_number`, `converted`, `revenue`, `cost`, `reward`, `decision_at`, `observed_at` | /metrics, /customers/{id} |
-| `model_state` | `simulation_id`, `action_id`, `theta_vector`, `n_pulls`, `alpha`, `updated_at`, `round_number` | /model/state, /decide |
-
+| `interactions` | `interaction_id`, `customer_id`, `action_id`, `simulation_id`, `round_number`, `context_vector`, `converted`, `revenue`, `cost`, `reward`, `decision_at`, `observed_at` | /metrics, /customers/{id}, /model/state, /decide |
+| `model_state` | `simulation_id`, `action_id`, `theta_vector`, `n_pulls`, `alpha`, `updated_at`, `round_number` | persisted by /feedback; available for model-state storage and later reuse |

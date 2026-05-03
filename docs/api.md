@@ -1,37 +1,32 @@
-# Backend API — FastAPI
-
-**Owner:** Victoria Makaryan · Branch: `backend`
-
----
+# Backend | FastAPI
 
 ## Overview
 
-RESTful API built with FastAPI, serving the LinUCB model and exposing CRUD operations on the database.
+The backend is a FastAPI service that exposes the project API, database-backed
+simulation endpoints, and model inspection routes.
 
-**Base URL:** `http://localhost:8000`  
-**Interactive docs:** `http://localhost:8000/docs`
+Base URL:
 
----
-
-## Planned endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/customers` | List all customers |
-| `POST` | `/customers` | Add a new customer |
-| `GET` | `/predict/{customer_id}` | Get best action for a customer |
-| `POST` | `/interact` | Log an interaction and update model |
-| `GET` | `/actions` | List all available actions |
-| `GET` | `/simulations` | List simulation runs |
-| `POST` | `/simulations` | Create a new simulation record |
-| `GET` | `/model/state` | Inspect current LinUCB matrices |
-
----
-
-## Setup
-
-```bash
-docker-compose up api
+```text
+http://localhost:8000
 ```
 
-*(Full implementation — M3)*
+Swagger:
+
+```text
+http://localhost:8000/docs
+```
+
+## API Reference
+
+### `main.py`
+
+::: campx.api.main
+
+### `schemas.py`
+
+::: campx.api.schemas
+
+### `crud.py`
+
+::: campx.api.crud

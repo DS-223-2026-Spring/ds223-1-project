@@ -1,20 +1,22 @@
-site_name: Campaign Optimization Engine
-site_description: LinUCB contextual bandit for promotional action selection — DS223 Group 1
+site_name: DS223 Group Project
+site_description: CampX contextual bandit system for promotional action selection
 site_author: Group 1, AUA Spring 2026
 
 nav:
-  - Home: index.md
-  - Demo: demo.md
-  - Governance: governance.md
-  - MkDocs Setup: mkdocs_setup.md
-  - Services:
-      - Database: database.md
+  - Product: index.md
+  - Docker: docker.md
+  - Git: git.md
+  - Database | PostgreSQL: database.md
+  - Data Science | Modeling: modeling.md
+  - Frontend | Streamlit: app.md
+  - Backend | FastAPI: api.md
+  - Project Notes:
+      - Demo: demo.md
+      - Governance: governance.md
+      - MkDocs Setup Notes: mkdocs_setup.md
       - ETL: etl.md
-      - Data Science & Modeling: modeling.md
       - DS Feature & Reward Spec: ds_data_spec.md
-      - API: api.md
-      - APP: app.md
-  - PM Review: pm_endpoint_review.md
+      - PM Review: pm_endpoint_review.md
 
 theme:
   name: material
