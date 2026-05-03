@@ -22,3 +22,6 @@ CREATE INDEX IF NOT EXISTS idx_model_state_sim_action
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_model_state_unique
     ON model_state(simulation_id, action_id, round_number);
+
+CREATE INDEX IF NOT EXISTS idx_simulation_artifacts_simulation
+    ON simulation_artifacts(simulation_id);

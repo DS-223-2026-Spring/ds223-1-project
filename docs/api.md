@@ -3,7 +3,7 @@
 ## Overview
 
 The backend is a FastAPI service that exposes the project API, database-backed
-simulation endpoints, and model inspection routes.
+simulation endpoints, DS artifact import routes, and model inspection routes.
 
 Base URL:
 
@@ -16,6 +16,10 @@ Swagger:
 ```text
 http://localhost:8000/docs
 ```
+
+DS generated data can be imported with `POST /ds/artifacts` and retrieved with
+`GET /ds/artifacts/{simulation_id}` or
+`GET /ds/artifacts/{simulation_id}/{artifact_name}`.
 
 ## API Reference
 

@@ -16,9 +16,22 @@ try:
         create_simulation,
         get_customer_by_id,
         get_customer_latents,
+        get_simulation_artifact as db_get_simulation_artifact,
+        list_simulation_artifacts as db_list_simulation_artifacts,
+        log_interaction as db_log_interaction,
+        observe_outcome as db_observe_outcome,
+        upsert_action as db_upsert_action,
+        upsert_customer as db_upsert_customer,
         upsert_model_state,
+        upsert_simulation_artifact as db_upsert_simulation_artifact,
     )
-    from .schemas import CustomerCreate, CustomerUpdate, FeedbackRequest, SimulationCreate
+    from .schemas import (
+        CustomerCreate,
+        CustomerUpdate,
+        DSArtifactBundleImportRequest,
+        FeedbackRequest,
+        SimulationCreate,
+    )
 except ImportError:
     from SQLHandler import SQLHandler
     from db_interactions import (
@@ -26,9 +39,22 @@ except ImportError:
         create_simulation,
         get_customer_by_id,
         get_customer_latents,
+        get_simulation_artifact as db_get_simulation_artifact,
+        list_simulation_artifacts as db_list_simulation_artifacts,
+        log_interaction as db_log_interaction,
+        observe_outcome as db_observe_outcome,
+        upsert_action as db_upsert_action,
+        upsert_customer as db_upsert_customer,
         upsert_model_state,
+        upsert_simulation_artifact as db_upsert_simulation_artifact,
     )
-    from schemas import CustomerCreate, CustomerUpdate, FeedbackRequest, SimulationCreate
+    from schemas import (
+        CustomerCreate,
+        CustomerUpdate,
+        DSArtifactBundleImportRequest,
+        FeedbackRequest,
+        SimulationCreate,
+    )
 
 
 MODEL_FEATURE_COLUMNS = (
@@ -39,6 +65,14 @@ MODEL_FEATURE_COLUMNS = (
     "avg_order_size",
     "purchase_regularity",
 )
+
+DEFAULT_ACTION_TARGET_LATENTS = {
+    0: "brand_loyalty",
+    1: "price_sensitivity",
+    2: "price_sensitivity+planning",
+    3: "brand_loyalty+impulse",
+    4: "impulse_tendency",
+}
 
 
 class ConflictError(Exception):
@@ -377,6 +411,274 @@ def complete_simulation_record(db: SQLHandler, simulation_id: int) -> dict[str, 
         return None
     complete_simulation(db, simulation_id)
     return _get_simulation_record(db, simulation_id)
+
+
+def _row_value(
+    row: dict[str, Any],
+    *names: str,
+    default: Any = None,
+) -> Any:
+    for name in names:
+        value = row.get(name)
+        if value is not None and not _is_missing_scalar(value):
+            return value
+    return default
+
+
+def _is_missing_scalar(value: Any) -> bool:
+    return isinstance(value, float) and np.isnan(value)
+
+
+def _json_ready(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {str(key): _json_ready(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_json_ready(item) for item in value]
+    if isinstance(value, tuple):
+        return [_json_ready(item) for item in value]
+    if isinstance(value, np.ndarray):
+        return _json_ready(value.tolist())
+    if isinstance(value, np.generic):
+        return _json_ready(value.item())
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if _is_missing_scalar(value):
+        return None
+    return value
+
+
+def _records_json_ready(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [_json_ready(row) for row in rows]
+
+
+def _payload_to_float_array(payload: Any) -> np.ndarray:
+    if payload is None:
+        raise ValueError("Missing vector or matrix payload")
+    if isinstance(payload, str):
+        payload = json.loads(payload)
+    return np.asarray(payload, dtype=np.float64)
+
+
+def _payload_to_bytes(payload: Any) -> bytes:
+    return _payload_to_float_array(payload).tobytes()
+
+
+def _context_vector_from_payload(
+    interaction: dict[str, Any],
+    customer: dict[str, Any],
+) -> bytes:
+    context_payload = _row_value(
+        interaction,
+        "context_vector",
+        "context",
+        "raw_context",
+    )
+    if context_payload is not None:
+        return _payload_to_bytes(context_payload)
+
+    return _array_to_bytes(
+        np.asarray(
+            [float(customer[column]) for column in MODEL_FEATURE_COLUMNS],
+            dtype=np.float64,
+        )
+    )
+
+
+def _store_records_artifact(
+    db: SQLHandler,
+    simulation_id: int,
+    artifact_name: str,
+    rows: list[dict[str, Any]],
+) -> int:
+    if not rows:
+        return 0
+    db_upsert_simulation_artifact(
+        db,
+        simulation_id=simulation_id,
+        artifact_name=artifact_name,
+        artifact_type="records",
+        content_type="application/json",
+        payload_json=_records_json_ready(rows),
+    )
+    return 1
+
+
+def import_ds_artifact_bundle(
+    db: SQLHandler,
+    payload: DSArtifactBundleImportRequest,
+) -> dict[str, Any]:
+    """Persist generated DS data-file payloads into relational and artifact tables."""
+
+    data = _dump_model(payload)
+    simulation_data = data["simulation"]
+    sim_name = simulation_data["sim_name"]
+    if _simulation_name_exists(db, sim_name):
+        raise ConflictError(f"Simulation name '{sim_name}' already exists.")
+
+    simulation_id = create_simulation(db, **simulation_data)
+    customer_id_map: dict[int, int] = {}
+    customers = data.get("customers") or []
+    latents = data.get("customer_latents") or []
+    actions = data.get("actions") or []
+    interactions = data.get("interactions") or []
+    model_state = data.get("model_state") or []
+    artifacts = data.get("artifacts") or []
+
+    latents_by_customer = {
+        int(row["customer_id"]): row
+        for row in latents
+        if row.get("customer_id") is not None
+    }
+    customer_rows_by_source_id: dict[int, dict[str, Any]] = {}
+
+    for row in customers:
+        source_customer_id = int(row["customer_id"])
+        latent_row = latents_by_customer.get(source_customer_id, {})
+        db_customer_id = db_upsert_customer(
+            db,
+            customer_id=None,
+            gender=_row_value(row, "gender", default="F"),
+            segment_label=_row_value(row, "segment_label", "segment"),
+            recency=_row_value(row, "recency"),
+            frequency=_row_value(row, "frequency"),
+            monetary=_row_value(row, "monetary"),
+            basket_diversity=_row_value(row, "basket_diversity"),
+            avg_order_size=_row_value(row, "avg_order_size"),
+            purchase_regularity=_row_value(row, "purchase_regularity"),
+            z_price_sensitivity=_row_value(latent_row, "z_price_sensitivity"),
+            z_brand_loyalty=_row_value(latent_row, "z_brand_loyalty"),
+            z_impulse_tendency=_row_value(latent_row, "z_impulse_tendency"),
+        )
+        customer_id_map[source_customer_id] = int(db_customer_id)
+        customer_rows_by_source_id[source_customer_id] = row
+
+    action_costs: dict[int, float] = {}
+    for row in actions:
+        action_id = int(row["action_id"])
+        action_cost = float(_row_value(row, "action_cost", "base_cost", default=0.0))
+        action_costs[action_id] = action_cost
+        db_upsert_action(
+            db,
+            action_id=action_id,
+            action_name=_row_value(row, "action_name", default=f"action_{action_id}"),
+            action_cost=action_cost,
+            target_latent=_row_value(
+                row,
+                "target_latent",
+                default=DEFAULT_ACTION_TARGET_LATENTS.get(action_id, "unknown"),
+            ),
+            description=_row_value(row, "description", default="Generated DS action"),
+        )
+
+    interactions_inserted = 0
+    for row in interactions:
+        source_customer_id = int(row["customer_id"])
+        db_customer_id = customer_id_map.get(source_customer_id)
+        customer_row = customer_rows_by_source_id.get(source_customer_id)
+        if db_customer_id is None or customer_row is None:
+            raise ValueError(
+                f"Interaction references unknown generated customer {source_customer_id}"
+            )
+        action_id = int(row["action_id"])
+        interaction_id = db_log_interaction(
+            db,
+            simulation_id=simulation_id,
+            customer_id=db_customer_id,
+            action_id=action_id,
+            round_number=int(row["round_number"]),
+            context_vector_bytes=_context_vector_from_payload(row, customer_row),
+            ucb_score=float(_row_value(row, "ucb_score", default=0.0)),
+            cost=float(_row_value(row, "cost", default=action_costs.get(action_id, 0.0))),
+        )
+        interactions_inserted += 1
+        if row.get("converted") is not None:
+            db_observe_outcome(
+                db,
+                interaction_id=interaction_id,
+                converted=bool(row["converted"]),
+                revenue=float(_row_value(row, "revenue", default=0.0)),
+                converted_at=_row_value(row, "converted_at"),
+                observed_at=_row_value(row, "observed_at"),
+            )
+
+    for row in model_state:
+        upsert_model_state(
+            db,
+            simulation_id=simulation_id,
+            action_id=int(row["action_id"]),
+            round_number=int(_row_value(row, "round_number", default=0)),
+            n_pulls=int(_row_value(row, "n_pulls", default=0)),
+            theta_bytes=_payload_to_bytes(_row_value(row, "theta_json", "theta_vector", "theta")),
+            a_bytes=_payload_to_bytes(_row_value(row, "a_json", "a_matrix")),
+            b_bytes=_payload_to_bytes(_row_value(row, "b_json", "b_vector")),
+            alpha=float(_row_value(row, "alpha", default=simulation_data["alpha"])),
+        )
+
+    artifacts_stored = 0
+    artifacts_stored += _store_records_artifact(
+        db, simulation_id, "customers.csv", customers
+    )
+    artifacts_stored += _store_records_artifact(
+        db, simulation_id, "customer_latents.csv", latents
+    )
+    artifacts_stored += _store_records_artifact(
+        db, simulation_id, "actions.csv", actions
+    )
+    artifacts_stored += _store_records_artifact(
+        db, simulation_id, "interactions.csv", interactions
+    )
+    artifacts_stored += _store_records_artifact(
+        db, simulation_id, "model_state.csv", model_state
+    )
+
+    for artifact in artifacts:
+        if artifact.get("payload_json") is None and artifact.get("payload_text") is None:
+            raise ValueError(
+                f"Artifact {artifact.get('artifact_name', '<unknown>')} has no payload."
+            )
+        db_upsert_simulation_artifact(
+            db,
+            simulation_id=simulation_id,
+            artifact_name=artifact["artifact_name"],
+            artifact_type=artifact.get("artifact_type") or "json",
+            content_type=artifact.get("content_type") or "application/json",
+            payload_json=_json_ready(artifact.get("payload_json")),
+            payload_text=artifact.get("payload_text"),
+        )
+        artifacts_stored += 1
+
+    completed = bool(data.get("complete_simulation", True))
+    if completed:
+        complete_simulation(db, simulation_id)
+
+    return {
+        "simulation_id": simulation_id,
+        "sim_name": sim_name,
+        "customers_inserted": len(customers),
+        "actions_upserted": len(actions),
+        "interactions_inserted": interactions_inserted,
+        "model_state_rows_upserted": len(model_state),
+        "artifacts_stored": artifacts_stored,
+        "completed": completed,
+    }
+
+
+def list_ds_artifacts(db: SQLHandler, simulation_id: int) -> list[dict[str, Any]] | None:
+    if not _simulation_exists(db, simulation_id):
+        return None
+    df = db_list_simulation_artifacts(db, simulation_id)
+    return [_serialize_record(row) for row in df.to_dict(orient="records")]
+
+
+def get_ds_artifact(
+    db: SQLHandler,
+    simulation_id: int,
+    artifact_name: str,
+) -> dict[str, Any] | None:
+    if not _simulation_exists(db, simulation_id):
+        return None
+    artifact = db_get_simulation_artifact(db, simulation_id, artifact_name)
+    return _serialize_record(artifact)
 
 
 def _get_feature_scales(db: SQLHandler, simulation_id: int) -> np.ndarray:

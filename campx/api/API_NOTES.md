@@ -8,6 +8,7 @@ This backend package currently provides:
 - backend-local DB helper modules in `campx/api/`
 - DB-backed CRUD for `customers`
 - DB-backed simulation listing and creation
+- DB-backed DS artifact import and retrieval
 - `GET /model/state` for LinUCB inspection
 - `POST /decide` in preview and live modes
 - `POST /feedback` with reward calculation and model-state persistence
@@ -50,6 +51,12 @@ Metrics endpoint:
 
 - `GET /metrics?simulation_id=...`
 
+DS artifact endpoints:
+
+- `POST /ds/artifacts`
+- `GET /ds/artifacts/{simulation_id}`
+- `GET /ds/artifacts/{simulation_id}/{artifact_name}`
+
 ## Response-shape conventions currently implemented
 
 - `GET /customers` returns a raw array, not an `{items, count}` envelope
@@ -60,6 +67,7 @@ Metrics endpoint:
   - an array of per-action scores in preview mode, or
   - `{interaction_id, recommended_action, scores}` in live mode
 - `POST /feedback` returns `{interaction_id, reward, observed_at, model_updated}`
+- `POST /ds/artifacts` returns counts for imported customers, actions, interactions, model-state rows, and stored generated artifacts.
 
 ## DB integration choices
 
@@ -68,6 +76,7 @@ Metrics endpoint:
 - Local scripts load `campx/.env`, and host-side DB access remaps compose-internal `db:5432` to `localhost:5434` when needed.
 - `view_simulation_summary` is the main read source for simulation listing.
 - `sp_upsert_customer`, `sp_log_interaction`, and `sp_submit_feedback` are the main write paths used by the API.
+- `simulation_artifacts` stores generated CSV-style DS outputs as JSON/text payloads keyed by `simulation_id`.
 
 ## Model and interaction assumptions
 
