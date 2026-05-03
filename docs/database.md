@@ -6,7 +6,7 @@
 
 ## Schema overview
 
-Eight tables in two layers.
+Nine tables in three layers.
 
 **Simulation layer** — generated once before bandit runs:
 
@@ -26,17 +26,25 @@ Eight tables in two layers.
 | `interactions` | Every (customer, action, reward) decision — core training log |
 | `model_state` | LinUCB A, b, θ per action — persists across container restarts |
 
+**Artifact layer** — stores generated file payloads without relying on local CSVs:
+
+| Table | Purpose |
+|-------|---------|
+| `simulation_artifacts` | JSON/text payloads for generated DS files keyed by simulation |
+
 ---
 
 ## Schema files
 
-The schema is split across three files, run in order by PostgreSQL on first container start:
+The schema is split across five files, run in order by PostgreSQL on first container start:
 
 | File | Contents |
 |------|---------|
 | `db/1_schema.sql` | All table definitions |
 | `db/2_indexes.sql` | Performance indexes |
 | `db/3_initial_insert.sql` | Seed data — actions, products, bundles |
+| `db/4_views.sql` | Read views for customer latents and simulation summaries |
+| `db/5_stored_procedures.sql` | Write procedures for customer upsert, interaction logging, and feedback |
 
 ---
 
@@ -87,13 +95,13 @@ pgAdmin does not auto-connect. After running the command above:
 Navigate to:
 `Servers → campaign → Databases → campaign → Schemas → public → Tables`
 
-You should see 8 tables. `actions` has 5 rows, `products` has 12 rows, `bundles` has 6 rows.
+You should see 9 tables. `actions` has 5 rows, `products` has 12 rows, `bundles` has 6 rows.
 
 ---
 
 ## CRUD helpers
 
-All DB access goes through `db/db_interactions.py`. No raw SQL elsewhere.
+All DB access goes through `campx/api/db_interactions.py`. No raw SQL elsewhere.
 Every function takes a `SQLHandler` instance as its first argument.
 
 ```python
@@ -140,4 +148,13 @@ dbi.upsert_model_state(db, simulation_id, action_id, round_number,
 ```
 dbi.create_simulation(db, sim_name, num_rounds, num_customers, alpha)
 dbi.complete_simulation(db, simulation_id)
+```
+
+# DS artifacts
+```
+dbi.upsert_simulation_artifact(db, simulation_id, artifact_name,
+                               artifact_type, content_type,
+                               payload_json=rows_or_object)
+dbi.list_simulation_artifacts(db, simulation_id)
+dbi.get_simulation_artifact(db, simulation_id, artifact_name)
 ```

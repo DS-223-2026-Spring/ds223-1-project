@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -207,6 +207,56 @@ class ModelStateResponse(BaseModel):
     updated_at: datetime | None = None
     n_pulls: dict[str, int]
     theta: dict[str, dict[str, float]]
+
+
+class DSArtifactPayload(BaseModel):
+    artifact_name: str = Field(..., min_length=1, max_length=150)
+    artifact_type: str = Field(default="json", max_length=30)
+    content_type: str = Field(default="application/json", max_length=100)
+    payload_json: Any | None = None
+    payload_text: str | None = None
+
+
+class DSArtifactBundleImportRequest(BaseModel):
+    simulation: SimulationCreate
+    customers: list[dict[str, Any]] = Field(default_factory=list)
+    customer_latents: list[dict[str, Any]] = Field(default_factory=list)
+    actions: list[dict[str, Any]] = Field(default_factory=list)
+    interactions: list[dict[str, Any]] = Field(default_factory=list)
+    model_state: list[dict[str, Any]] = Field(default_factory=list)
+    artifacts: list[DSArtifactPayload] = Field(default_factory=list)
+    complete_simulation: bool = True
+
+
+class DSArtifactImportResponse(BaseModel):
+    simulation_id: int
+    sim_name: str
+    customers_inserted: int
+    actions_upserted: int
+    interactions_inserted: int
+    model_state_rows_upserted: int
+    artifacts_stored: int
+    completed: bool
+
+
+class DSArtifactListItem(BaseModel):
+    artifact_id: int
+    simulation_id: int
+    artifact_name: str
+    artifact_type: str
+    content_type: str
+    created_at: datetime | None = None
+
+
+class DSArtifactListResponse(BaseModel):
+    simulation_id: int
+    items: list[DSArtifactListItem]
+    count: int
+
+
+class DSArtifactResponse(DSArtifactListItem):
+    payload_json: Any | None = None
+    payload_text: str | None = None
 
 
 class AssumptionsResponse(BaseModel):

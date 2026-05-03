@@ -15,8 +15,11 @@ try:
         create_simulation_record,
         delete_customer_record,
         get_customer_detail_record,
+        get_ds_artifact,
         get_metrics_snapshot,
         get_model_state_snapshot,
+        import_ds_artifact_bundle,
+        list_ds_artifacts,
         list_actions,
         list_customers,
         list_simulations,
@@ -48,6 +51,10 @@ try:
         DecisionScoreResponse,
         DecideResponse,
         DeleteResponse,
+        DSArtifactBundleImportRequest,
+        DSArtifactImportResponse,
+        DSArtifactListResponse,
+        DSArtifactResponse,
         FeedbackRequest,
         FeedbackResponse,
         HealthResponse,
@@ -64,8 +71,11 @@ except ImportError:
         create_simulation_record,
         delete_customer_record,
         get_customer_detail_record,
+        get_ds_artifact,
         get_metrics_snapshot,
         get_model_state_snapshot,
+        import_ds_artifact_bundle,
+        list_ds_artifacts,
         list_actions,
         list_customers,
         list_simulations,
@@ -97,6 +107,10 @@ except ImportError:
         DecisionScoreResponse,
         DecideResponse,
         DeleteResponse,
+        DSArtifactBundleImportRequest,
+        DSArtifactImportResponse,
+        DSArtifactListResponse,
+        DSArtifactResponse,
         FeedbackRequest,
         FeedbackResponse,
         HealthResponse,
@@ -118,6 +132,7 @@ def build_description() -> str:
         "- flat FastAPI package layout under `backend/`\n"
         "- CRUD endpoints for `customers`\n"
         "- simulation, decision, and metrics endpoints wired through the DB helper layer\n"
+        "- DS artifact import and retrieval endpoints backed by PostgreSQL\n"
         "- Swagger/OpenAPI output at `/docs` and `/openapi.json`\n\n"
         "API assumptions:\n"
         f"{assumptions}\n\n"
@@ -388,6 +403,76 @@ def complete_simulation(
     if simulation is None:
         raise HTTPException(status_code=404, detail=f"Simulation {simulation_id} was not found.")
     return SimulationResponse(**simulation)
+
+
+@app.post(
+    "/ds/artifacts",
+    response_model=DSArtifactImportResponse,
+    status_code=status.HTTP_201_CREATED,
+    tags=["ds-artifacts"],
+    summary="Import generated DS data-file payloads into the database",
+)
+def import_ds_artifacts(
+    payload: DSArtifactBundleImportRequest,
+    db: SQLHandler = Depends(get_db),
+) -> DSArtifactImportResponse:
+    """Persist generated customers, interactions, model state, and file payloads."""
+
+    try:
+        result = import_ds_artifact_bundle(db, payload)
+    except ConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return DSArtifactImportResponse(**result)
+
+
+@app.get(
+    "/ds/artifacts/{simulation_id}",
+    response_model=DSArtifactListResponse,
+    tags=["ds-artifacts"],
+    summary="List generated DS artifacts stored for a simulation",
+)
+def list_simulation_ds_artifacts(
+    simulation_id: int,
+    db: SQLHandler = Depends(get_db),
+) -> DSArtifactListResponse:
+    """Return stored generated artifact names for one simulation."""
+
+    artifacts = list_ds_artifacts(db, simulation_id)
+    if artifacts is None:
+        raise HTTPException(status_code=404, detail=f"Simulation {simulation_id} was not found.")
+    return DSArtifactListResponse(
+        simulation_id=simulation_id,
+        items=artifacts,
+        count=len(artifacts),
+    )
+
+
+@app.get(
+    "/ds/artifacts/{simulation_id}/{artifact_name}",
+    response_model=DSArtifactResponse,
+    response_model_exclude_none=True,
+    tags=["ds-artifacts"],
+    summary="Fetch one generated DS artifact payload",
+)
+def get_simulation_ds_artifact(
+    simulation_id: int,
+    artifact_name: str,
+    db: SQLHandler = Depends(get_db),
+) -> DSArtifactResponse:
+    """Return one generated artifact payload, such as customers.csv as JSON rows."""
+
+    artifact = get_ds_artifact(db, simulation_id, artifact_name)
+    if artifact is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"Artifact {artifact_name!r} for simulation {simulation_id} "
+                "was not found."
+            ),
+        )
+    return DSArtifactResponse(**artifact)
 
 
 @app.get(
