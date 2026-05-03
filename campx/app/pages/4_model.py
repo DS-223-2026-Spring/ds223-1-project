@@ -2,34 +2,26 @@
 Page 4 — Model Inspector
 Owner: Armine Babajanyan (frontend branch)
 
-An extra page beyond the instructor's 3-page structure — justified because
-LinUCB has richer internals than a Bayesian bandit: a 6×5 θ matrix, per-arm
-covariance, and a decomposable UCB score. Academically useful for showing
-WHAT the model learned, not just its outputs.
+What LinUCB has learned: θ matrix, pull counts, UCB decomposition.
 
-M2: θ heatmap, n_pulls bars, UCB decomposition layout with mock data.
-M3: Connect to GET /model/state and POST /decide?preview=true (no write).
+Wired to:
+  GET  /simulations
+  GET  /model/state?simulation_id=...
+  POST /decide?customer_id=...&simulation_id=...&preview=true
 
-Backend endpoints consumed:
-  GET  /simulations                        : simulation selector
-  GET  /model/state?simulation_id=...      : θ matrix + n_pulls + α
-  POST /decide?customer_id=...&preview=true: per-action UCB breakdown
+Built-in Streamlit components only:
+  - θ heatmap is a styled DataFrame (pandas Styler + st.dataframe)
+  - bar charts use st.bar_chart
 """
 import pandas as pd
-import plotly.express as px
 import streamlit as st
 
 import bandit_utils as bu
 
-st.set_page_config(
-    page_title="Model · CampX",
-    layout="wide",
-)
+st.set_page_config(page_title="Model · CampX", layout="wide")
 
 st.title("Model Inspector")
-st.caption(
-    "What LinUCB has learned — θ vectors, pull counts, UCB decomposition."
-)
+st.caption("What LinUCB has learned — θ vectors, pull counts, UCB decomposition.")
 
 # ── Simulation selector ────────────────────────────────────────
 sim_id, sims = bu.select_simulation_widget(key="model_sim")
@@ -37,35 +29,54 @@ if sim_id is None:
     st.info("No simulations yet. Launch one on **Create Simulation**.")
     st.stop()
 
-state = bu.get_model_state(sim_id)
-st.metric("Alpha (exploration)", f"{state['alpha']:.2f}")
+# ── Fetch model state ──────────────────────────────────────────
+try:
+    state = bu.get_model_state(sim_id)
+except bu.APIError as exc:
+    bu.render_api_error(exc)
+    st.stop()
+
+m1, m2, m3 = st.columns(3)
+m1.metric("Alpha (exploration)", f"{state['alpha']:.2f}")
+m2.metric("Round number", f"{state['round_number']:,}")
+m3.metric("Total pulls", f"{sum(state['n_pulls'].values()):,}")
 
 st.divider()
 
-# ── Theta heatmap ──────────────────────────────────────────────
-st.subheader("θ heatmap — learned feature weights per action")
+# ── Theta matrix (heatmap-style via pandas Styler) ─────────────
+st.subheader("θ matrix — learned feature weights per action")
 st.caption(
-    "Rows are RFM features, columns are actions. Red = positive weight, "
-    "blue = negative. If LinUCB learned, you should see meaningful "
-    "structure — not noise."
+    "Rows: RFM features. Columns: actions. Higher (red) = positive weight; "
+    "lower (blue) = negative. Real structure means LinUCB learned something."
 )
 
-theta = state["theta"]
-theta_display = theta.rename(columns=bu.ACTION_LABELS)
-fig_t = px.imshow(
-    theta_display,
-    color_continuous_scale="RdBu_r",
-    zmin=-1.5, zmax=1.5,
-    aspect="auto",
-    text_auto=".2f",
-)
-fig_t.update_layout(
-    height=400,
-    xaxis_title=None,
-    yaxis_title=None,
-    margin=dict(t=20, b=20),
-)
-st.plotly_chart(fig_t, width='stretch')
+theta = state["theta"].copy()
+# Display friendly action labels
+theta.columns = [bu.ACTION_LABELS.get(c, c) for c in theta.columns]
+
+
+def _theta_cell_style(val) -> str:
+    """Red-for-positive, blue-for-negative cell shading via inline CSS."""
+    if val is None or pd.isna(val):
+        return ""
+    v = max(-1.5, min(1.5, float(val))) / 1.5  # → [-1, 1]
+    if v >= 0:
+        # Toward red: blend white (255,255,255) → red (239, 68, 68)
+        r = int(255 - (255 - 239) * v)
+        g = int(255 - (255 - 68) * v)
+        b = int(255 - (255 - 68) * v)
+    else:
+        # Toward blue: blend white (255,255,255) → blue (59, 130, 246)
+        v = -v
+        r = int(255 - (255 - 59) * v)
+        g = int(255 - (255 - 130) * v)
+        b = int(255 - (255 - 246) * v)
+    text_color = "white" if abs(v) > 0.55 else "#1F2937"
+    return f"background-color: rgb({r},{g},{b}); color: {text_color};"
+
+
+styled_theta = theta.style.map(_theta_cell_style).format("{:.3f}")
+st.dataframe(styled_theta, width="stretch")
 
 st.divider()
 
@@ -74,22 +85,14 @@ st.subheader("Pull counts per action")
 st.caption("How often each arm was chosen. Watch for convergence.")
 
 pulls_df = pd.DataFrame([
-    {"action": k, "label": bu.ACTION_LABELS[k], "n_pulls": v}
+    {"Action": bu.ACTION_LABELS.get(k, k), "Times chosen": v}
     for k, v in state["n_pulls"].items()
-])
-fig_p = px.bar(
-    pulls_df, x="label", y="n_pulls", color="action",
-    color_discrete_map=bu.ACTION_COLORS,
-    labels={"label": "Action", "n_pulls": "Times chosen"},
-)
-fig_p.update_layout(
-    showlegend=False, height=350, margin=dict(t=20, b=20),
-)
-st.plotly_chart(fig_p, width='stretch')
+]).set_index("Action")
+st.bar_chart(pulls_df, height=320, y_label="Times chosen")
 
 st.divider()
 
-# ── UCB decomposition for a specific customer ──────────────────
+# ── UCB decomposition for one customer ─────────────────────────
 st.subheader("UCB decomposition — predict for a customer")
 st.caption(
     "For any customer, show the exploit term (θᵀx), the explore bonus "
@@ -99,51 +102,56 @@ st.caption(
 c1, c2 = st.columns([1, 3])
 with c1:
     cid = st.number_input(
-        "Customer ID", min_value=1, max_value=500, value=1, step=1,
+        "Customer ID", min_value=1, max_value=10000, value=1, step=1,
     )
     predict_clicked = st.button(
-        "🎯 Predict", type="primary", width='stretch',
+        "🎯 Predict", type="primary", width="stretch",
     )
 
 with c2:
     if predict_clicked:
-        breakdown = bu.predict_for_customer(int(cid))
-        breakdown["action_label"] = breakdown["action"].map(bu.ACTION_LABELS)
+        try:
+            breakdown = bu.predict_for_customer(sim_id, int(cid))
+        except bu.APIError as exc:
+            bu.render_api_error(exc)
+            breakdown = pd.DataFrame()
 
-        chosen = breakdown.iloc[0]
-        st.success(
-            f"**Chosen action: {chosen['action_label']}**  ·  "
-            f"UCB = {chosen['ucb_score']:.3f}  ·  "
-            f"cost {chosen['cost']:.2f}"
-        )
-
-        long = breakdown.melt(
-            id_vars="action_label",
-            value_vars=["exploit", "explore"],
-            var_name="component",
-            value_name="score",
-        )
-        fig_u = px.bar(
-            long.sort_values("action_label"),
-            x="score", y="action_label", color="component",
-            orientation="h",
-            color_discrete_map={"exploit": "#1F2937", "explore": "#9CA3AF"},
-            labels={"action_label": "Action", "score": "UCB score"},
-        )
-        fig_u.update_layout(
-            barmode="stack", height=320,
-            legend_title_text=None, margin=dict(t=20, b=20),
-        )
-        st.plotly_chart(fig_u, width='stretch')
-
-        with st.expander("Raw per-action scores"):
-            st.dataframe(
-                breakdown, hide_index=True, width='stretch',
+        if breakdown.empty:
+            st.warning("No scores returned for that customer.")
+        else:
+            breakdown["action_label"] = (
+                breakdown["action"].map(bu.ACTION_LABELS).fillna(breakdown["action"])
             )
+            chosen = breakdown.iloc[0]
+            st.success(
+                f"**Chosen action: {chosen['action_label']}**  ·  "
+                f"UCB = {chosen['ucb_score']:.3f}  ·  "
+                f"cost {bu.format_currency(chosen['cost'])}"
+            )
+
+            # Stacked horizontal bar: exploit + explore per action
+            chart_df = breakdown.set_index("action_label")[["exploit", "explore"]]
+            st.bar_chart(
+                chart_df,
+                horizontal=True,
+                stack=True,
+                height=320,
+                x_label="UCB score",
+            )
+
+            with st.expander("Raw per-action scores"):
+                detail = breakdown[[
+                    "action_label", "exploit", "explore", "ucb_score", "cost",
+                ]].rename(columns={
+                    "action_label": "Action",
+                    "exploit": "Exploit",
+                    "explore": "Explore",
+                    "ucb_score": "UCB",
+                    "cost": "Cost",
+                })
+                st.dataframe(detail, hide_index=True, width="stretch")
     else:
         st.info(
             "Pick a customer ID and click **Predict** to see the "
             "per-action UCB breakdown."
         )
-
-st.caption("M2: scores from mock generator. Real θ and A⁻¹ wired in M3.")

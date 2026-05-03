@@ -8,6 +8,7 @@ from decimal import Decimal
 from typing import Any
 
 import numpy as np
+import pandas as pd
 
 try:
     from .SQLHandler import SQLHandler
@@ -86,6 +87,8 @@ def _dump_model(model: Any, *, exclude_unset: bool = False) -> dict[str, Any]:
 
 
 def _serialize_value(value: Any) -> Any:
+    if pd.isna(value):
+        return None
     if isinstance(value, Decimal):
         return float(value)
     if isinstance(value, memoryview):
