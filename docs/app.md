@@ -20,6 +20,7 @@ http://localhost:8501
 | Interaction | Watch reward and recent decisions |
 | Analytics | Review distributions and policy results |
 | Model | Inspect learned weights and action scores |
+| Customers | View and filter customer profiles |
 
 ## Frontend reference
 
@@ -30,4 +31,4 @@ http://localhost:8501
 ## Notes
 
 - The current UI structure is in place.
-- The main remaining frontend work is full live API integration and removal of mock-only behavior.
+- The Streamlit app is fully wired to the live FastAPI backend (mocks removed).

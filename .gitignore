@@ -38,6 +38,9 @@ data/raw/
 !outputs/final_outputs/
 !outputs/final_outputs/**
 
+
+local_outputs/
+
 # Jupyter
 .ipynb_checkpoints/
 

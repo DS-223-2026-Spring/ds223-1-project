@@ -49,7 +49,7 @@ ds223-1-project/              ← repo root
 │   ├── modeling.md
 │   ├── ds_data_spec.md
 │   ├── api.md
-│   └── frontend.md
+│   └── app.md
 └── campx/                    ← product folder
     ├── .env                  ← all service credentials
     ├── __init__.py
@@ -59,6 +59,8 @@ ds223-1-project/              ← repo root
     │   ├── database.py
     │   ├── models.py
     │   ├── schema.py
+    │   ├── SQLHandler.py
+    │   ├── db_interactions.py
     │   ├── requirements.txt
     │   └── routes/
     │       ├── customers.py
@@ -73,7 +75,8 @@ ds223-1-project/              ← repo root
     │       ├── 1_create_simulation.py
     │       ├── 2_interaction.py
     │       ├── 3_analytics.py
-    │       └── 4_model.py
+    │       ├── 4_model.py
+    │       └── 5_customers.py
     ├── ds/                   ← Data Science (Davit)
     │   ├── _routing.py
     │   ├── Dockerfile
@@ -81,10 +84,12 @@ ds223-1-project/              ← repo root
     │   ├── etl.py
     │   ├── eda.py
     │   ├── baselines.py
+    │   ├── linucb.py
     │   ├── model.py
     │   ├── experiments.ipynb
     │   ├── generate_eda_report.py
     │   ├── generate_final_outputs.py
+    │   ├── final_outputs.py
     │   ├── generate_synthetic_data.py
     │   ├── run_baseline_comparison.py
     │   ├── run_workflow.py
@@ -94,11 +99,8 @@ ds223-1-project/              ← repo root
     │   ├── 1_schema.sql
     │   ├── 2_indexes.sql
     │   ├── 3_initial_insert.sql
-    │   ├── SQLHandler.py
-    │   └── db_interactions.py
-    ├── etl/                  ← shared ETL utilities
-    │   ├── SQLHandler.py
-    │   └── db_interactions.py
+    │   ├── 4_views.sql
+    │   └── 5_stored_procedures.sql
     └── orchestration/        ← Prefect flows (shared)
         ├── Dockerfile
         ├── flows.py
@@ -137,3 +139,18 @@ Full contribution rules: [`docs/governance.md`](docs/governance.md)
 | M3 | May 1 | API, Streamlit, Prefect integration |
 | M4 | May 8 | Testing, documentation, polish |
 | Demo | May 14 | Live demonstration |
+
+### Current Milestone (M3) API Specifications & Product Mapping
+
+The following endpoints have been designed to unblock the live frontend integration. For full structured JSON schemas and request/response shapes, refer to [`campx/app/backend_requirements.md`](campx/app/backend_requirements.md).
+
+| Endpoint | Method | Product Functionality | Description / Specification Summary |
+|----------|--------|-----------------------|-------------------------------------|
+| `/simulations` | `GET` | All pages (Sidebar) | Returns list of all past and running simulation objects with `status` and `cumulative_reward`. |
+| `/simulations` | `POST` | Create Simulation page | Accepts parameters (`sim_name`, `num_rounds`, `alpha`, etc.), creates a new run, and triggers orchestration. |
+| `/metrics` | `GET` | Interaction & Analytics pages | Returns aggregated arrays (`cumulative_reward_series`, `action_distribution`) and top-level KPI counters. |
+| `/customers` | `GET` | Customer Explorer page | Returns the full list of customers with RFM features. |
+| `/customers/{id}` | `GET` | Customer Detail view | Returns RFM features, interaction history, and (if `?debug=true`) latent variables. |
+| `/model/state` | `GET` | Model Inspection page | Returns the learned `theta` matrix (6x5) and `n_pulls` action counts for the LinUCB model. |
+| `/decide` | `POST` | Model page / Simulation loop | Computes `exploit`, `explore`, and `ucb_score`. If `preview=false`, it logs the interaction. |
+| `/feedback` | `POST` | Internal / Orchestration | Updates model weights (`theta`, `A`) based on conversion outcome and computed reward. |

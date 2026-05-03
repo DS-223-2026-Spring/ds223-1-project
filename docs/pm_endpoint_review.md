@@ -195,7 +195,6 @@ What is aligned:
 
 What is not aligned yet:
 
-- frontend still uses mocks
 - `GET /metrics` is not enough for the real frontend
 - orchestration still does not drive the actual run lifecycle
 
@@ -203,7 +202,6 @@ What is not aligned yet:
 
 Current blockers:
 
-- frontend still on mocks
 - `GET /metrics` incomplete
 - orchestration not ready
 
@@ -218,7 +216,6 @@ Most realistic simplification:
 
 The main remaining work is:
 
-1. Replace frontend mocks with live backend calls.
-2. Expand `GET /metrics` to match the dashboard pages.
-3. Decide whether orchestration is required for milestone sign-off or documented as stretch scope.
-4. Run live frontend/backend smoke tests page by page.
+1. Expand `GET /metrics` to match the dashboard pages.
+2. Decide whether orchestration is required for milestone sign-off or documented as stretch scope.
+3. Run live frontend/backend smoke tests page by page.
