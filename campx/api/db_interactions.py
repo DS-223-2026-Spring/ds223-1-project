@@ -447,6 +447,37 @@ def complete_simulation(db: SQLHandler, simulation_id: int):
     logger.success("Simulation completed")
 
 
+def ensure_simulation_artifacts_table(db: SQLHandler) -> None:
+    """Create the DS artifact table for databases initialized before it existed."""
+
+    db.cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS public.simulation_artifacts (
+            artifact_id     SERIAL PRIMARY KEY,
+            simulation_id   INTEGER NOT NULL
+                            REFERENCES public.simulations(simulation_id)
+                            ON DELETE CASCADE,
+            artifact_name   VARCHAR(150) NOT NULL,
+            artifact_type   VARCHAR(30) NOT NULL DEFAULT 'json',
+            content_type    VARCHAR(100) NOT NULL DEFAULT 'application/json',
+            payload_json    JSONB,
+            payload_text    TEXT,
+            created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+            CHECK (payload_json IS NOT NULL OR payload_text IS NOT NULL),
+            UNIQUE (simulation_id, artifact_name)
+        )
+        """
+    )
+    db.cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_simulation_artifacts_simulation
+            ON public.simulation_artifacts(simulation_id)
+        """
+    )
+    db.commit()
+
+
 
 def upsert_simulation_artifact(
     db: SQLHandler,
@@ -459,6 +490,7 @@ def upsert_simulation_artifact(
 ) -> int:
     """Insert or update one generated DS artifact payload for a simulation."""
 
+    ensure_simulation_artifacts_table(db)
     if payload_json is None and payload_text is None:
         raise ValueError("simulation artifact payload cannot be empty")
 
@@ -500,6 +532,7 @@ def upsert_simulation_artifact(
 def list_simulation_artifacts(db: SQLHandler, simulation_id: int):
     """List stored generated artifact payloads for one simulation."""
 
+    ensure_simulation_artifacts_table(db)
     return db.select(
         """
         SELECT
@@ -520,6 +553,7 @@ def list_simulation_artifacts(db: SQLHandler, simulation_id: int):
 def get_simulation_artifact(db: SQLHandler, simulation_id: int, artifact_name: str):
     """Fetch one generated artifact payload for a simulation."""
 
+    ensure_simulation_artifacts_table(db)
     df = db.select(
         """
         SELECT

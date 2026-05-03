@@ -26,11 +26,15 @@ Nine tables in three layers.
 | `interactions` | Every (customer, action, reward) decision — core training log |
 | `model_state` | LinUCB A, b, θ per action — persists across container restarts |
 
-**Artifact layer** — stores generated file payloads without relying on local CSVs:
+**Artifact layer** — stores generated file payloads after the local CSV/report
+directory is written:
 
 | Table | Purpose |
 |-------|---------|
 | `simulation_artifacts` | JSON/text payloads for generated DS files keyed by simulation |
+
+The DS generator keeps the local artifacts and then loads those files into the
+database.
 
 ---
 

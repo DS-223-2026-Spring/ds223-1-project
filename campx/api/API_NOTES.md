@@ -84,6 +84,7 @@ DS artifact endpoints:
 - LinUCB state is reconstructed from observed interactions plus action metadata when serving `/model/state` and `/decide`.
 - `interactions.context_vector` is stored as float64 binary feature bytes so the feedback path can reproduce the learning update.
 - `POST /feedback` computes realized reward through the stored procedure and then persists updated `model_state` for the affected action.
+- `POST /feedback` is only for pending interactions created by `POST /decide`; imported DS experiment interactions already include observed outcomes and will return 409 if submitted again.
 - The current `/model/state` path uses customer features available in the live DB to derive scaling, because the DB schema does not store the richer DS-side feature-transform metadata.
 
 ## What is still incomplete
