@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import base64
 import importlib
 import json
+import mimetypes
 import os
 import sys
 from dataclasses import asdict, dataclass
@@ -17,6 +19,14 @@ import pandas as pd
 from .config import FEATURE_COLUMNS, SyntheticDataConfig
 from .features import get_model_feature_frame
 from .pipeline import SyntheticArtifacts
+
+DEFAULT_ACTION_TARGET_LATENTS = {
+    0: "brand_loyalty",
+    1: "price_sensitivity",
+    2: "price_sensitivity+planning",
+    3: "brand_loyalty+impulse",
+    4: "impulse_tendency",
+}
 
 
 @dataclass(slots=True)
@@ -35,7 +45,40 @@ def persist_pipeline_artifacts_to_db(
     config: SyntheticDataConfig,
     notes: str | None = None,
 ) -> DatabasePersistenceResult:
-    """Persist generated DS artifacts into PostgreSQL via the DB CRUD layer."""
+    """Write generated artifacts to CSV first, then persist that directory to DB."""
+
+    from .export import export_artifacts
+
+    export_artifacts(
+        output_dir=config.output_dir,
+        config=config,
+        customers=artifacts.customers,
+        customer_latents=artifacts.customer_latents,
+        actions=artifacts.actions,
+        interactions=artifacts.interactions,
+        model_state=artifacts.model_state,
+        validation=artifacts.validation,
+    )
+    return persist_csv_artifacts_to_db(
+        input_dir=config.output_dir,
+        config=config,
+        notes=notes,
+    )
+
+
+def persist_csv_artifacts_to_db(
+    input_dir: Path | str,
+    config: SyntheticDataConfig,
+    notes: str | None = None,
+) -> DatabasePersistenceResult:
+    """Load generated CSV/report files from disk and persist them into PostgreSQL."""
+
+    input_path = Path(input_dir)
+    customers = _read_required_csv(input_path, "customers.csv")
+    customer_latents = _read_required_csv(input_path, "customer_latents.csv")
+    actions = _read_required_csv(input_path, "actions.csv")
+    interactions = _read_required_csv(input_path, "interactions.csv")
+    model_state = _read_required_csv(input_path, "model_state.csv")
 
     db_crud, sql_handler_cls = _load_db_modules()
     db = _connect(sql_handler_cls)
@@ -52,31 +95,35 @@ def persist_pipeline_artifacts_to_db(
             notes=notes,
         )
 
+        _persist_actions(
+            db_crud=db_crud,
+            db=db,
+            actions=actions,
+        )
         customer_id_map = _persist_customers_and_latents(
             db_crud=db_crud,
             db=db,
-            customers=artifacts.customers,
-            customer_latents=artifacts.customer_latents,
+            customers=customers,
+            customer_latents=customer_latents,
         )
         _persist_interactions(
             db_crud=db_crud,
             db=db,
-            interactions=artifacts.interactions,
-            customers=artifacts.customers,
+            interactions=interactions,
+            customers=customers,
             customer_id_map=customer_id_map,
             simulation_id=simulation_id,
         )
         _persist_model_state(
             db_crud=db_crud,
             db=db,
-            model_state=artifacts.model_state,
+            model_state=model_state,
             simulation_id=simulation_id,
         )
-        artifacts_stored = _persist_generated_artifacts(
+        artifacts_stored = _persist_generated_artifact_files(
             db_crud=db_crud,
             db=db,
-            artifacts=artifacts,
-            config=config,
+            input_dir=input_path,
             simulation_id=simulation_id,
         )
         db_crud.complete_simulation(db, simulation_id)
@@ -85,11 +132,38 @@ def persist_pipeline_artifacts_to_db(
 
     return DatabasePersistenceResult(
         simulation_id=simulation_id,
-        customers_inserted=len(artifacts.customers),
-        interactions_inserted=len(artifacts.interactions),
-        model_state_rows_upserted=len(artifacts.model_state),
+        customers_inserted=len(customers),
+        interactions_inserted=len(interactions),
+        model_state_rows_upserted=len(model_state),
         artifacts_stored=artifacts_stored,
     )
+
+
+def _read_required_csv(input_dir: Path, file_name: str) -> pd.DataFrame:
+    path = input_dir / file_name
+    if not path.exists():
+        raise FileNotFoundError(f"Required DS artifact is missing: {path}")
+    return pd.read_csv(path)
+
+
+def _persist_actions(db_crud, db, actions: pd.DataFrame) -> None:
+    """Upsert generated action metadata before interactions reference it."""
+
+    for row in actions.itertuples(index=False):
+        action_id = int(row.action_id)
+        action_cost = float(getattr(row, "action_cost", getattr(row, "base_cost", 0.0)))
+        db_crud.upsert_action(
+            db,
+            action_id=action_id,
+            action_name=getattr(row, "action_name", f"action_{action_id}"),
+            action_cost=action_cost,
+            target_latent=getattr(
+                row,
+                "target_latent",
+                DEFAULT_ACTION_TARGET_LATENTS.get(action_id, "unknown"),
+            ),
+            description=getattr(row, "description", "Generated DS action"),
+        )
 
 
 def _persist_customers_and_latents(
@@ -195,6 +269,64 @@ def _persist_model_state(
             b_bytes=b_bytes,
             alpha=float(row.alpha),
         )
+
+
+def _persist_generated_artifact_files(
+    db_crud,
+    db,
+    input_dir: Path,
+    simulation_id: int,
+) -> int:
+    """Store the actual generated files from disk in simulation_artifacts."""
+
+    stored = 0
+    for path in sorted(input_dir.rglob("*")):
+        if not path.is_file():
+            continue
+
+        artifact_name = path.relative_to(input_dir).as_posix()
+        suffix = path.suffix.lower()
+        content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+
+        if suffix == ".csv":
+            db_crud.upsert_simulation_artifact(
+                db,
+                simulation_id=simulation_id,
+                artifact_name=artifact_name,
+                artifact_type="records",
+                content_type="application/json",
+                payload_json=_dataframe_records(pd.read_csv(path)),
+            )
+        elif suffix == ".json":
+            db_crud.upsert_simulation_artifact(
+                db,
+                simulation_id=simulation_id,
+                artifact_name=artifact_name,
+                artifact_type="json",
+                content_type="application/json",
+                payload_json=_json_ready(json.loads(path.read_text())),
+            )
+        elif suffix in {".txt", ".md"}:
+            db_crud.upsert_simulation_artifact(
+                db,
+                simulation_id=simulation_id,
+                artifact_name=artifact_name,
+                artifact_type="text",
+                content_type=content_type,
+                payload_text=path.read_text(),
+            )
+        else:
+            db_crud.upsert_simulation_artifact(
+                db,
+                simulation_id=simulation_id,
+                artifact_name=artifact_name,
+                artifact_type="base64",
+                content_type=content_type,
+                payload_text=base64.b64encode(path.read_bytes()).decode("ascii"),
+            )
+        stored += 1
+
+    return stored
 
 
 def _persist_generated_artifacts(

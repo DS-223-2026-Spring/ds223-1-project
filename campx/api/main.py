@@ -450,7 +450,7 @@ def list_simulation_ds_artifacts(
 
 
 @app.get(
-    "/ds/artifacts/{simulation_id}/{artifact_name}",
+    "/ds/artifacts/{simulation_id}/{artifact_name:path}",
     response_model=DSArtifactResponse,
     response_model_exclude_none=True,
     tags=["ds-artifacts"],

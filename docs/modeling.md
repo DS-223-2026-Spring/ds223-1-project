@@ -31,6 +31,10 @@ python -m campx.ds.generate_final_outputs --input-dir outputs/synthetic_data --o
 python -m campx.ds.generate_eda_report --input-dir outputs/final_outputs --output-dir outputs/final_outputs/eda
 ```
 
+`--storage db` still writes the generated CSV/report directory first, then loads
+those files into PostgreSQL. This keeps the local artifacts available while the
+database becomes the serving layer.
+
 ## Main modules
 
 ### `run_workflow.py`

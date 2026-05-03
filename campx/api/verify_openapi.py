@@ -190,6 +190,17 @@ SAMPLE_DS_ARTIFACT = {
     "created_at": FIXED_TIME,
 }
 
+SAMPLE_NESTED_DS_ARTIFACT = {
+    "artifact_id": 2,
+    "simulation_id": 1,
+    "artifact_name": "eda/segment_counts.png",
+    "artifact_type": "base64",
+    "content_type": "image/png",
+    "payload_json": None,
+    "payload_text": "iVBORw0KGgo=",
+    "created_at": FIXED_TIME,
+}
+
 
 def _registered_api_paths() -> dict[str, set[str]]:
     paths: dict[str, set[str]] = {}
@@ -199,7 +210,8 @@ def _registered_api_paths() -> dict[str, set[str]]:
         methods = {method.lower() for method in route.methods or set()}
         methods -= {"head", "options"}
         if methods:
-            paths.setdefault(route.path, set()).update(methods)
+            openapi_path = route.path.replace("{artifact_name:path}", "{artifact_name}")
+            paths.setdefault(openapi_path, set()).update(methods)
     return paths
 
 
@@ -307,15 +319,22 @@ def _install_endpoint_stubs() -> dict[str, object]:
     def list_ds_artifacts_stub(db, simulation_id):
         if simulation_id != 1:
             return None
-        item = dict(SAMPLE_DS_ARTIFACT)
-        item.pop("payload_json")
-        item.pop("payload_text")
-        return [item]
+        items = []
+        for sample in (SAMPLE_DS_ARTIFACT, SAMPLE_NESTED_DS_ARTIFACT):
+            item = dict(sample)
+            item.pop("payload_json")
+            item.pop("payload_text")
+            items.append(item)
+        return items
 
     def get_ds_artifact_stub(db, simulation_id, artifact_name):
-        if simulation_id != 1 or artifact_name != "customers.csv":
+        if simulation_id != 1:
             return None
-        return dict(SAMPLE_DS_ARTIFACT)
+        if artifact_name == "customers.csv":
+            return dict(SAMPLE_DS_ARTIFACT)
+        if artifact_name == "eda/segment_counts.png":
+            return dict(SAMPLE_NESTED_DS_ARTIFACT)
+        return None
 
     replacements = {
         "list_customers": list_customers_stub,
@@ -500,6 +519,11 @@ def _verify_endpoints(client: TestClient) -> bool:
         (
             "GET /ds/artifacts/1/customers.csv",
             client.get("/ds/artifacts/1/customers.csv"),
+            200,
+        ),
+        (
+            "GET /ds/artifacts/1/eda/segment_counts.png",
+            client.get("/ds/artifacts/1/eda/segment_counts.png"),
             200,
         ),
         ("GET /model/state", client.get("/model/state?simulation_id=1"), 200),

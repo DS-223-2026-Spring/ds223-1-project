@@ -981,7 +981,9 @@ def submit_feedback(db: SQLHandler, payload: FeedbackRequest) -> dict[str, Any] 
         return None
     if interaction["observed_at"] is not None:
         raise ConflictError(
-            f"Interaction {data['interaction_id']} already has recorded feedback."
+            f"Interaction {data['interaction_id']} already has recorded feedback. "
+            "Use /feedback only for a pending interaction created by POST /decide; "
+            "generated DS experiment imports are already observed."
         )
 
     try:

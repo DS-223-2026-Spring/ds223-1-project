@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 
 from .config import SUPPORTED_POLICY_MODES, SyntheticDataConfig
-from .dbio import persist_pipeline_artifacts_to_db
+from .dbio import persist_csv_artifacts_to_db
 from .pipeline import run_pipeline
 
 
@@ -36,8 +36,8 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("db", "csv", "both"),
         default="db",
         help=(
-            "Where generated DS artifacts are stored. Default `db` persists into "
-            "PostgreSQL instead of writing local CSV files."
+            "Where generated DS artifacts are stored. DB mode writes the CSV/report "
+            "directory first, then loads those files into PostgreSQL."
         ),
     )
     parser.add_argument(
@@ -74,10 +74,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.persist_db and storage == "csv":
         storage = "both"
 
-    artifacts = run_pipeline(config, export_to_disk=storage in {"csv", "both"})
+    artifacts = run_pipeline(config, export_to_disk=True)
     if storage in {"db", "both"} or args.persist_db:
-        result = persist_pipeline_artifacts_to_db(
-            artifacts=artifacts,
+        result = persist_csv_artifacts_to_db(
+            input_dir=config.output_dir,
             config=config,
             notes=args.db_notes,
         )
@@ -90,7 +90,6 @@ def main(argv: list[str] | None = None) -> int:
             f"artifacts={result.artifacts_stored}"
         )
     print(artifacts.validation.report_text)
-    if storage in {"csv", "both"}:
-        print("")
-        print(f"Artifacts written to: {config.output_dir}")
+    print("")
+    print(f"Artifacts written to: {config.output_dir}")
     return 0

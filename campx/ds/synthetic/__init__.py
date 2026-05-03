@@ -9,7 +9,11 @@ from .config import (
     LINUCB_POLICY_MODES,
     SyntheticDataConfig,
 )
-from .dbio import DatabasePersistenceResult, persist_pipeline_artifacts_to_db
+from .dbio import (
+    DatabasePersistenceResult,
+    persist_csv_artifacts_to_db,
+    persist_pipeline_artifacts_to_db,
+)
 from .features import (
     build_context_matrix,
     get_model_feature_frame,
@@ -29,6 +33,7 @@ __all__ = [
     "build_context_matrix",
     "get_model_feature_frame",
     "get_model_feature_metadata",
+    "persist_csv_artifacts_to_db",
     "persist_pipeline_artifacts_to_db",
     "run_pipeline",
 ]
