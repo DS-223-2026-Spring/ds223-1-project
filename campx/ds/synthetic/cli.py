@@ -32,9 +32,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--alpha", type=float, default=0.5)
     parser.add_argument(
+        "--storage",
+        choices=("db", "csv", "both"),
+        default="db",
+        help=(
+            "Where generated DS artifacts are stored. Default `db` persists into "
+            "PostgreSQL instead of writing local CSV files."
+        ),
+    )
+    parser.add_argument(
         "--persist-db",
         action="store_true",
-        help="Persist generated artifacts into PostgreSQL via db_interactions.",
+        help="Deprecated compatibility flag. Use --storage both or --storage db.",
     )
     parser.add_argument(
         "--db-notes",
@@ -61,8 +70,12 @@ def main(argv: list[str] | None = None) -> int:
         alpha=args.alpha,
     )
 
-    artifacts = run_pipeline(config)
-    if args.persist_db:
+    storage = args.storage
+    if args.persist_db and storage == "csv":
+        storage = "both"
+
+    artifacts = run_pipeline(config, export_to_disk=storage in {"csv", "both"})
+    if storage in {"db", "both"} or args.persist_db:
         result = persist_pipeline_artifacts_to_db(
             artifacts=artifacts,
             config=config,
@@ -73,9 +86,11 @@ def main(argv: list[str] | None = None) -> int:
             f"simulation_id={result.simulation_id}, "
             f"customers={result.customers_inserted}, "
             f"interactions={result.interactions_inserted}, "
-            f"model_state_rows={result.model_state_rows_upserted}"
+            f"model_state_rows={result.model_state_rows_upserted}, "
+            f"artifacts={result.artifacts_stored}"
         )
     print(artifacts.validation.report_text)
-    print("")
-    print(f"Artifacts written to: {config.output_dir}")
+    if storage in {"csv", "both"}:
+        print("")
+        print(f"Artifacts written to: {config.output_dir}")
     return 0
