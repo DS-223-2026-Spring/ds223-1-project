@@ -109,7 +109,7 @@ API_ASSUMPTIONS = (
 )
 
 PENDING_DEPENDENCIES = (
-    "Full metrics payload expansion is still required before the Interaction and Analytics pages can fully replace mock data.",
+    "Baseline policy comparison data is not yet stored separately from the LinUCB interaction stream.",
     "Orchestration wiring that turns simulation creation into Prefect flow runs rather than a database-only placeholder write.",
 )
 

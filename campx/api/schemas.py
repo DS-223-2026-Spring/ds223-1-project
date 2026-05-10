@@ -191,13 +191,53 @@ class FeedbackResponse(BaseModel):
     model_updated: bool
 
 
+class CumulativeRewardPoint(BaseModel):
+    round: int
+    cumulative_reward: float | None = None
+
+
+class ActionDistributionPoint(BaseModel):
+    round: int
+    action: str
+
+
+class ConversionByActionItem(BaseModel):
+    action: str
+    conversion_rate: float | None = None
+    n_pulls: int
+
+
+class RecentInteractionItem(BaseModel):
+    interaction_id: int
+    customer_id: int
+    action_id: int
+    simulation_id: int
+    round_number: int
+    converted: bool | None = None
+    revenue: float | None = None
+    cost: float | None = None
+    reward: float | None = None
+    decision_at: datetime
+    observed_at: datetime | None = None
+    action: str
+
+
 class MetricsResponse(BaseModel):
     simulation_id: int
+    status: Literal["running", "completed"]
+    rounds_completed: int
+    cumulative_reward: float | None = None
+    avg_reward_per_round: float | None = None
+    pending_observations: int
+    cumulative_reward_series: list[CumulativeRewardPoint]
+    action_distribution: list[ActionDistributionPoint]
+    conversion_by_action: list[ConversionByActionItem]
+    recent_interactions: list[RecentInteractionItem]
     total_interactions: int
     conversions: int
     total_revenue: float
     total_cost: float
-    total_reward: float
+    total_reward: float | None = None
 
 
 class ModelStateResponse(BaseModel):
