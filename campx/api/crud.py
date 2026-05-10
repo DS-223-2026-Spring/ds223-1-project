@@ -1044,30 +1044,161 @@ def submit_feedback(db: SQLHandler, payload: FeedbackRequest) -> dict[str, Any] 
 
 
 def get_metrics_snapshot(db: SQLHandler, simulation_id: int) -> dict[str, Any] | None:
-    if not _simulation_exists(db, simulation_id):
-        return None
-
-    metrics = _select_one(
+    simulation = _select_one(
         db,
         """
-        SELECT
-            %s AS simulation_id,
-            COUNT(*)::int AS total_interactions,
-            COUNT(*) FILTER (WHERE converted IS TRUE)::int AS conversions,
-            COALESCE(SUM(revenue), 0.0) AS total_revenue,
-            COALESCE(SUM(cost), 0.0) AS total_cost,
-            COALESCE(SUM(reward), 0.0) AS total_reward
+        SELECT completed_at
+        FROM public.simulations
+        WHERE simulation_id = %s
+        """,
+        (simulation_id,),
+    )
+    if simulation is None:
+        return None
+
+    rounds = _select_one(
+        db,
+        """
+        SELECT COUNT(*)::int AS rounds_completed
         FROM public.interactions
         WHERE simulation_id = %s
         """,
-        (simulation_id, simulation_id),
+        (simulation_id,),
+    )
+    reward = _select_one(
+        db,
+        """
+        SELECT SUM(reward) AS cumulative_reward
+        FROM public.interactions
+        WHERE simulation_id = %s
+            AND observed_at IS NOT NULL
+        """,
+        (simulation_id,),
+    )
+    pending = _select_one(
+        db,
+        """
+        SELECT COUNT(*)::int AS pending_observations
+        FROM public.interactions
+        WHERE simulation_id = %s
+            AND observed_at IS NULL
+        """,
+        (simulation_id,),
+    )
+    totals = _select_one(
+        db,
+        """
+        SELECT
+            COUNT(*) FILTER (
+                WHERE converted IS TRUE
+                    AND observed_at IS NOT NULL
+            )::int AS conversions,
+            COALESCE(
+                SUM(revenue) FILTER (WHERE observed_at IS NOT NULL),
+                0.0
+            ) AS total_revenue,
+            COALESCE(SUM(cost), 0.0) AS total_cost
+        FROM public.interactions
+        WHERE simulation_id = %s
+        """,
+        (simulation_id,),
+    )
+    cumulative_reward_series = [
+        _serialize_record(row)
+        for row in _fetchall_raw(
+            db,
+            """
+            SELECT
+                round_number AS round,
+                SUM(reward) OVER (ORDER BY round_number) AS cumulative_reward
+            FROM public.interactions
+            WHERE simulation_id = %s
+                AND observed_at IS NOT NULL
+            ORDER BY round_number
+            """,
+            (simulation_id,),
+        )
+    ]
+    action_distribution = [
+        _serialize_record(row)
+        for row in _fetchall_raw(
+            db,
+            """
+            SELECT
+                i.round_number AS round,
+                a.action_name AS action
+            FROM public.interactions AS i
+            JOIN public.actions AS a
+                ON i.action_id = a.action_id
+            WHERE i.simulation_id = %s
+            ORDER BY i.round_number
+            """,
+            (simulation_id,),
+        )
+    ]
+    conversion_by_action = [
+        _serialize_record(row)
+        for row in _fetchall_raw(
+            db,
+            """
+            SELECT
+                a.action_name AS action,
+                AVG(i.converted::int) FILTER (
+                    WHERE i.observed_at IS NOT NULL
+                ) AS conversion_rate,
+                COUNT(*)::int AS n_pulls
+            FROM public.interactions AS i
+            JOIN public.actions AS a
+                ON i.action_id = a.action_id
+            WHERE i.simulation_id = %s
+            GROUP BY a.action_name
+            ORDER BY a.action_name
+            """,
+            (simulation_id,),
+        )
+    ]
+    recent_interactions = [
+        _serialize_record(row)
+        for row in _fetchall_raw(
+            db,
+            """
+            SELECT
+                i.*,
+                a.action_name AS action
+            FROM public.interactions AS i
+            JOIN public.actions AS a
+                ON i.action_id = a.action_id
+            WHERE i.simulation_id = %s
+            ORDER BY i.decision_at DESC
+            LIMIT 20
+            """,
+            (simulation_id,),
+        )
+    ]
+
+    rounds_completed = int(rounds["rounds_completed"]) if rounds else 0
+    cumulative_reward = reward["cumulative_reward"] if reward else None
+    cumulative_reward = float(cumulative_reward) if cumulative_reward is not None else None
+    avg_reward_per_round = (
+        cumulative_reward / rounds_completed
+        if cumulative_reward is not None and rounds_completed > 0
+        else None
     )
 
     return {
         "simulation_id": simulation_id,
-        "total_interactions": metrics["total_interactions"] if metrics else 0,
-        "conversions": metrics["conversions"] if metrics else 0,
-        "total_revenue": float(metrics["total_revenue"]) if metrics else 0.0,
-        "total_cost": float(metrics["total_cost"]) if metrics else 0.0,
-        "total_reward": float(metrics["total_reward"]) if metrics else 0.0,
+        "status": "completed" if simulation["completed_at"] is not None else "running",
+        "rounds_completed": rounds_completed,
+        "cumulative_reward": cumulative_reward,
+        "avg_reward_per_round": avg_reward_per_round,
+        "pending_observations": int(pending["pending_observations"]) if pending else 0,
+        "cumulative_reward_series": cumulative_reward_series,
+        "action_distribution": action_distribution,
+        "conversion_by_action": conversion_by_action,
+        "recent_interactions": recent_interactions,
+        "total_interactions": rounds_completed,
+        "conversions": int(totals["conversions"]) if totals else 0,
+        "total_revenue": float(totals["total_revenue"]) if totals else 0.0,
+        "total_cost": float(totals["total_cost"]) if totals else 0.0,
+        "total_reward": cumulative_reward,
     }

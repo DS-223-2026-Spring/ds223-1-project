@@ -103,6 +103,39 @@ SAMPLE_FEEDBACK = {
 
 SAMPLE_METRICS = {
     "simulation_id": 1,
+    "status": "completed",
+    "rounds_completed": 4,
+    "cumulative_reward": 12.5,
+    "avg_reward_per_round": 3.125,
+    "pending_observations": 1,
+    "cumulative_reward_series": [
+        {"round": 1, "cumulative_reward": 5.0},
+        {"round": 2, "cumulative_reward": 12.5},
+    ],
+    "action_distribution": [
+        {"round": 1, "action": "discount_10"},
+        {"round": 2, "action": "product_recommendation"},
+    ],
+    "conversion_by_action": [
+        {"action": "discount_10", "conversion_rate": 0.5, "n_pulls": 2},
+        {"action": "product_recommendation", "conversion_rate": None, "n_pulls": 1},
+    ],
+    "recent_interactions": [
+        {
+            "interaction_id": 1,
+            "customer_id": 1,
+            "action_id": 1,
+            "simulation_id": 1,
+            "round_number": 2,
+            "converted": True,
+            "revenue": 15.0,
+            "cost": 2.5,
+            "reward": 12.5,
+            "decision_at": FIXED_TIME,
+            "observed_at": FIXED_TIME,
+            "action": "discount_10",
+        },
+    ],
     "total_interactions": 4,
     "conversions": 2,
     "total_revenue": 21.5,

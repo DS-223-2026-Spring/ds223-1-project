@@ -89,9 +89,9 @@ DS artifact endpoints:
 
 ## What is still incomplete
 
-- `GET /metrics` is still only the lightweight aggregate payload, not the full dashboard payload required by `campx/app/backend_requirements.md`.
+- `GET /metrics` now returns dashboard counters, action breakdowns, cumulative reward series, and recent interactions for the LinUCB interaction stream.
 - `POST /simulations` still creates the DB record only. It does not yet launch Prefect/orchestration.
-- Baseline-series data for the full analytics contract is not yet exposed from the DB-backed API.
+- Baseline-series data is not yet stored separately from the LinUCB interaction stream.
 
 ## Operational note
 

@@ -405,26 +405,26 @@ def complete_simulation(
     return SimulationResponse(**simulation)
 
 
-# @app.post(
-#     "/ds/artifacts",
-#     response_model=DSArtifactImportResponse,
-#     status_code=status.HTTP_201_CREATED,
-#     tags=["ds-artifacts"],
-#     summary="Import generated DS data-file payloads into the database",
-# )
-# def import_ds_artifacts(
-#     payload: DSArtifactBundleImportRequest,
-#     db: SQLHandler = Depends(get_db),
-# ) -> DSArtifactImportResponse:
-#     """Persist generated customers, interactions, model state, and file payloads."""
+@app.post(
+    "/ds/artifacts",
+    response_model=DSArtifactImportResponse,
+    status_code=status.HTTP_201_CREATED,
+    tags=["ds-artifacts"],
+    summary="Import generated DS data-file payloads into the database",
+)
+def import_ds_artifacts(
+    payload: DSArtifactBundleImportRequest,
+    db: SQLHandler = Depends(get_db),
+) -> DSArtifactImportResponse:
+    """Persist generated customers, interactions, model state, and file payloads."""
 
-#     try:
-#         result = import_ds_artifact_bundle(db, payload)
-#     except ConflictError as exc:
-#         raise HTTPException(status_code=409, detail=str(exc)) from exc
-#     except ValueError as exc:
-#         raise HTTPException(status_code=400, detail=str(exc)) from exc
-#     return DSArtifactImportResponse(**result)
+    try:
+        result = import_ds_artifact_bundle(db, payload)
+    except ConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return DSArtifactImportResponse(**result)
 
 
 @app.get(
@@ -568,7 +568,7 @@ def get_metrics(
     simulation_id: int = Query(..., ge=1),
     db: SQLHandler = Depends(get_db),
 ) -> MetricsResponse:
-    """Return the currently implemented aggregate interaction counters."""
+    """Return dashboard metrics and recent interaction details."""
 
     metrics = get_metrics_snapshot(db, simulation_id)
     if metrics is None:
