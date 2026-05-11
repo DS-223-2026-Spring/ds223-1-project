@@ -15,12 +15,17 @@ st.set_page_config(
     layout="wide",
 )
 
+# Capitalize every word in sidebar navigation labels
+st.markdown(
+    "<style>[data-testid='stSidebarNav'] span { text-transform: capitalize; }</style>",
+    unsafe_allow_html=True,
+)
+
 # ── Hero ──────────────────────────────────────────────────────
 st.title("CampX")
 st.markdown(
     "A **contextual bandit (LinUCB)** that learns which promotional action "
-    "maximises profit for each fashion retail customer — updating after "
-    "every interaction."
+    "maximises profit for each fashion retail custome.r"
 )
 
 
@@ -33,6 +38,12 @@ except bu.APIError as exc:
     bu.render_api_error(exc)
     sims = pd.DataFrame()
 
+try:
+    customers = bu.list_customers()
+    customer_count = len(customers)
+except bu.APIError:
+    customer_count = 0
+
 total_sims = len(sims)
 running = int((sims["status"] == "running").sum()) if total_sims and "status" in sims else 0
 best = sims["cumulative_reward"].max() if total_sims and "cumulative_reward" in sims else None
@@ -41,7 +52,7 @@ c1, c2, c3, c4 = st.columns(4)
 c1.metric("Simulations run", total_sims)
 c2.metric("Currently running", running)
 c3.metric("Best cumulative reward", bu.format_currency(best))
-c4.metric("Customer pool", "500")
+c4.metric("Customer pool", customer_count)
 
 st.divider()
 
@@ -93,11 +104,3 @@ with n5:
     st.page_link("pages/5_customers.py", label="Open →")
 
 st.divider()
-
-with st.expander("Build status"):
-    st.markdown(
-        "- Frontend wired to live API\n"
-        "- Charts use built-in `st.line_chart` / `st.bar_chart` / `st.area_chart`\n"
-        "- Tables use `st.dataframe` (with Pandas styler for the θ matrix)\n"
-        "- Pending backend work: full `/metrics` payload, Prefect-triggered runs"
-    )

@@ -92,6 +92,8 @@ else:
     chart_df = cum.copy()
     if "round" in chart_df.columns:
         chart_df = chart_df.set_index("round")
+    if "cumulative_reward" in chart_df.columns and len(chart_df.columns) == 1:
+        chart_df = chart_df.rename(columns={"cumulative_reward": "LinUCB"})
     st.line_chart(
         chart_df,
         height=380,

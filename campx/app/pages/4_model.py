@@ -55,11 +55,13 @@ theta = state["theta"].copy()
 theta.columns = [bu.ACTION_LABELS.get(c, c) for c in theta.columns]
 
 
+theta_max_abs = max(1e-6, float(theta.abs().max().max()))
+
 def _theta_cell_style(val) -> str:
     """Red-for-positive, blue-for-negative cell shading via inline CSS."""
     if val is None or pd.isna(val):
         return ""
-    v = max(-1.5, min(1.5, float(val))) / 1.5  # → [-1, 1]
+    v = float(val) / theta_max_abs  # → [-1, 1]
     if v >= 0:
         # Toward red: blend white (255,255,255) → red (239, 68, 68)
         r = int(255 - (255 - 239) * v)
@@ -95,8 +97,7 @@ st.divider()
 # ── UCB decomposition for one customer ─────────────────────────
 st.subheader("UCB decomposition — predict for a customer")
 st.caption(
-    "For any customer, show the exploit term (θᵀx), the explore bonus "
-    "(α·√(xᵀA⁻¹x)), and which action wins."
+    "For any customer, show the exploit term and the explore bonus, and which action wins."
 )
 
 c1, c2 = st.columns([1, 3])
