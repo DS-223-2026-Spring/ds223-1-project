@@ -7,6 +7,14 @@ from psycopg2 import OperationalError
 try:
     from .SQLHandler import SQLHandler
     from .config import get_database_settings, load_backend_env
+    from .crud import (
+        get_ds_artifact,
+        get_metrics_snapshot,
+        get_model_state_snapshot,
+        get_simulation_record,
+        list_ds_artifacts,
+        list_simulations,
+    )
     from .db_interactions import (
         get_all_customers,
         get_customer_by_id,
@@ -17,6 +25,14 @@ try:
 except ImportError:
     from SQLHandler import SQLHandler
     from config import get_database_settings, load_backend_env
+    from crud import (
+        get_ds_artifact,
+        get_metrics_snapshot,
+        get_model_state_snapshot,
+        get_simulation_record,
+        list_ds_artifacts,
+        list_simulations,
+    )
     from db_interactions import (
         get_all_customers,
         get_customer_by_id,
@@ -33,6 +49,10 @@ REQUIRED_TABLES = (
     "simulations",
     "interactions",
     "model_state",
+)
+
+OPTIONAL_TABLES = (
+    "simulation_artifacts",
 )
 
 
@@ -95,6 +115,61 @@ def _exercise_read_helpers(db) -> list[str]:
     return messages
 
 
+def _exercise_backend_snapshots(db) -> list[str]:
+    messages: list[str] = []
+    tables = _table_names(db)
+
+    simulations = list_simulations(db)
+    messages.append(f"list_simulations -> {len(simulations)} rows")
+    if not simulations:
+        messages.append("Simulation-dependent CRUD checks skipped -> no simulations found")
+        return messages
+
+    simulation_id = int(simulations[0]["simulation_id"])
+    simulation = get_simulation_record(db, simulation_id)
+    messages.append(
+        "get_simulation_record -> "
+        f"{'ok' if simulation is not None else 'missing'} for simulation_id={simulation_id}"
+    )
+
+    metrics = get_metrics_snapshot(db, simulation_id)
+    messages.append(
+        "get_metrics_snapshot -> "
+        f"{'ok' if metrics is not None else 'missing'} for simulation_id={simulation_id}"
+    )
+
+    model_state = get_model_state_snapshot(db, simulation_id)
+    messages.append(
+        "get_model_state_snapshot -> "
+        f"{'ok' if model_state is not None else 'missing'} for simulation_id={simulation_id}"
+    )
+
+    if "simulation_artifacts" not in tables:
+        messages.append(
+            "DS artifact checks skipped -> simulation_artifacts table is missing "
+            "(re-apply DB migrations or recreate the volume to enable DS artifact storage)"
+        )
+        return messages
+
+    artifacts = list_ds_artifacts(db, simulation_id)
+    artifact_count = len(artifacts) if artifacts is not None else 0
+    messages.append(
+        f"list_ds_artifacts -> {artifact_count} rows for simulation_id={simulation_id}"
+    )
+    if artifacts:
+        first_artifact_name = str(artifacts[0]["artifact_name"])
+        artifact = get_ds_artifact(db, simulation_id, first_artifact_name)
+        messages.append(
+            "get_ds_artifact -> "
+            f"{'ok' if artifact is not None else 'missing'} "
+            f"for simulation_id={simulation_id}, artifact_name={first_artifact_name}"
+        )
+    else:
+        messages.append("get_ds_artifact skipped -> no simulation_artifacts rows found")
+
+    return messages
+
+
 def main() -> int:
     load_backend_env()
     settings = get_database_settings()
@@ -113,6 +188,9 @@ def main() -> int:
 
         tables = _table_names(db)
         missing_tables = [table for table in REQUIRED_TABLES if table not in tables]
+        missing_optional_tables = [
+            table for table in OPTIONAL_TABLES if table not in tables
+        ]
 
         print("Database connection OK")
         print(f"Host: {settings['host']}:{settings['port']}")
@@ -128,9 +206,17 @@ def main() -> int:
         print("Required tables present:")
         for table in REQUIRED_TABLES:
             print(f"- {table}")
+        if missing_optional_tables:
+            print("Optional integration tables missing:")
+            for table in missing_optional_tables:
+                print(f"- {table}")
 
         print("Shared read helpers:")
         for message in _exercise_read_helpers(db):
+            print(f"- {message}")
+
+        print("Backend CRUD integration:")
+        for message in _exercise_backend_snapshots(db):
             print(f"- {message}")
         return 0
 

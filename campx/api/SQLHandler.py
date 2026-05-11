@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import psycopg2
 from psycopg2.extras import execute_values
+from typing import Any
 
 
 class SQLHandler:
@@ -147,6 +148,36 @@ class SQLHandler:
         except Exception as exc:
             logger.error(f"SELECT failed: {exc}")
             raise
+
+    def fetch_all(self, query: str, params: tuple | None = None) -> list[dict[str, Any]]:
+        """
+        Execute a SELECT query and return all rows as dictionaries.
+
+        This is a lighter-weight alternative to ``select`` when pandas is not needed.
+        """
+        if not query.strip().lower().startswith("select"):
+            raise ValueError("Only SELECT queries are allowed")
+
+        logger.info("Executing row fetch query")
+        self.cursor.execute(query, params)
+        rows = self.cursor.fetchall()
+        columns = [column.name for column in self.cursor.description]
+        return [dict(zip(columns, row, strict=True)) for row in rows]
+
+    def fetch_one(self, query: str, params: tuple | None = None) -> dict[str, Any] | None:
+        """
+        Execute a SELECT query and return the first row as a dictionary.
+        """
+        if not query.strip().lower().startswith("select"):
+            raise ValueError("Only SELECT queries are allowed")
+
+        logger.info("Executing single-row fetch query")
+        self.cursor.execute(query, params)
+        row = self.cursor.fetchone()
+        if row is None:
+            return None
+        columns = [column.name for column in self.cursor.description]
+        return dict(zip(columns, row, strict=True))
 
     def insert_dataframe(self, df: pd.DataFrame, table: str):
         """
