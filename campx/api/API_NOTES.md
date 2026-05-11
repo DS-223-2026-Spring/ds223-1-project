@@ -37,6 +37,7 @@ Reference endpoints:
 Simulation endpoints:
 
 - `GET /simulations`
+- `GET /simulations/{simulation_id}`
 - `POST /simulations`
 - `PUT /simulations/{simulation_id}/complete`
 
@@ -49,7 +50,7 @@ Interaction and model endpoints:
 
 Metrics endpoint:
 
-- `GET /metrics?simulation_id=...`
+- `GET /metrics?simulation_id=...&sample_rate=...`
 
 DS artifact endpoints:
 
@@ -61,6 +62,7 @@ DS artifact endpoints:
 
 - `GET /customers` returns a raw array, not an `{items, count}` envelope
 - `GET /simulations` returns a raw array, not an `{items, count}` envelope
+- `GET /simulations/{simulation_id}` returns the same simulation summary shape as the list items
 - `GET /customers/{customer_id}` returns the richer detail shape with nested `rfm`, `interactions`, and optional `latents`
 - `POST /simulations` returns the simulation record shape used by the backend and frontend contract
 - `POST /decide` returns either:
@@ -68,6 +70,7 @@ DS artifact endpoints:
   - `{interaction_id, recommended_action, scores}` in live mode
 - `POST /feedback` returns `{interaction_id, reward, observed_at, model_updated}`
 - `POST /ds/artifacts` returns counts for imported customers, actions, interactions, model-state rows, and stored generated artifacts.
+- `GET /metrics` returns top-level counters plus chart-ready arrays; `sample_rate` downsamples the cumulative reward series while keeping the last point.
 
 ## DB integration choices
 
@@ -77,6 +80,7 @@ DS artifact endpoints:
 - `view_simulation_summary` is the main read source for simulation listing.
 - `sp_upsert_customer`, `sp_log_interaction`, and `sp_submit_feedback` are the main write paths used by the API.
 - `simulation_artifacts` stores generated CSV-style DS outputs as JSON/text payloads keyed by `simulation_id`.
+- When present, DS baseline comparison traces are read back from `simulation_artifacts` and merged into `/metrics.cumulative_reward_series`.
 
 ## Model and interaction assumptions
 
@@ -86,12 +90,15 @@ DS artifact endpoints:
 - `POST /feedback` computes realized reward through the stored procedure and then persists updated `model_state` for the affected action.
 - `POST /feedback` is only for pending interactions created by `POST /decide`; imported DS experiment interactions already include observed outcomes and will return 409 if submitted again.
 - The current `/model/state` path uses customer features available in the live DB to derive scaling, because the DB schema does not store the richer DS-side feature-transform metadata.
+- `/metrics.cumulative_reward_series` always includes the live LinUCB trace and may also include baseline policy columns such as `random` or `heuristic` when DS round-trace artifacts were imported.
 
 ## What is still incomplete
 
 - `GET /metrics` now returns dashboard counters, action breakdowns, cumulative reward series, and recent interactions for the LinUCB interaction stream.
-- `POST /simulations` still creates the DB record only. It does not yet launch Prefect/orchestration.
-- Baseline-series data is not yet stored separately from the LinUCB interaction stream.
+- Baseline policy comparison data is surfaced through `/metrics` only when the corresponding DS artifacts were imported for that simulation.
+- `POST /simulations` creates the DB record and launches an in-process FastAPI background simulation loop.
+- Simulation orchestration still runs in-process for now; it does not yet hand off to Prefect or an external worker.
+- Baseline-series data is not yet stored in dedicated relational tables; the backend currently reads it from DS artifacts.
 
 ## Operational note
 

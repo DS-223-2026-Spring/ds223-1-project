@@ -65,6 +65,71 @@ def get_customer_latents(db: SQLHandler, customer_id: int):
     return df.iloc[0].to_dict() if not df.empty else None
 
 
+def list_action_definitions(db: SQLHandler):
+    """Return the seeded action catalog as plain dictionaries."""
+
+    logger.info("Fetching action definitions")
+    return db.fetch_all(
+        """
+        SELECT action_id, action_name, action_cost, target_latent, description
+        FROM public.actions
+        ORDER BY action_id
+        """
+    )
+
+
+def get_simulation_summary(db: SQLHandler, simulation_id: int):
+    """Fetch one simulation summary row from the shared summary view."""
+
+    logger.info(f"Fetching simulation summary simulation_id={simulation_id}")
+    return db.fetch_one(
+        """
+        SELECT *
+        FROM public.view_simulation_summary
+        WHERE simulation_id = %s
+        """,
+        (simulation_id,),
+    )
+
+
+def list_customer_feature_rows(db: SQLHandler, limit: int | None = None):
+    """Fetch customer feature rows used for simulation context vectors."""
+
+    logger.info(f"Fetching customer feature rows limit={limit}")
+    if limit is None:
+        return db.fetch_all(
+            """
+            SELECT
+                customer_id,
+                recency,
+                frequency,
+                monetary,
+                basket_diversity,
+                avg_order_size,
+                purchase_regularity
+            FROM public.customers
+            ORDER BY customer_id
+            """
+        )
+
+    return db.fetch_all(
+        """
+        SELECT
+            customer_id,
+            recency,
+            frequency,
+            monetary,
+            basket_diversity,
+            avg_order_size,
+            purchase_regularity
+        FROM public.customers
+        ORDER BY customer_id
+        LIMIT %s
+        """,
+        (limit,),
+    )
+
+
 def insert_customer(
     db: SQLHandler,
     gender,
@@ -302,6 +367,39 @@ def get_pending_interactions(db: SQLHandler, older_than_hours=48):
     )
 
 
+def get_interaction_summary(db: SQLHandler, interaction_id: int):
+    """Fetch the interaction fields needed by feedback/model update flows."""
+
+    logger.info(f"Fetching interaction summary interaction_id={interaction_id}")
+    return db.fetch_one(
+        """
+        SELECT
+            interaction_id,
+            simulation_id,
+            action_id,
+            observed_at
+        FROM public.interactions
+        WHERE interaction_id = %s
+        """,
+        (interaction_id,),
+    )
+
+
+def get_next_simulation_round(db: SQLHandler, simulation_id: int) -> int:
+    """Return the next round number for one simulation."""
+
+    logger.info(f"Fetching next round number simulation_id={simulation_id}")
+    row = db.fetch_one(
+        """
+        SELECT COALESCE(MAX(round_number), 0) + 1 AS next_round
+        FROM public.interactions
+        WHERE simulation_id = %s
+        """,
+        (simulation_id,),
+    )
+    return int(row["next_round"]) if row is not None else 1
+
+
 def get_model_state(db: SQLHandler, simulation_id: int, action_id: int):
     """
     Retrieve latest model state for a given simulation-action pair.
@@ -324,6 +422,28 @@ def get_model_state(db: SQLHandler, simulation_id: int, action_id: int):
         (simulation_id, action_id),
     )
     return df.iloc[0].to_dict() if not df.empty else None
+
+
+def list_observed_simulation_interactions(db: SQLHandler, simulation_id: int):
+    """Return observed interactions in replay order for state reconstruction."""
+
+    logger.info(f"Fetching observed interactions simulation_id={simulation_id}")
+    return db.fetch_all(
+        """
+        SELECT
+            interaction_id,
+            action_id,
+            round_number,
+            context_vector,
+            reward,
+            observed_at
+        FROM public.interactions
+        WHERE simulation_id = %s
+          AND observed_at IS NOT NULL
+        ORDER BY observed_at, interaction_id
+        """,
+        (simulation_id,),
+    )
 
 
 def upsert_model_state(

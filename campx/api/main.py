@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -18,12 +18,14 @@ try:
         get_ds_artifact,
         get_metrics_snapshot,
         get_model_state_snapshot,
+        get_simulation_record,
         import_ds_artifact_bundle,
         list_ds_artifacts,
         list_actions,
         list_customers,
         list_simulations,
         log_scored_decision,
+        run_simulation_background,
         score_customer_actions,
         submit_feedback,
         upsert_customer_record,
@@ -74,12 +76,14 @@ except ImportError:
         get_ds_artifact,
         get_metrics_snapshot,
         get_model_state_snapshot,
+        get_simulation_record,
         import_ds_artifact_bundle,
         list_ds_artifacts,
         list_actions,
         list_customers,
         list_simulations,
         log_scored_decision,
+        run_simulation_background,
         score_customer_actions,
         submit_feedback,
         upsert_customer_record,
@@ -367,23 +371,43 @@ def get_simulations(db: SQLHandler = Depends(get_db)) -> list[SimulationResponse
     return [SimulationResponse(**item) for item in list_simulations(db)]
 
 
+@app.get(
+    "/simulations/{simulation_id}",
+    response_model=SimulationResponse,
+    tags=["simulations"],
+    summary="Fetch one simulation record",
+)
+def get_simulation(
+    simulation_id: int,
+    db: SQLHandler = Depends(get_db),
+) -> SimulationResponse:
+    """Return one simulation summary including status and cumulative reward."""
+
+    simulation = get_simulation_record(db, simulation_id)
+    if simulation is None:
+        raise HTTPException(status_code=404, detail=f"Simulation {simulation_id} was not found.")
+    return SimulationResponse(**simulation)
+
+
 @app.post(
     "/simulations",
     response_model=SimulationResponse,
     status_code=status.HTTP_201_CREATED,
     tags=["simulations"],
-    summary="Create a simulation record",
+    summary="Create and launch a simulation",
 )
 def create_simulation(
     payload: SimulationCreate,
+    background_tasks: BackgroundTasks,
     db: SQLHandler = Depends(get_db),
 ) -> SimulationResponse:
-    """Create a simulation record through the REST-style resource endpoint."""
+    """Create a simulation record and enqueue the in-process simulation runner."""
 
     try:
         simulation = create_simulation_record(db, payload)
     except ConflictError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    background_tasks.add_task(run_simulation_background, int(simulation["simulation_id"]))
     return SimulationResponse(**simulation)
 
 
@@ -566,11 +590,12 @@ def feedback(payload: FeedbackRequest, db: SQLHandler = Depends(get_db)) -> Feed
 )
 def get_metrics(
     simulation_id: int = Query(..., ge=1),
+    sample_rate: int = Query(default=1, ge=1, le=1000),
     db: SQLHandler = Depends(get_db),
 ) -> MetricsResponse:
-    """Return dashboard metrics and recent interaction details."""
+    """Return dashboard metrics, recent interactions, and policy comparison series."""
 
-    metrics = get_metrics_snapshot(db, simulation_id)
+    metrics = get_metrics_snapshot(db, simulation_id, sample_rate=sample_rate)
     if metrics is None:
         raise HTTPException(status_code=404, detail=f"Simulation {simulation_id} was not found.")
     return MetricsResponse(**metrics)
