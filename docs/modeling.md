@@ -19,7 +19,8 @@ python -m campx.ds.run_workflow \
   --n-rounds 5000 \
   --random-seed 42 \
   --policy-mode linucb \
-  --output-dir outputs/final_outputs
+  --output-dir outputs/final_outputs \
+  --storage db
 ```
 
 Other useful entrypoints:
@@ -32,8 +33,13 @@ python -m campx.ds.generate_eda_report --input-dir outputs/final_outputs --outpu
 ```
 
 `--storage db` still writes the generated CSV/report directory first, then loads
-those files into PostgreSQL. This keeps the local artifacts available while the
-database becomes the serving layer.
+those files into PostgreSQL. For the full workflow this includes
+`baselines/policy_round_traces.csv`, which is the artifact the backend uses to
+add baseline policy columns to `/metrics.cumulative_reward_series`.
+
+`generate_synthetic_data --storage db` is the lightweight synthetic-data import
+path. Use `run_workflow --storage db` for the full dashboard/demo path because it
+also generates and imports baseline comparison artifacts.
 
 ## Main modules
 
