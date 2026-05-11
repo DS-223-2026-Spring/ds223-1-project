@@ -37,7 +37,11 @@ RESOURCE_STRUCTURE = (
     {
         "resource": "simulations",
         "table": "simulations",
-        "paths": ("/simulations", "/simulations/{simulation_id}/complete"),
+        "paths": (
+            "/simulations",
+            "/simulations/{simulation_id}",
+            "/simulations/{simulation_id}/complete",
+        ),
         "methods": ("GET", "POST", "PUT"),
         "owner_notes": (
             "Simulation records provide the shared coordination point between backend, "
@@ -105,11 +109,12 @@ API_ASSUMPTIONS = (
     "The `decide` endpoint now computes LinUCB-style exploit and explore scores from database-backed model state reconstructed from observed interactions.",
     "Context vectors are stored in `interactions.context_vector` as float64 binary feature arrays so feedback updates can reproduce the learning state.",
     "Generated DS CSV-style outputs are stored in PostgreSQL through `/ds/artifacts` instead of relying on local output directories.",
+    "When baseline comparison artifacts are available in `simulation_artifacts`, `/metrics` folds those DS policy traces into the cumulative reward series used by analytics visualizations.",
     "The frontend should reach the service at `http://backend:8000` inside docker-compose.",
 )
 
 PENDING_DEPENDENCIES = (
-    "Baseline policy comparison data is not yet stored separately from the LinUCB interaction stream.",
+    "Baseline policy comparison data is currently read from DS artifacts when available rather than from first-class relational tables.",
     "Orchestration wiring that hands simulation execution off to Prefect or another external worker instead of the current in-process BackgroundTask runner.",
 )
 

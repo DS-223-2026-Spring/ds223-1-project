@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 
 
 class HealthResponse(BaseModel):
@@ -191,9 +191,10 @@ class FeedbackResponse(BaseModel):
     model_updated: bool
 
 
-class CumulativeRewardPoint(BaseModel):
+class PolicyCumulativeRewardPoint(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     round: int
-    cumulative_reward: float | None = None
 
 
 class ActionDistributionPoint(BaseModel):
@@ -229,7 +230,7 @@ class MetricsResponse(BaseModel):
     cumulative_reward: float | None = None
     avg_reward_per_round: float | None = None
     pending_observations: int
-    cumulative_reward_series: list[CumulativeRewardPoint]
+    cumulative_reward_series: list[PolicyCumulativeRewardPoint]
     action_distribution: list[ActionDistributionPoint]
     conversion_by_action: list[ConversionByActionItem]
     recent_interactions: list[RecentInteractionItem]
@@ -256,14 +257,93 @@ class DSArtifactPayload(BaseModel):
     payload_json: Any | None = None
     payload_text: str | None = None
 
+    @model_validator(mode="after")
+    def validate_payload_present(self) -> "DSArtifactPayload":
+        if self.payload_json is None and self.payload_text is None:
+            raise ValueError("Either payload_json or payload_text must be provided.")
+        return self
+
+
+class DSGeneratedRowBase(BaseModel):
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+
+class DSGeneratedCustomerRow(DSGeneratedRowBase):
+    customer_id: int = Field(..., ge=1)
+    gender: Literal["M", "F"]
+    segment_label: str = Field(
+        ...,
+        min_length=1,
+        validation_alias=AliasChoices("segment_label", "segment"),
+    )
+    recency: float
+    frequency: float
+    monetary: float
+    basket_diversity: float
+    avg_order_size: float
+    purchase_regularity: float
+
+
+class DSGeneratedCustomerLatentRow(DSGeneratedRowBase):
+    customer_id: int = Field(..., ge=1)
+    z_price_sensitivity: float
+    z_brand_loyalty: float
+    z_impulse_tendency: float
+
+
+class DSGeneratedActionRow(DSGeneratedRowBase):
+    action_id: int = Field(..., ge=0)
+    action_name: str = Field(..., min_length=1)
+    action_cost: float = Field(
+        ...,
+        validation_alias=AliasChoices("action_cost", "base_cost"),
+    )
+    target_latent: str | None = Field(default=None, min_length=1)
+    description: str | None = None
+
+
+class DSGeneratedInteractionRow(DSGeneratedRowBase):
+    round_number: int = Field(..., ge=1)
+    customer_id: int = Field(..., ge=1)
+    action_id: int = Field(..., ge=0)
+    converted: bool | None = None
+    revenue: float | None = Field(default=None, ge=0.0)
+    cost: float | None = Field(default=None, ge=0.0)
+    ucb_score: float | None = None
+    converted_at: datetime | None = None
+    observed_at: datetime | None = None
+    context_vector: Any | None = Field(
+        default=None,
+        validation_alias=AliasChoices("context_vector", "context", "raw_context"),
+    )
+
+
+class DSGeneratedModelStateRow(DSGeneratedRowBase):
+    action_id: int = Field(..., ge=0)
+    round_number: int = Field(default=0, ge=0)
+    n_pulls: int = Field(default=0, ge=0)
+    theta_json: Any = Field(
+        ...,
+        validation_alias=AliasChoices("theta_json", "theta_vector", "theta"),
+    )
+    a_json: Any = Field(
+        ...,
+        validation_alias=AliasChoices("a_json", "a_matrix"),
+    )
+    b_json: Any = Field(
+        ...,
+        validation_alias=AliasChoices("b_json", "b_vector"),
+    )
+    alpha: float = Field(..., ge=0.0)
+
 
 class DSArtifactBundleImportRequest(BaseModel):
     simulation: SimulationCreate
-    customers: list[dict[str, Any]] = Field(default_factory=list)
-    customer_latents: list[dict[str, Any]] = Field(default_factory=list)
-    actions: list[dict[str, Any]] = Field(default_factory=list)
-    interactions: list[dict[str, Any]] = Field(default_factory=list)
-    model_state: list[dict[str, Any]] = Field(default_factory=list)
+    customers: list[DSGeneratedCustomerRow] = Field(default_factory=list)
+    customer_latents: list[DSGeneratedCustomerLatentRow] = Field(default_factory=list)
+    actions: list[DSGeneratedActionRow] = Field(default_factory=list)
+    interactions: list[DSGeneratedInteractionRow] = Field(default_factory=list)
+    model_state: list[DSGeneratedModelStateRow] = Field(default_factory=list)
     artifacts: list[DSArtifactPayload] = Field(default_factory=list)
     complete_simulation: bool = True
 

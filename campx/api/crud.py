@@ -843,6 +843,109 @@ def get_ds_artifact(
     return _serialize_record(artifact)
 
 
+_BASELINE_POLICY_TRACE_ARTIFACTS = (
+    "baselines/policy_round_traces.csv",
+    "policy_round_traces.csv",
+)
+
+_POLICY_NAME_ALIASES = {
+    "linucb": "linucb",
+    "random_uniform": "random",
+    "segment_heuristic": "heuristic",
+}
+
+
+def _normalize_policy_series_name(raw_name: Any) -> str:
+    name = str(raw_name or "").strip()
+    if not name:
+        return "unknown_policy"
+    return _POLICY_NAME_ALIASES.get(name, name)
+
+
+def _records_payload(value: Any) -> list[dict[str, Any]]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [row for row in value if isinstance(row, dict)]
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return []
+        return [row for row in parsed if isinstance(row, dict)] if isinstance(parsed, list) else []
+    return []
+
+
+def _load_baseline_policy_round_traces(
+    db: SQLHandler,
+    simulation_id: int,
+) -> list[dict[str, Any]]:
+    for artifact_name in _BASELINE_POLICY_TRACE_ARTIFACTS:
+        artifact = db_get_simulation_artifact(db, simulation_id, artifact_name)
+        if artifact is None:
+            continue
+        return _records_payload(artifact.get("payload_json"))
+    return []
+
+
+def _sample_round_series(
+    rows: list[dict[str, Any]],
+    sample_rate: int,
+) -> list[dict[str, Any]]:
+    if sample_rate <= 1 or len(rows) <= 2:
+        return rows
+
+    sampled = [row for index, row in enumerate(rows) if index % sample_rate == 0]
+    if sampled and sampled[-1].get("round") != rows[-1].get("round"):
+        sampled.append(rows[-1])
+    elif not sampled:
+        sampled = [rows[-1]]
+    return sampled
+
+
+def _build_policy_cumulative_reward_series(
+    db: SQLHandler,
+    simulation_id: int,
+    *,
+    sample_rate: int,
+) -> list[dict[str, Any]]:
+    linucb_rows = _fetchall_raw(
+        db,
+        """
+        SELECT
+            round_number AS round,
+            SUM(reward) OVER (ORDER BY round_number) AS cumulative_reward
+        FROM public.interactions
+        WHERE simulation_id = %s
+            AND observed_at IS NOT NULL
+        ORDER BY round_number
+        """,
+        (simulation_id,),
+    )
+
+    merged_by_round: dict[int, dict[str, Any]] = {}
+    for row in linucb_rows:
+        round_number = int(row["round"])
+        merged_by_round[round_number] = {
+            "round": round_number,
+            "linucb": float(row["cumulative_reward"]),
+        }
+
+    for row in _load_baseline_policy_round_traces(db, simulation_id):
+        if row.get("round_number") is None or row.get("cumulative_reward") is None:
+            continue
+        round_number = int(row["round_number"])
+        policy_name = _normalize_policy_series_name(row.get("policy_name"))
+        merged = merged_by_round.setdefault(round_number, {"round": round_number})
+        merged[policy_name] = float(row["cumulative_reward"])
+
+    ordered_rows = [
+        _serialize_record(merged_by_round[round_number])
+        for round_number in sorted(merged_by_round)
+    ]
+    return _sample_round_series(ordered_rows, sample_rate)
+
+
 def _get_feature_scales(db: SQLHandler, simulation_id: int) -> np.ndarray:
     context_df = db.select(
         """
@@ -1165,7 +1268,12 @@ def submit_feedback(db: SQLHandler, payload: FeedbackRequest) -> dict[str, Any] 
     }
 
 
-def get_metrics_snapshot(db: SQLHandler, simulation_id: int) -> dict[str, Any] | None:
+def get_metrics_snapshot(
+    db: SQLHandler,
+    simulation_id: int,
+    *,
+    sample_rate: int = 1,
+) -> dict[str, Any] | None:
     simulation = _select_one(
         db,
         """
@@ -1225,22 +1333,11 @@ def get_metrics_snapshot(db: SQLHandler, simulation_id: int) -> dict[str, Any] |
         """,
         (simulation_id,),
     )
-    cumulative_reward_series = [
-        _serialize_record(row)
-        for row in _fetchall_raw(
-            db,
-            """
-            SELECT
-                round_number AS round,
-                SUM(reward) OVER (ORDER BY round_number) AS cumulative_reward
-            FROM public.interactions
-            WHERE simulation_id = %s
-                AND observed_at IS NOT NULL
-            ORDER BY round_number
-            """,
-            (simulation_id,),
-        )
-    ]
+    cumulative_reward_series = _build_policy_cumulative_reward_series(
+        db,
+        simulation_id,
+        sample_rate=sample_rate,
+    )
     action_distribution = [
         _serialize_record(row)
         for row in _fetchall_raw(

@@ -109,8 +109,8 @@ SAMPLE_METRICS = {
     "avg_reward_per_round": 3.125,
     "pending_observations": 1,
     "cumulative_reward_series": [
-        {"round": 1, "cumulative_reward": 5.0},
-        {"round": 2, "cumulative_reward": 12.5},
+        {"round": 1, "linucb": 5.0, "random": 2.5, "heuristic": 3.2},
+        {"round": 2, "linucb": 12.5, "random": 7.0, "heuristic": 8.8},
     ],
     "action_distribution": [
         {"round": 1, "action": "discount_10"},
@@ -308,6 +308,11 @@ def _install_endpoint_stubs() -> dict[str, object]:
     def list_simulations_stub(db):
         return [dict(SAMPLE_SIMULATION)]
 
+    def get_simulation_record_stub(db, simulation_id):
+        if simulation_id != 1:
+            return None
+        return dict(SAMPLE_SIMULATION)
+
     def create_simulation_record_stub(db, payload):
         record = dict(SAMPLE_SIMULATION)
         record.update(payload.model_dump(exclude_none=True, exclude_unset=True))
@@ -342,7 +347,7 @@ def _install_endpoint_stubs() -> dict[str, object]:
             return None
         return dict(SAMPLE_MODEL_STATE)
 
-    def get_metrics_snapshot_stub(db, simulation_id):
+    def get_metrics_snapshot_stub(db, simulation_id, sample_rate=1):
         if simulation_id != 1:
             return None
         return dict(SAMPLE_METRICS)
@@ -379,6 +384,7 @@ def _install_endpoint_stubs() -> dict[str, object]:
         "delete_customer_record": delete_customer_record_stub,
         "list_actions": list_actions_stub,
         "list_simulations": list_simulations_stub,
+        "get_simulation_record": get_simulation_record_stub,
         "create_simulation_record": create_simulation_record_stub,
         "run_simulation_background": run_simulation_background_stub,
         "complete_simulation_record": complete_simulation_record_stub,
@@ -461,6 +467,7 @@ def _verify_endpoints(client: TestClient) -> bool:
         ("DELETE /customers/1", client.delete("/customers/1"), 200),
         ("GET /actions", client.get("/actions"), 200),
         ("GET /simulations", client.get("/simulations"), 200),
+        ("GET /simulations/1", client.get("/simulations/1"), 200),
         (
             "POST /simulations",
             client.post(
@@ -586,7 +593,7 @@ def _verify_endpoints(client: TestClient) -> bool:
             ),
             200,
         ),
-        ("GET /metrics", client.get("/metrics?simulation_id=1"), 200),
+        ("GET /metrics", client.get("/metrics?simulation_id=1&sample_rate=2"), 200),
     ]
 
     for label, response, expected_status in requests:
@@ -598,6 +605,9 @@ def _verify_endpoints(client: TestClient) -> bool:
         return False
     if client.put("/simulations/999/complete").status_code != 404:
         print("PUT /simulations/999/complete did not return 404")
+        return False
+    if client.get("/simulations/999").status_code != 404:
+        print("GET /simulations/999 did not return 404")
         return False
     if client.get("/ds/artifacts/999").status_code != 404:
         print("GET /ds/artifacts/999 did not return 404")
