@@ -41,7 +41,7 @@ RESOURCE_STRUCTURE = (
         "methods": ("GET", "POST", "PUT"),
         "owner_notes": (
             "Simulation records provide the shared coordination point between backend, "
-            "DB persistence, and later orchestration-triggered runs."
+            "DB persistence, and the current in-process background simulation runner."
         ),
     },
     {
@@ -101,7 +101,7 @@ API_ASSUMPTIONS = (
     "The `customers` resource is the primary milestone-2 CRUD surface because the schema and helper layer already support it end to end.",
     "Public resource names are `customers`, `actions`, `simulations`, `interactions`, and `metrics`, matching the shared API structure exposed by the backend.",
     "The backend reuses DB-facing helper logic copied from `etl/` into the backend container so imports work without changing the ETL codebase.",
-    "Simulation creation is exposed through `POST /simulations` as the single public write route for simulation records.",
+    "Simulation creation is exposed through `POST /simulations` as the single public write route for simulation records and currently launches an in-process background run.",
     "The `decide` endpoint now computes LinUCB-style exploit and explore scores from database-backed model state reconstructed from observed interactions.",
     "Context vectors are stored in `interactions.context_vector` as float64 binary feature arrays so feedback updates can reproduce the learning state.",
     "Generated DS CSV-style outputs are stored in PostgreSQL through `/ds/artifacts` instead of relying on local output directories.",
@@ -110,7 +110,7 @@ API_ASSUMPTIONS = (
 
 PENDING_DEPENDENCIES = (
     "Baseline policy comparison data is not yet stored separately from the LinUCB interaction stream.",
-    "Orchestration wiring that turns simulation creation into Prefect flow runs rather than a database-only placeholder write.",
+    "Orchestration wiring that hands simulation execution off to Prefect or another external worker instead of the current in-process BackgroundTask runner.",
 )
 
 API_TAGS = [

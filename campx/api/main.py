@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -24,6 +24,7 @@ try:
         list_customers,
         list_simulations,
         log_scored_decision,
+        run_simulation_background,
         score_customer_actions,
         submit_feedback,
         upsert_customer_record,
@@ -80,6 +81,7 @@ except ImportError:
         list_customers,
         list_simulations,
         log_scored_decision,
+        run_simulation_background,
         score_customer_actions,
         submit_feedback,
         upsert_customer_record,
@@ -376,6 +378,7 @@ def get_simulations(db: SQLHandler = Depends(get_db)) -> list[SimulationResponse
 )
 def create_simulation(
     payload: SimulationCreate,
+    background_tasks: BackgroundTasks,
     db: SQLHandler = Depends(get_db),
 ) -> SimulationResponse:
     """Create a simulation record through the REST-style resource endpoint."""
@@ -384,6 +387,7 @@ def create_simulation(
         simulation = create_simulation_record(db, payload)
     except ConflictError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    background_tasks.add_task(run_simulation_background, int(simulation["simulation_id"]))
     return SimulationResponse(**simulation)
 
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import traceback
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
@@ -17,7 +18,13 @@ try:
         create_simulation,
         get_customer_by_id,
         get_customer_latents,
+        get_interaction_summary as db_get_interaction_summary,
+        get_next_simulation_round as db_get_next_simulation_round,
         get_simulation_artifact as db_get_simulation_artifact,
+        get_simulation_summary as db_get_simulation_summary,
+        list_action_definitions as db_list_action_definitions,
+        list_customer_feature_rows as db_list_customer_feature_rows,
+        list_observed_simulation_interactions as db_list_observed_simulation_interactions,
         list_simulation_artifacts as db_list_simulation_artifacts,
         log_interaction as db_log_interaction,
         observe_outcome as db_observe_outcome,
@@ -40,7 +47,13 @@ except ImportError:
         create_simulation,
         get_customer_by_id,
         get_customer_latents,
+        get_interaction_summary as db_get_interaction_summary,
+        get_next_simulation_round as db_get_next_simulation_round,
         get_simulation_artifact as db_get_simulation_artifact,
+        get_simulation_summary as db_get_simulation_summary,
+        list_action_definitions as db_list_action_definitions,
+        list_customer_feature_rows as db_list_customer_feature_rows,
+        list_observed_simulation_interactions as db_list_observed_simulation_interactions,
         list_simulation_artifacts as db_list_simulation_artifacts,
         log_interaction as db_log_interaction,
         observe_outcome as db_observe_outcome,
@@ -73,6 +86,23 @@ DEFAULT_ACTION_TARGET_LATENTS = {
     2: "price_sensitivity+planning",
     3: "brand_loyalty+impulse",
     4: "impulse_tendency",
+}
+
+# Calibrated from DS synthetic config (GeneratorCalibration.simulation)
+_ACTION_BASE_CONVERSION_RATE: dict[int, float] = {
+    0: 0.29,  # no_action
+    1: 0.18,  # discount_10
+    2: 0.20,  # free_shipping
+    3: 0.30,  # product_recommendation
+    4: 0.28,  # bundle_offer
+}
+
+_ACTION_REVENUE_RANGE: dict[int, tuple[float, float]] = {
+    0: (60.0, 78.0),
+    1: (65.0, 85.0),
+    2: (62.0, 82.0),
+    3: (70.0, 92.0),
+    4: (92.0, 125.0),
 }
 
 
@@ -132,19 +162,11 @@ def _select_one(db: SQLHandler, query: str, params: tuple[Any, ...]) -> dict[str
 
 
 def _fetchone_raw(db: SQLHandler, query: str, params: tuple[Any, ...]) -> dict[str, Any] | None:
-    db.cursor.execute(query, params)
-    row = db.cursor.fetchone()
-    if row is None:
-        return None
-    columns = [column.name for column in db.cursor.description]
-    return dict(zip(columns, row, strict=True))
+    return db.fetch_one(query, params)
 
 
 def _fetchall_raw(db: SQLHandler, query: str, params: tuple[Any, ...]) -> list[dict[str, Any]]:
-    db.cursor.execute(query, params)
-    rows = db.cursor.fetchall()
-    columns = [column.name for column in db.cursor.description]
-    return [dict(zip(columns, row, strict=True)) for row in rows]
+    return db.fetch_all(query, params)
 
 
 def _action_exists(db: SQLHandler, action_id: int) -> bool:
@@ -368,26 +390,11 @@ def delete_customer_record(db: SQLHandler, customer_id: int) -> bool:
 
 
 def list_actions(db: SQLHandler) -> list[dict[str, Any]]:
-    df = db.select(
-        """
-        SELECT action_id, action_name, action_cost, target_latent, description
-        FROM public.actions
-        ORDER BY action_id
-        """
-    )
-    return [_serialize_record(row) for row in df.to_dict(orient="records")]
+    return [_serialize_record(row) for row in db_list_action_definitions(db)]
 
 
 def _get_simulation_record(db: SQLHandler, simulation_id: int) -> dict[str, Any] | None:
-    return _select_one(
-        db,
-        """
-        SELECT *
-        FROM public.view_simulation_summary
-        WHERE simulation_id = %s
-        """,
-        (simulation_id,),
-    )
+    return _serialize_record(db_get_simulation_summary(db, simulation_id))
 
 
 def list_simulations(db: SQLHandler) -> list[dict[str, Any]]:
@@ -414,6 +421,158 @@ def complete_simulation_record(db: SQLHandler, simulation_id: int) -> dict[str, 
         return None
     complete_simulation(db, simulation_id)
     return _get_simulation_record(db, simulation_id)
+
+
+def _simulate_outcome(
+    action_id: int,
+    cost: float,
+    rng: np.random.Generator,
+) -> tuple[bool, float, float]:
+    """Return (converted, revenue, reward) for one synthetic interaction."""
+
+    conversion_rate = _ACTION_BASE_CONVERSION_RATE.get(action_id, 0.20)
+    converted = bool(rng.random() < conversion_rate)
+    if converted:
+        low, high = _ACTION_REVENUE_RANGE.get(action_id, (60.0, 90.0))
+        revenue = float(rng.uniform(low, high))
+    else:
+        revenue = 0.0
+    return converted, revenue, revenue - cost
+
+
+def get_simulation_record(db: SQLHandler, simulation_id: int) -> dict[str, Any] | None:
+    return _get_simulation_record(db, simulation_id)
+
+
+def run_simulation_background(simulation_id: int) -> None:
+    """
+    Run one synthetic LinUCB simulation in a FastAPI background task.
+
+    The request-scoped DB dependency is already closed by the time the task runs,
+    so this function creates and owns its own connection.
+    """
+
+    try:
+        try:
+            from .database import create_db_handler
+        except ImportError:
+            from database import create_db_handler
+
+        db = create_db_handler()
+    except Exception:
+        traceback.print_exc()
+        return
+
+    try:
+        simulation = _get_simulation_record(db, simulation_id)
+        if simulation is None:
+            return
+
+        num_rounds = int(simulation["num_rounds"])
+        alpha = float(simulation["alpha"])
+        context_dim = _normalize_context_dim(simulation.get("context_dim"))
+        num_customers = int(simulation.get("num_customers") or 500)
+
+        customer_rows = db_list_customer_feature_rows(db, limit=num_customers)
+        if not customer_rows:
+            raise RuntimeError(
+                f"Simulation {simulation_id} could not start because no customers were found."
+            )
+
+        action_rows = db_list_action_definitions(db)
+        if not action_rows:
+            raise RuntimeError(
+                f"Simulation {simulation_id} could not start because no actions were found."
+            )
+
+        customer_ids = np.array([row["customer_id"] for row in customer_rows], dtype=int)
+        feature_matrix = np.array(
+            [[float(row[column]) for column in MODEL_FEATURE_COLUMNS] for row in customer_rows],
+            dtype=np.float64,
+        )
+        scales = np.max(np.abs(feature_matrix), axis=0)
+        scales = np.where(scales < 1e-8, 1.0, scales)[:context_dim]
+
+        bandit: dict[int, dict[str, Any]] = {
+            int(row["action_id"]): {
+                "action_name": str(row["action_name"]),
+                "cost": float(row["action_cost"]),
+                "a_matrix": np.eye(context_dim, dtype=np.float64),
+                "b_vector": np.zeros(context_dim, dtype=np.float64),
+                "n_pulls": 0,
+            }
+            for row in action_rows
+        }
+        sorted_action_ids = np.array(sorted(bandit.keys()), dtype=int)
+        rng = np.random.default_rng(simulation_id)
+
+        for round_number in range(1, num_rounds + 1):
+            customer_index = int(rng.integers(0, len(customer_ids)))
+            customer_id = int(customer_ids[customer_index])
+            raw_context = feature_matrix[customer_index, :context_dim]
+            scaled_context = raw_context / scales
+
+            best_action_id = int(sorted_action_ids[0])
+            best_ucb = -np.inf
+
+            for action_id in sorted_action_ids:
+                entry = bandit[int(action_id)]
+                theta = np.linalg.solve(entry["a_matrix"], entry["b_vector"])
+                exploit = float(theta @ scaled_context)
+                uncertainty = float(
+                    scaled_context @ np.linalg.solve(entry["a_matrix"], scaled_context)
+                )
+                explore = float(alpha * np.sqrt(max(uncertainty, 0.0)))
+                ucb_score = exploit + explore
+                if ucb_score > best_ucb:
+                    best_ucb = ucb_score
+                    best_action_id = int(action_id)
+
+            best_cost = float(bandit[best_action_id]["cost"])
+            interaction_id = db_log_interaction(
+                db,
+                simulation_id=simulation_id,
+                customer_id=customer_id,
+                action_id=best_action_id,
+                round_number=round_number,
+                context_vector_bytes=_array_to_bytes(raw_context),
+                ucb_score=best_ucb,
+                cost=best_cost,
+            )
+
+            converted, revenue, reward = _simulate_outcome(best_action_id, best_cost, rng)
+            db_observe_outcome(
+                db,
+                interaction_id=interaction_id,
+                converted=converted,
+                revenue=revenue,
+            )
+
+            entry = bandit[best_action_id]
+            entry["a_matrix"] += np.outer(scaled_context, scaled_context)
+            entry["b_vector"] += reward * scaled_context
+            entry["n_pulls"] += 1
+
+        for action_id, entry in bandit.items():
+            theta = np.linalg.solve(entry["a_matrix"], entry["b_vector"])
+            upsert_model_state(
+                db,
+                simulation_id=simulation_id,
+                action_id=action_id,
+                round_number=num_rounds,
+                n_pulls=entry["n_pulls"],
+                theta_bytes=_array_to_bytes(theta),
+                a_bytes=_array_to_bytes(entry["a_matrix"]),
+                b_bytes=_array_to_bytes(entry["b_vector"]),
+                alpha=alpha,
+            )
+
+        complete_simulation_record(db, simulation_id)
+    except Exception:
+        db.rollback()
+        traceback.print_exc()
+    finally:
+        db.close()
 
 
 def _row_value(
@@ -758,7 +917,7 @@ def _reconstruct_bandit_state(db: SQLHandler, simulation_id: int) -> dict[str, A
     if simulation is None:
         return None
 
-    action_rows = list_actions(db)
+    action_rows = db_list_action_definitions(db)
     context_dim = _normalize_context_dim(simulation.get("context_dim"))
     scales = _get_feature_scales(db, simulation_id)
     state = _build_empty_bandit_state(
@@ -767,23 +926,7 @@ def _reconstruct_bandit_state(db: SQLHandler, simulation_id: int) -> dict[str, A
         context_dim=context_dim,
     )
 
-    observed_rows = _fetchall_raw(
-        db,
-        """
-        SELECT
-            interaction_id,
-            action_id,
-            round_number,
-            context_vector,
-            reward,
-            observed_at
-        FROM public.interactions
-        WHERE simulation_id = %s
-          AND observed_at IS NOT NULL
-        ORDER BY observed_at, interaction_id
-        """,
-        (simulation_id,),
-    )
+    observed_rows = db_list_observed_simulation_interactions(db, simulation_id)
 
     latest_observed_at = None
     for row in observed_rows:
@@ -916,16 +1059,7 @@ def log_scored_decision(
     selected = scores[0]
     next_round = round_number
     if next_round is None:
-        result = _select_one(
-            db,
-            """
-            SELECT COALESCE(MAX(round_number), 0) + 1 AS next_round
-            FROM public.interactions
-            WHERE simulation_id = %s
-            """,
-            (simulation_id,),
-        )
-        next_round = int(result["next_round"])
+        next_round = db_get_next_simulation_round(db, simulation_id)
 
     result = _select_one(
         db,
@@ -967,19 +1101,7 @@ def log_scored_decision(
 def submit_feedback(db: SQLHandler, payload: FeedbackRequest) -> dict[str, Any] | None:
     data = _dump_model(payload)
 
-    interaction = _fetchone_raw(
-        db,
-        """
-        SELECT
-            interaction_id,
-            simulation_id,
-            action_id,
-            observed_at
-        FROM public.interactions
-        WHERE interaction_id = %s
-        """,
-        (data["interaction_id"],),
-    )
+    interaction = db_get_interaction_summary(db, data["interaction_id"])
     if interaction is None:
         return None
     if interaction["observed_at"] is not None:

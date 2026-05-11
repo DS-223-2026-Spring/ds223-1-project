@@ -314,6 +314,9 @@ def _install_endpoint_stubs() -> dict[str, object]:
         record["simulation_id"] = 1
         return record
 
+    def run_simulation_background_stub(simulation_id):
+        return None
+
     def complete_simulation_record_stub(db, simulation_id):
         if simulation_id != 1:
             return None
@@ -377,6 +380,7 @@ def _install_endpoint_stubs() -> dict[str, object]:
         "list_actions": list_actions_stub,
         "list_simulations": list_simulations_stub,
         "create_simulation_record": create_simulation_record_stub,
+        "run_simulation_background": run_simulation_background_stub,
         "complete_simulation_record": complete_simulation_record_stub,
         "score_customer_actions": score_customer_actions_stub,
         "log_scored_decision": log_scored_decision_stub,

@@ -90,7 +90,8 @@ DS artifact endpoints:
 ## What is still incomplete
 
 - `GET /metrics` now returns dashboard counters, action breakdowns, cumulative reward series, and recent interactions for the LinUCB interaction stream.
-- `POST /simulations` still creates the DB record only. It does not yet launch Prefect/orchestration.
+- `POST /simulations` creates the DB record and launches an in-process FastAPI background simulation loop.
+- Simulation orchestration still runs in-process for now; it does not yet hand off to Prefect or an external worker.
 - Baseline-series data is not yet stored separately from the LinUCB interaction stream.
 
 ## Operational note
