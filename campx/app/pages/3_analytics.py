@@ -153,6 +153,8 @@ st.caption(
     "Best-performing action per customer segment. "
 )
 
+ALL_SEGMENTS = ["Champion", "Loyal", "At-Risk", "Lost"]
+
 ri = metrics.get("recent_interactions")
 if ri is None or ri.empty:
     st.info("Segment performance will appear once interactions are recorded.")
@@ -187,7 +189,15 @@ else:
                     .first()
                     .reset_index()
                 )
-                best["conversion_rate"] = best["conversion_rate"].apply(bu.format_pct)
+                # Ensure all 4 segments appear
+                all_seg = pd.DataFrame({"segment_label": ALL_SEGMENTS})
+                best = all_seg.merge(best, on="segment_label", how="left")
+                best["action_label"] = best["action_label"].fillna("—")
+                best["pulls"] = best["pulls"].fillna(0).astype(int)
+                best["conversions"] = best["conversions"].fillna(0).astype(int)
+                best["conversion_rate"] = best["conversion_rate"].apply(
+                    lambda x: bu.format_pct(x) if pd.notna(x) else "—"
+                )
                 st.dataframe(
                     best[["segment_label", "action_label", "pulls", "conversions", "conversion_rate"]],
                     hide_index=True,
