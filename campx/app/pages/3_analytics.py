@@ -144,3 +144,65 @@ else:
             "est_reward_per_pull": "Est. reward/pull",
         },
     )
+
+st.divider()
+
+# ── Segment-level performance ──────────────────────────────────
+st.subheader("Segment performance")
+st.caption(
+    "Best-performing action per customer segment. "
+)
+
+ri = metrics.get("recent_interactions")
+if ri is None or ri.empty:
+    st.info("Segment performance will appear once interactions are recorded.")
+else:
+    try:
+        customers = bu.list_customers()
+        if not customers.empty and "segment_label" in customers.columns:
+            # Join interactions with customer segments
+            seg_df = ri.merge(
+                customers[["customer_id", "segment_label"]],
+                on="customer_id",
+                how="left",
+            )
+            if "action" in seg_df.columns and "segment_label" in seg_df.columns:
+                seg_df["action_label"] = seg_df["action"].map(bu.ACTION_LABELS).fillna(seg_df["action"])
+                # Compute per-segment per-action conversion rates
+                seg_action = (
+                    seg_df.groupby(["segment_label", "action_label"])
+                    .agg(
+                        pulls=("customer_id", "size"),
+                        conversions=("converted", lambda x: x.sum() if x.notna().any() else 0),
+                    )
+                    .reset_index()
+                )
+                seg_action["conversion_rate"] = seg_action["conversions"] / seg_action["pulls"]
+                # Pick best action per segment (highest conversion rate, break ties by pulls)
+                best = (
+                    seg_action.sort_values(
+                        ["conversion_rate", "pulls"], ascending=[False, False]
+                    )
+                    .groupby("segment_label")
+                    .first()
+                    .reset_index()
+                )
+                best["conversion_rate"] = best["conversion_rate"].apply(bu.format_pct)
+                st.dataframe(
+                    best[["segment_label", "action_label", "pulls", "conversions", "conversion_rate"]],
+                    hide_index=True,
+                    width="stretch",
+                    column_config={
+                        "segment_label": "Segment",
+                        "action_label": "Best action",
+                        "pulls": "Pulls",
+                        "conversions": "Conversions",
+                        "conversion_rate": "Conversion rate",
+                    },
+                )
+            else:
+                st.info("Segment data not available in interactions.")
+        else:
+            st.info("No customer data available for segment analysis.")
+    except bu.APIError:
+        st.info("Could not load customer data for segment analysis.")
