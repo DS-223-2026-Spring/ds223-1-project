@@ -40,7 +40,7 @@ k1.metric("Total rounds", f"{metrics['rounds_completed']:,}")
 k2.metric("Cumulative reward",
           bu.format_currency(metrics["cumulative_reward"]))
 k3.metric("Avg reward / round",
-          f"£{metrics['avg_reward_per_round']:.2f}")
+          f"£{metrics['avg_reward_per_round']:.2f}" if metrics.get("avg_reward_per_round") is not None else "—")
 k4.metric("Conversions", f"{metrics['conversions']:,}")
 
 st.divider()

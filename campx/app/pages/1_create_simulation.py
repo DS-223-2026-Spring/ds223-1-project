@@ -47,7 +47,6 @@ with st.form("new_simulation", clear_on_submit=False):
             "Alpha (exploration)", 0.0, 2.0, 0.5, 0.1,
             help="Higher α → more exploration. Lower α → more exploitation.",
         )
-        st.info("ℹ️ Baselines (Random, Heuristic) are computed automatically.")
         notes = st.text_area("Notes", placeholder="Why this run?", height=100)
 
     submitted = st.form_submit_button(

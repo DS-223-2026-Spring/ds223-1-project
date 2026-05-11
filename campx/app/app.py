@@ -22,10 +22,13 @@ st.markdown(
 )
 
 # ── Hero ──────────────────────────────────────────────────────
+_, logo_col, _ = st.columns([1, 2, 1])
+with logo_col:
+    st.image("campx_logo.svg", use_container_width=True)
 st.title("CampX")
 st.markdown(
     "A **contextual bandit (LinUCB)** that learns which promotional action "
-    "maximises profit for each fashion retail custome.r"
+    "maximises profit for each fashion retail customer."
 )
 
 

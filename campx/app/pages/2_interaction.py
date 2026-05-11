@@ -59,7 +59,7 @@ k1.metric("Rounds completed", f"{metrics['rounds_completed']:,}")
 k2.metric("Cumulative reward",
           bu.format_currency(metrics["cumulative_reward"]))
 k3.metric("Avg reward / round",
-          f"£{metrics['avg_reward_per_round']:.2f}")
+          f"£{metrics['avg_reward_per_round']:.2f}" if metrics.get("avg_reward_per_round") is not None else "—")
 pending = metrics.get("pending_observations")
 k4.metric(
     "Pending observations",
@@ -98,6 +98,34 @@ else:
         chart_df,
         height=380,
         y_label="Cumulative reward (£)",
+        x_label="Round",
+    )
+
+st.divider()
+
+# ── Reward per round ───────────────────────────────────────────
+st.subheader("Reward per round")
+st.caption(
+    "Per-round reward and a rolling average. "
+    "An upward trend means LinUCB is learning to pick better actions."
+)
+if cum is None or cum.empty:
+    st.info(
+        "Reward-per-round chart will appear once the cumulative "
+        "reward series is available from `/metrics`."
+    )
+else:
+    rpr = cum.copy()
+    if "round" in rpr.columns:
+        rpr = rpr.set_index("round")
+    col = rpr.columns[0]
+    rpr["Per round"] = rpr[col].diff().fillna(rpr[col])
+    window = max(1, len(rpr) // 20)  # ~5 % window for smooth trend
+    rpr["Rolling avg"] = rpr["Per round"].rolling(window, min_periods=1).mean()
+    st.line_chart(
+        rpr[["Per round", "Rolling avg"]],
+        height=320,
+        y_label="Reward (£)",
         x_label="Round",
     )
 
