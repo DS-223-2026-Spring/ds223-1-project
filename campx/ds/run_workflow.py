@@ -270,6 +270,7 @@ def _build_manifest(
             "python -m campx.ds.generate_final_outputs",
             "python -m campx.ds.generate_eda_report",
             "python -m campx.ds.run_baseline_comparison",
+            "python -m campx.ds.verify_reproducibility",
         ],
     }
     if baseline_artifacts is not None and baseline_output_dir is not None:

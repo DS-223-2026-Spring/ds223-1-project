@@ -30,6 +30,7 @@ python -m campx.ds.generate_synthetic_data --storage db
 python -m campx.ds.generate_synthetic_data --storage csv --output-dir outputs/synthetic_data
 python -m campx.ds.generate_final_outputs --input-dir outputs/synthetic_data --output-dir outputs/final_outputs
 python -m campx.ds.generate_eda_report --input-dir outputs/final_outputs --output-dir outputs/final_outputs/eda
+python -m campx.ds.verify_reproducibility
 ```
 
 `--storage db` still writes the generated CSV/report directory first, then loads
@@ -40,6 +41,35 @@ add baseline policy columns to `/metrics.cumulative_reward_series`.
 `generate_synthetic_data --storage db` is the lightweight synthetic-data import
 path. Use `run_workflow --storage db` for the full dashboard/demo path because it
 also generates and imports baseline comparison artifacts.
+
+## Reproducibility check
+
+Issue #114 is covered by a dedicated verifier:
+
+```bash
+python -m campx.ds.verify_reproducibility
+```
+
+The verifier runs `campx.ds.run_workflow` twice with the same seed into temporary
+directories and compares deterministic artifacts byte-for-byte. CSV, JSON, text,
+and Markdown outputs must match. PNG files are skipped by default because
+Matplotlib can write environment-specific image metadata even when the chart is
+visually unchanged.
+
+Use the full demo-sized parameters before release:
+
+```bash
+python -m campx.ds.verify_reproducibility \
+  --n-customers 500 \
+  --n-rounds 5000 \
+  --baseline-n-customers 500 \
+  --baseline-train-rounds 5000 \
+  --baseline-eval-rounds 5000 \
+  --random-seed 42
+```
+
+The verifier intentionally uses local CSV artifact output. DB reproducibility is
+then driven from the same deterministic directory by `run_workflow --storage db`.
 
 ## Main modules
 

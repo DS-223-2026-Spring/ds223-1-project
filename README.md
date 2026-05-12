@@ -93,6 +93,7 @@ ds223-1-project/              ← repo root
     │   ├── generate_synthetic_data.py
     │   ├── run_baseline_comparison.py
     │   ├── run_workflow.py
+    │   ├── verify_reproducibility.py
     │   ├── requirements.txt
     │   └── synthetic/        ← synthetic data generation module
     ├── db/                   ← DB schema & helpers (Hayk)
