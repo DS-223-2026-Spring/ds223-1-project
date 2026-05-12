@@ -213,6 +213,14 @@ def get_metrics(simulation_id: int) -> dict:
         "recent_interactions": recent,
     }
 
+@st.cache_data(ttl=60, show_spinner=False)
+def get_baselines() -> list[float]:
+    """GET /baselines → array of random policy cumulative rewards."""
+    raw = _request("GET", "/baselines")
+    if raw and "random_baseline_rewards" in raw:
+        return raw["random_baseline_rewards"]
+    return []
+
 
 # ═════════════════════════════════════════════════════════════
 # Customers
@@ -367,49 +375,101 @@ def render_api_error(exc: APIError) -> None:
         st.error(f"Backend error: {exc}")
 
 
-def inject_chart_styles() -> None:
-    """Disable zoom/pan on all Vega-Lite charts (st.line_chart, st.bar_chart, etc.).
-
-    Call once at the top of any page that renders charts.
-    """
-    st.markdown(
-        """<style>
-        /* Disable zoom/pan interaction on Vega-Lite chart canvases */
-        [data-testid="stVegaLiteChart"] canvas {
-            pointer-events: none !important;
-        }
-        </style>""",
-        unsafe_allow_html=True,
-    )
-
-
 def render_sidebar_and_css() -> None:
-    """Render the global sidebar and inject navigation CSS across all pages."""
+    """Render the global sidebar and inject premium CSS across all pages."""
     
-    # Hide the default sidebar navigation and style the pill buttons
     st.markdown(
         """
         <style>
+        /* Hide the default sidebar navigation */
         [data-testid='stSidebarNav'] { display: none; }
-        div[data-testid="stSidebarContent"] { padding-top: 2rem; }
+        div[data-testid="stSidebarContent"] { padding-top: 1.5rem; }
         
-        /* Style for top navigation page links to look like pills */
+        /* Premium Global Layout adjustments */
+        .block-container {
+            padding-top: 2rem !important;
+            padding-bottom: 5rem !important;
+            max-width: 1200px;
+        }
+
+        /* Typography improvements */
+        h1, h2, h3 {
+            font-weight: 800 !important;
+            color: #0f172a;
+            letter-spacing: -0.02em;
+        }
+        
+        /* Style for top navigation page links to look like modern tabs */
         [data-testid="stPageLink-NavLink"] {
-            background-color: #f1f3f5;
-            border-radius: 8px;
-            padding: 8px 12px;
+            background-color: transparent;
+            border-radius: 0px;
+            padding: 8px 4px;
+            margin: 0 8px;
             text-align: center;
             text-decoration: none;
-            color: #333;
-            font-weight: 500;
+            color: #475569;
+            font-weight: 600;
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: background-color 0.2s;
-            border: 1px solid #e9ecef;
+            transition: all 0.2s ease-in-out;
+            border: none;
+            border-bottom: 3px solid transparent;
         }
         [data-testid="stPageLink-NavLink"]:hover {
-            background-color: #e9ecef;
+            color: #0f172a;
+            background-color: transparent;
+            border-bottom: 3px solid #cbd5e1;
+        }
+        [data-testid="stPageLink-NavLink"][data-active="true"],
+        [data-testid="stPageLink-NavLink"]:active {
+            background-color: transparent;
+            color: #0f766e;
+            border: none;
+            border-bottom: 3px solid #0f766e;
+            box-shadow: none;
+        }
+
+        /* Disable zoom/pan interaction on Vega-Lite chart canvases globally */
+        [data-testid="stVegaLiteChart"] canvas,
+        [data-testid="stArrowVegaLiteChart"] canvas {
+            pointer-events: none !important;
+        }
+        
+        /* Premium Dataframes */
+        [data-testid="stDataFrame"] {
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+
+        /* Metrics glassmorphism */
+        [data-testid="stMetric"] {
+            background: color-mix(in srgb, var(--secondary-background-color) 60%, transparent);
+            border: 1px solid color-mix(in srgb, var(--text-color) 15%, transparent);
+            box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--text-color) 10%, transparent);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        [data-testid="stMetric"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--primary-color) 20%, transparent);
+            border-color: color-mix(in srgb, var(--primary-color) 30%, transparent);
+        }
+        [data-testid="stMetricValue"] {
+            font-weight: 800 !important;
+            color: #0f766e !important;
+        }
+        [data-testid="stMetricLabel"] {
+            font-weight: 600 !important;
+            color: #64748b !important;
+            font-size: 0.85rem !important;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         </style>
         """,
@@ -419,29 +479,31 @@ def render_sidebar_and_css() -> None:
     # Sidebar Content
     with st.sidebar:
         st.markdown("### CampX")
-        
-        st.markdown("**Description**")
-        st.caption("CampX is a live contextual bandit demonstration that uses LinUCB to actively learn and assign optimal promotional actions to different customer segments.")
-        
-        st.markdown("**Main Features**")
-        st.caption("- Live simulated customer environment\n- Real-time policy learning\n- Counterfactual performance evaluation")
-        
-        st.markdown("**Main Goals of the Model**")
-        st.caption("- Maximize overall campaign profit\n- Personalize promotions dynamically\n- Balance exploration vs. exploitation")
-        
-        st.markdown("**Our Advantages**")
-        st.caption("- Adaptive to changing behaviors\n- Cost-aware action selection\n- Continuous interactive learning")
+        st.caption("Live contextual bandit demonstration")
+        st.write("")
+        st.markdown("**Overview**")
+        st.write(
+            "CampX is a live demonstration of a LinUCB contextual bandit algorithm applied to fashion retail. "
+            "It learns to assign optimal promotional actions—such as a 10% discount, free shipping, or a product recommendation—to distinct customer segments."
+        )
+        st.write("")
+        st.markdown("**How it works**")
+        st.write(
+            "By analyzing real-time RFM (Recency, Frequency, Monetary) features, the platform continuously updates its policy. "
+            "It automatically balances *exploration* (trying new promotions to learn customer behavior) and *exploitation* "
+            "(assigning the most profitable known promotions) to maximize net campaign profit."
+        )
 
 
 def render_top_navigation() -> None:
-    """Render the top navigation buttons."""
+    """Render the top navigation buttons cleanly."""
     c1, c2, c3, c4, c5, c6 = st.columns(6)
-    c1.page_link("app.py", label="Home", icon="🏠", use_container_width=True)
-    c2.page_link("pages/1_create_simulation.py", label="Create", icon="🚀", use_container_width=True)
-    c3.page_link("pages/2_interaction.py", label="Interaction", icon="⚡", use_container_width=True)
-    c4.page_link("pages/3_analytics.py", label="Analytics", icon="📊", use_container_width=True)
-    c5.page_link("pages/4_model.py", label="Model", icon="🧠", use_container_width=True)
-    c6.page_link("pages/5_customers.py", label="Customers", icon="👥", use_container_width=True)
+    c1.page_link("app.py", label="Home", use_container_width=True)
+    c2.page_link("pages/1_create_simulation.py", label="Create", use_container_width=True)
+    c3.page_link("pages/2_interaction.py", label="Interaction", use_container_width=True)
+    c4.page_link("pages/3_analytics.py", label="Analytics", use_container_width=True)
+    c5.page_link("pages/4_model.py", label="Model", use_container_width=True)
+    c6.page_link("pages/5_customers.py", label="Customers", use_container_width=True)
     
     st.write("") # Spacer
 
