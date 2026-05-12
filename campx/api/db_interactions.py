@@ -4,14 +4,33 @@ All functions require an SQLHandler instance.
 """
 
 import json
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from loguru import logger
+from psycopg2.extras import execute_values
 
 try:
     from .SQLHandler import SQLHandler
 except ImportError:
     from SQLHandler import SQLHandler
+
+
+DEFAULT_ACTION_TARGET_LATENTS = {
+    0: "brand_loyalty",
+    1: "price_sensitivity",
+    2: "price_sensitivity+planning",
+    3: "brand_loyalty+impulse",
+    4: "impulse_tendency",
+}
+
+
+def _batch_timestamp(offset: int = 0) -> datetime:
+    """Return a naive UTC timestamp suitable for project TIMESTAMP columns."""
+
+    return datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(
+        microseconds=offset
+    )
 
 
 def get_all_customers(db: SQLHandler):
@@ -276,6 +295,152 @@ def upsert_action(
     db.commit()
 
 
+def bulk_upsert_actions(db: SQLHandler, actions: list[dict[str, Any]]) -> int:
+    """Insert or update generated action definitions in one DB batch."""
+
+    if not actions:
+        return 0
+
+    values = [
+        (
+            int(row["action_id"]),
+            row.get("action_name") or f"action_{int(row['action_id'])}",
+            float(row.get("action_cost") or row.get("base_cost") or 0.0),
+            row.get("target_latent")
+            or DEFAULT_ACTION_TARGET_LATENTS.get(int(row["action_id"]), "unknown"),
+            row.get("description") or "Generated DS action",
+        )
+        for row in actions
+    ]
+
+    logger.info(f"Bulk upserting {len(values)} actions")
+    execute_values(
+        db.cursor,
+        """
+        INSERT INTO public.actions (
+            action_id,
+            action_name,
+            action_cost,
+            target_latent,
+            description
+        )
+        VALUES %s
+        ON CONFLICT (action_id) DO UPDATE
+        SET
+            action_name = EXCLUDED.action_name,
+            action_cost = EXCLUDED.action_cost,
+            target_latent = EXCLUDED.target_latent,
+            description = EXCLUDED.description
+        """,
+        values,
+        page_size=1000,
+    )
+    db.commit()
+    return len(values)
+
+
+def bulk_insert_customers_with_latents(
+    db: SQLHandler,
+    customer_rows: list[dict[str, Any]],
+) -> dict[int, int]:
+    """
+    Insert generated customers and latents in table batches.
+
+    Returns a mapping from source/generated customer_id to DB customer_id.
+    """
+
+    if not customer_rows:
+        return {}
+
+    values = []
+    created_at_to_source_id: dict[datetime, int] = {}
+    batch_time = _batch_timestamp()
+    for offset, row in enumerate(customer_rows):
+        source_customer_id = int(row.get("source_customer_id", row["customer_id"]))
+        created_at = batch_time + timedelta(microseconds=offset)
+        created_at_to_source_id[created_at] = source_customer_id
+        values.append(
+            (
+                row.get("gender") or ("F" if source_customer_id % 2 == 0 else "M"),
+                row.get("segment_label", row.get("segment")),
+                float(row["recency"]),
+                float(row["frequency"]),
+                float(row["monetary"]),
+                float(row["basket_diversity"]),
+                float(row["avg_order_size"]),
+                float(row["purchase_regularity"]),
+                created_at,
+            )
+        )
+
+    logger.info(f"Bulk inserting {len(values)} customers")
+    inserted_rows = execute_values(
+        db.cursor,
+        """
+        INSERT INTO public.customers (
+            gender,
+            segment_label,
+            recency,
+            frequency,
+            monetary,
+            basket_diversity,
+            avg_order_size,
+            purchase_regularity,
+            created_at
+        )
+        VALUES %s
+        RETURNING customer_id, created_at
+        """,
+        values,
+        page_size=1000,
+        fetch=True,
+    )
+
+    customer_id_map = {
+        int(created_at_to_source_id[created_at]): int(customer_id)
+        for customer_id, created_at in inserted_rows
+    }
+
+    latent_values = []
+    for row in customer_rows:
+        source_customer_id = int(row.get("source_customer_id", row["customer_id"]))
+        if row.get("z_price_sensitivity") is None:
+            continue
+        latent_values.append(
+            (
+                customer_id_map[source_customer_id],
+                float(row["z_price_sensitivity"]),
+                float(row["z_brand_loyalty"]),
+                float(row["z_impulse_tendency"]),
+            )
+        )
+
+    if latent_values:
+        logger.info(f"Bulk upserting {len(latent_values)} customer latent rows")
+        execute_values(
+            db.cursor,
+            """
+            INSERT INTO public.customer_latents (
+                customer_id,
+                z_price_sensitivity,
+                z_brand_loyalty,
+                z_impulse_tendency
+            )
+            VALUES %s
+            ON CONFLICT (customer_id) DO UPDATE
+            SET
+                z_price_sensitivity = EXCLUDED.z_price_sensitivity,
+                z_brand_loyalty = EXCLUDED.z_brand_loyalty,
+                z_impulse_tendency = EXCLUDED.z_impulse_tendency
+            """,
+            latent_values,
+            page_size=1000,
+        )
+
+    db.commit()
+    return customer_id_map
+
+
 def log_interaction(
     db: SQLHandler,
     simulation_id,
@@ -339,6 +504,78 @@ def observe_outcome(
     columns = [column.name for column in db.cursor.description]
     db.commit()
     return dict(zip(columns, row, strict=True))
+
+
+def bulk_insert_interactions(db: SQLHandler, interactions: list[dict[str, Any]]) -> int:
+    """
+    Insert generated interaction rows in one or more DB batches.
+
+    Generated DS imports already contain outcomes, so this writes the observed
+    interaction state directly instead of logging and then submitting feedback
+    row by row. Pending rows remain supported when converted is omitted.
+    """
+
+    if not interactions:
+        return 0
+
+    values = []
+    batch_time = _batch_timestamp()
+    for offset, row in enumerate(interactions):
+        converted = row.get("converted")
+        cost = float(row.get("cost") or 0.0)
+        revenue = float(row.get("revenue", 0.0) or 0.0)
+        observed_at = row.get("observed_at")
+        converted_at = row.get("converted_at")
+        reward = row.get("reward")
+
+        if converted is not None:
+            converted = bool(converted)
+            observed_at = observed_at or batch_time + timedelta(microseconds=offset)
+            converted_at = converted_at or (observed_at if converted else None)
+            reward = revenue - cost if reward is None else float(reward)
+
+        values.append(
+            (
+                int(row["simulation_id"]),
+                int(row["customer_id"]),
+                int(row["action_id"]),
+                int(row["round_number"]),
+                row["context_vector_bytes"],
+                float(row.get("ucb_score") or 0.0),
+                converted,
+                revenue,
+                cost,
+                reward,
+                converted_at,
+                observed_at,
+            )
+        )
+
+    logger.info(f"Bulk inserting {len(values)} interactions")
+    execute_values(
+        db.cursor,
+        """
+        INSERT INTO public.interactions (
+            simulation_id,
+            customer_id,
+            action_id,
+            round_number,
+            context_vector,
+            ucb_score,
+            converted,
+            revenue,
+            cost,
+            reward,
+            converted_at,
+            observed_at
+        )
+        VALUES %s
+        """,
+        values,
+        page_size=1000,
+    )
+    db.commit()
+    return len(values)
 
 
 def get_pending_interactions(db: SQLHandler, older_than_hours=48):
@@ -496,6 +733,60 @@ def upsert_model_state(
     )
     db.commit()
     logger.success("Model state updated")
+
+
+def bulk_upsert_model_state(
+    db: SQLHandler,
+    model_state_rows: list[dict[str, Any]],
+) -> int:
+    """Insert or update generated model-state rows in one DB batch."""
+
+    if not model_state_rows:
+        return 0
+
+    values = [
+        (
+            int(row["simulation_id"]),
+            int(row["action_id"]),
+            int(row.get("round_number", 0)),
+            int(row.get("n_pulls", 0)),
+            row["theta_bytes"],
+            row["a_bytes"],
+            row["b_bytes"],
+            float(row["alpha"]),
+        )
+        for row in model_state_rows
+    ]
+
+    logger.info(f"Bulk upserting {len(values)} model state rows")
+    execute_values(
+        db.cursor,
+        """
+        INSERT INTO public.model_state (
+            simulation_id,
+            action_id,
+            round_number,
+            n_pulls,
+            theta_vector,
+            a_matrix,
+            b_vector,
+            alpha
+        )
+        VALUES %s
+        ON CONFLICT (simulation_id, action_id, round_number)
+        DO UPDATE SET
+            n_pulls = EXCLUDED.n_pulls,
+            theta_vector = EXCLUDED.theta_vector,
+            a_matrix = EXCLUDED.a_matrix,
+            b_vector = EXCLUDED.b_vector,
+            alpha = EXCLUDED.alpha,
+            updated_at = NOW()
+        """,
+        values,
+        page_size=1000,
+    )
+    db.commit()
+    return len(values)
 
 
 def create_simulation(

@@ -14,6 +14,10 @@ import pandas as pd
 try:
     from .SQLHandler import SQLHandler
     from .db_interactions import (
+        bulk_insert_customers_with_latents as db_bulk_insert_customers_with_latents,
+        bulk_insert_interactions as db_bulk_insert_interactions,
+        bulk_upsert_actions as db_bulk_upsert_actions,
+        bulk_upsert_model_state as db_bulk_upsert_model_state,
         complete_simulation,
         create_simulation,
         get_customer_by_id,
@@ -26,10 +30,6 @@ try:
         list_customer_feature_rows as db_list_customer_feature_rows,
         list_observed_simulation_interactions as db_list_observed_simulation_interactions,
         list_simulation_artifacts as db_list_simulation_artifacts,
-        log_interaction as db_log_interaction,
-        observe_outcome as db_observe_outcome,
-        upsert_action as db_upsert_action,
-        upsert_customer as db_upsert_customer,
         upsert_model_state,
         upsert_simulation_artifact as db_upsert_simulation_artifact,
     )
@@ -43,6 +43,10 @@ try:
 except ImportError:
     from SQLHandler import SQLHandler
     from db_interactions import (
+        bulk_insert_customers_with_latents as db_bulk_insert_customers_with_latents,
+        bulk_insert_interactions as db_bulk_insert_interactions,
+        bulk_upsert_actions as db_bulk_upsert_actions,
+        bulk_upsert_model_state as db_bulk_upsert_model_state,
         complete_simulation,
         create_simulation,
         get_customer_by_id,
@@ -55,10 +59,6 @@ except ImportError:
         list_customer_feature_rows as db_list_customer_feature_rows,
         list_observed_simulation_interactions as db_list_observed_simulation_interactions,
         list_simulation_artifacts as db_list_simulation_artifacts,
-        log_interaction as db_log_interaction,
-        observe_outcome as db_observe_outcome,
-        upsert_action as db_upsert_action,
-        upsert_customer as db_upsert_customer,
         upsert_model_state,
         upsert_simulation_artifact as db_upsert_simulation_artifact,
     )
@@ -505,6 +505,7 @@ def run_simulation_background(simulation_id: int) -> None:
         }
         sorted_action_ids = np.array(sorted(bandit.keys()), dtype=int)
         rng = np.random.default_rng(simulation_id)
+        interaction_rows: list[dict[str, Any]] = []
 
         for round_number in range(1, num_rounds + 1):
             customer_index = int(rng.integers(0, len(customer_ids)))
@@ -529,23 +530,20 @@ def run_simulation_background(simulation_id: int) -> None:
                     best_action_id = int(action_id)
 
             best_cost = float(bandit[best_action_id]["cost"])
-            interaction_id = db_log_interaction(
-                db,
-                simulation_id=simulation_id,
-                customer_id=customer_id,
-                action_id=best_action_id,
-                round_number=round_number,
-                context_vector_bytes=_array_to_bytes(raw_context),
-                ucb_score=best_ucb,
-                cost=best_cost,
-            )
-
             converted, revenue, reward = _simulate_outcome(best_action_id, best_cost, rng)
-            db_observe_outcome(
-                db,
-                interaction_id=interaction_id,
-                converted=converted,
-                revenue=revenue,
+            interaction_rows.append(
+                {
+                    "simulation_id": simulation_id,
+                    "customer_id": customer_id,
+                    "action_id": best_action_id,
+                    "round_number": round_number,
+                    "context_vector_bytes": _array_to_bytes(raw_context),
+                    "ucb_score": best_ucb,
+                    "cost": best_cost,
+                    "converted": converted,
+                    "revenue": revenue,
+                    "reward": reward,
+                }
             )
 
             entry = bandit[best_action_id]
@@ -553,19 +551,24 @@ def run_simulation_background(simulation_id: int) -> None:
             entry["b_vector"] += reward * scaled_context
             entry["n_pulls"] += 1
 
+        db_bulk_insert_interactions(db, interaction_rows)
+
+        model_state_rows = []
         for action_id, entry in bandit.items():
             theta = np.linalg.solve(entry["a_matrix"], entry["b_vector"])
-            upsert_model_state(
-                db,
-                simulation_id=simulation_id,
-                action_id=action_id,
-                round_number=num_rounds,
-                n_pulls=entry["n_pulls"],
-                theta_bytes=_array_to_bytes(theta),
-                a_bytes=_array_to_bytes(entry["a_matrix"]),
-                b_bytes=_array_to_bytes(entry["b_vector"]),
-                alpha=alpha,
+            model_state_rows.append(
+                {
+                    "simulation_id": simulation_id,
+                    "action_id": action_id,
+                    "round_number": num_rounds,
+                    "n_pulls": entry["n_pulls"],
+                    "theta_bytes": _array_to_bytes(theta),
+                    "a_bytes": _array_to_bytes(entry["a_matrix"]),
+                    "b_bytes": _array_to_bytes(entry["b_vector"]),
+                    "alpha": alpha,
+                }
             )
+        db_bulk_upsert_model_state(db, model_state_rows)
 
         complete_simulation_record(db, simulation_id)
     except Exception:
@@ -678,7 +681,6 @@ def import_ds_artifact_bundle(
         raise ConflictError(f"Simulation name '{sim_name}' already exists.")
 
     simulation_id = create_simulation(db, **simulation_data)
-    customer_id_map: dict[int, int] = {}
     customers = data.get("customers") or []
     latents = data.get("customer_latents") or []
     actions = data.get("actions") or []
@@ -692,47 +694,58 @@ def import_ds_artifact_bundle(
         if row.get("customer_id") is not None
     }
     customer_rows_by_source_id: dict[int, dict[str, Any]] = {}
+    customer_rows = []
 
     for row in customers:
         source_customer_id = int(row["customer_id"])
         latent_row = latents_by_customer.get(source_customer_id, {})
-        db_customer_id = db_upsert_customer(
-            db,
-            customer_id=None,
-            gender=_row_value(row, "gender", default="F"),
-            segment_label=_row_value(row, "segment_label", "segment"),
-            recency=_row_value(row, "recency"),
-            frequency=_row_value(row, "frequency"),
-            monetary=_row_value(row, "monetary"),
-            basket_diversity=_row_value(row, "basket_diversity"),
-            avg_order_size=_row_value(row, "avg_order_size"),
-            purchase_regularity=_row_value(row, "purchase_regularity"),
-            z_price_sensitivity=_row_value(latent_row, "z_price_sensitivity"),
-            z_brand_loyalty=_row_value(latent_row, "z_brand_loyalty"),
-            z_impulse_tendency=_row_value(latent_row, "z_impulse_tendency"),
+        customer_rows.append(
+            {
+                "source_customer_id": source_customer_id,
+                "customer_id": source_customer_id,
+                "gender": _row_value(row, "gender", default="F"),
+                "segment_label": _row_value(row, "segment_label", "segment"),
+                "recency": _row_value(row, "recency"),
+                "frequency": _row_value(row, "frequency"),
+                "monetary": _row_value(row, "monetary"),
+                "basket_diversity": _row_value(row, "basket_diversity"),
+                "avg_order_size": _row_value(row, "avg_order_size"),
+                "purchase_regularity": _row_value(row, "purchase_regularity"),
+                "z_price_sensitivity": _row_value(latent_row, "z_price_sensitivity"),
+                "z_brand_loyalty": _row_value(latent_row, "z_brand_loyalty"),
+                "z_impulse_tendency": _row_value(latent_row, "z_impulse_tendency"),
+            }
         )
-        customer_id_map[source_customer_id] = int(db_customer_id)
         customer_rows_by_source_id[source_customer_id] = row
 
+    customer_id_map = db_bulk_insert_customers_with_latents(db, customer_rows)
+
     action_costs: dict[int, float] = {}
+    action_rows = []
     for row in actions:
         action_id = int(row["action_id"])
         action_cost = float(_row_value(row, "action_cost", "base_cost", default=0.0))
         action_costs[action_id] = action_cost
-        db_upsert_action(
-            db,
-            action_id=action_id,
-            action_name=_row_value(row, "action_name", default=f"action_{action_id}"),
-            action_cost=action_cost,
-            target_latent=_row_value(
-                row,
-                "target_latent",
-                default=DEFAULT_ACTION_TARGET_LATENTS.get(action_id, "unknown"),
-            ),
-            description=_row_value(row, "description", default="Generated DS action"),
+        action_rows.append(
+            {
+                "action_id": action_id,
+                "action_name": _row_value(row, "action_name", default=f"action_{action_id}"),
+                "action_cost": action_cost,
+                "target_latent": _row_value(
+                    row,
+                    "target_latent",
+                    default=DEFAULT_ACTION_TARGET_LATENTS.get(action_id, "unknown"),
+                ),
+                "description": _row_value(
+                    row,
+                    "description",
+                    default="Generated DS action",
+                ),
+            }
         )
+    db_bulk_upsert_actions(db, action_rows)
 
-    interactions_inserted = 0
+    interaction_rows = []
     for row in interactions:
         source_customer_id = int(row["customer_id"])
         db_customer_id = customer_id_map.get(source_customer_id)
@@ -742,39 +755,42 @@ def import_ds_artifact_bundle(
                 f"Interaction references unknown generated customer {source_customer_id}"
             )
         action_id = int(row["action_id"])
-        interaction_id = db_log_interaction(
-            db,
-            simulation_id=simulation_id,
-            customer_id=db_customer_id,
-            action_id=action_id,
-            round_number=int(row["round_number"]),
-            context_vector_bytes=_context_vector_from_payload(row, customer_row),
-            ucb_score=float(_row_value(row, "ucb_score", default=0.0)),
-            cost=float(_row_value(row, "cost", default=action_costs.get(action_id, 0.0))),
+        interaction_rows.append(
+            {
+                "simulation_id": simulation_id,
+                "customer_id": db_customer_id,
+                "action_id": action_id,
+                "round_number": int(row["round_number"]),
+                "context_vector_bytes": _context_vector_from_payload(row, customer_row),
+                "ucb_score": float(_row_value(row, "ucb_score", default=0.0)),
+                "cost": float(
+                    _row_value(row, "cost", default=action_costs.get(action_id, 0.0))
+                ),
+                "converted": _row_value(row, "converted"),
+                "revenue": float(_row_value(row, "revenue", default=0.0)),
+                "reward": _row_value(row, "reward"),
+                "converted_at": _row_value(row, "converted_at"),
+                "observed_at": _row_value(row, "observed_at"),
+            }
         )
-        interactions_inserted += 1
-        if row.get("converted") is not None:
-            db_observe_outcome(
-                db,
-                interaction_id=interaction_id,
-                converted=bool(row["converted"]),
-                revenue=float(_row_value(row, "revenue", default=0.0)),
-                converted_at=_row_value(row, "converted_at"),
-                observed_at=_row_value(row, "observed_at"),
-            )
+    interactions_inserted = db_bulk_insert_interactions(db, interaction_rows)
 
-    for row in model_state:
-        upsert_model_state(
-            db,
-            simulation_id=simulation_id,
-            action_id=int(row["action_id"]),
-            round_number=int(_row_value(row, "round_number", default=0)),
-            n_pulls=int(_row_value(row, "n_pulls", default=0)),
-            theta_bytes=_payload_to_bytes(_row_value(row, "theta_json", "theta_vector", "theta")),
-            a_bytes=_payload_to_bytes(_row_value(row, "a_json", "a_matrix")),
-            b_bytes=_payload_to_bytes(_row_value(row, "b_json", "b_vector")),
-            alpha=float(_row_value(row, "alpha", default=simulation_data["alpha"])),
-        )
+    model_state_rows = [
+        {
+            "simulation_id": simulation_id,
+            "action_id": int(row["action_id"]),
+            "round_number": int(_row_value(row, "round_number", default=0)),
+            "n_pulls": int(_row_value(row, "n_pulls", default=0)),
+            "theta_bytes": _payload_to_bytes(
+                _row_value(row, "theta_json", "theta_vector", "theta")
+            ),
+            "a_bytes": _payload_to_bytes(_row_value(row, "a_json", "a_matrix")),
+            "b_bytes": _payload_to_bytes(_row_value(row, "b_json", "b_vector")),
+            "alpha": float(_row_value(row, "alpha", default=simulation_data["alpha"])),
+        }
+        for row in model_state
+    ]
+    db_bulk_upsert_model_state(db, model_state_rows)
 
     artifacts_stored = 0
     artifacts_stored += _store_records_artifact(

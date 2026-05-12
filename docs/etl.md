@@ -63,6 +63,28 @@ Owns reusable Python-side DB access patterns.
 Uses the helper layer to persist generated customers, interactions, and model
 state.
 
+Generated DS data is created as a complete seeded artifact bundle first. The
+DB path then reads the generated CSV directory and bulk loads the relational
+tables:
+
+- actions are upserted as one batch
+- customers and customer latents are inserted as table batches
+- generated interactions are inserted with their already observed outcomes as
+  one interaction batch
+- generated model-state rows are upserted as one batch
+
+This is the initialization/import path used by:
+
+```bash
+python -m campx.ds.run_workflow --storage db
+```
+
+The in-process simulation runner also computes its rounds sequentially in
+memory, then bulk inserts the generated interaction batch and final model
+state. The live `/decide` and `/feedback` flow still uses the stored procedures
+one interaction at a time, because those requests represent real online
+decisions and delayed outcomes rather than generated initialization data.
+
 ### Backend
 
 Uses the same access pattern to expose DB-backed API endpoints.
