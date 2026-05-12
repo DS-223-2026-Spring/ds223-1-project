@@ -17,6 +17,8 @@ import streamlit as st
 import bandit_utils as bu
 
 st.set_page_config(page_title="Customers · CampX", layout="wide")
+bu.render_global_navigation()
+bu.inject_chart_styles()
 
 st.title("Customer Explorer")
 st.caption("Browse the customer pool, filter by segment & RFM features, drill into one profile.")

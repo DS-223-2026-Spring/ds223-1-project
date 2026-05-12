@@ -19,6 +19,8 @@ import streamlit as st
 import bandit_utils as bu
 
 st.set_page_config(page_title="Model · CampX", layout="wide")
+bu.render_global_navigation()
+bu.inject_chart_styles()
 
 st.title("Model Inspector")
 st.caption("What LinUCB has learned — θ vectors, pull counts, UCB decomposition.")

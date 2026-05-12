@@ -18,6 +18,8 @@ st.set_page_config(
     layout="wide",
 )
 
+bu.render_global_navigation()
+
 st.title("Create Simulation")
 st.caption("Configure a new bandit run or inspect past ones.")
 
