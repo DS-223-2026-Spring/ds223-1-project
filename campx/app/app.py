@@ -1,9 +1,6 @@
 """
 Campaign Optimization Engine — Streamlit entry point.
 Owner: Armine Babajanyan (frontend branch)
-
-M3: Wired to live FastAPI backend. Uses only built-in Streamlit components.
-Pages under pages/ are auto-discovered by Streamlit.
 """
 import pandas as pd
 import streamlit as st
@@ -15,22 +12,39 @@ st.set_page_config(
     layout="wide",
 )
 
-# Capitalize every word in sidebar navigation labels
-st.markdown(
-    "<style>[data-testid='stSidebarNav'] span { text-transform: capitalize; }</style>",
-    unsafe_allow_html=True,
-)
+bu.render_sidebar_and_css()
 
 # ── Hero ──────────────────────────────────────────────────────
-_, logo_col, _ = st.columns([1, 2, 1])
-with logo_col:
-    st.image("campx_logo.svg", use_container_width=True)
-st.title("CampX")
+# Logo in a white rounded container — works in both dark and light mode
 st.markdown(
-    "A **contextual bandit (LinUCB)** that learns which promotional action "
-    "maximises profit for each fashion retail customer."
+    """
+    <div style="
+        max-width: 480px;
+        margin: 1.5rem auto;
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 1.2rem 2rem;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    ">
+        <svg width="100%" viewBox="0 0 680 280" role="img" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="220" cy="140" r="62" fill="none" stroke="#1e40af" stroke-width="10"/>
+            <circle cx="220" cy="140" r="40" fill="none" stroke="#3b82f6" stroke-width="8"/>
+            <circle cx="220" cy="140" r="22" fill="#dc2626"/>
+            <line x1="208" y1="128" x2="232" y2="152" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+            <line x1="232" y1="128" x2="208" y2="152" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+            <text x="310" y="162" fill="#141413"
+                  style="font-size:60px; font-weight:500; letter-spacing:-1px;
+                         font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;">
+                Camp<tspan fill="#dc2626">X</tspan>
+            </text>
+        </svg>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
-
+st.title("CampX")
+st.write("") # Spacer
+bu.render_top_navigation()
 
 # ── KPI tiles ─────────────────────────────────────────────────
 st.subheader("System status")
@@ -80,30 +94,3 @@ action_df = pd.DataFrame([
 ])
 st.dataframe(action_df, hide_index=True, width="stretch")
 
-st.divider()
-
-# ── Navigation cards ───────────────────────────────────────────
-st.subheader("Where next?")
-n1, n2, n3, n4, n5 = st.columns(5)
-with n1:
-    st.markdown("### Create Simulation")
-    st.caption("Configure and launch a new run.")
-    st.page_link("pages/1_create_simulation.py", label="Open →")
-with n2:
-    st.markdown("### Interaction")
-    st.caption("Watch the live bandit loop as it runs.")
-    st.page_link("pages/2_interaction.py", label="Open →")
-with n3:
-    st.markdown("### Analytics")
-    st.caption("Compare policies, inspect results, review interactions.")
-    st.page_link("pages/3_analytics.py", label="Open →")
-with n4:
-    st.markdown("### Model")
-    st.caption("θ vectors, pull counts, UCB decomposition.")
-    st.page_link("pages/4_model.py", label="Open →")
-with n5:
-    st.markdown("### Customers")
-    st.caption("Browse & filter customer profiles.")
-    st.page_link("pages/5_customers.py", label="Open →")
-
-st.divider()

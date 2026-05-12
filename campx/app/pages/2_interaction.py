@@ -24,6 +24,8 @@ import streamlit as st
 import bandit_utils as bu
 
 st.set_page_config(page_title="Interaction · CampX", layout="wide")
+bu.render_global_navigation()
+bu.inject_chart_styles()
 
 st.title("Live Interaction")
 st.caption("LinUCB is picking actions for customers. Watch it learn.")
@@ -92,8 +94,8 @@ else:
     chart_df = cum.copy()
     if "round" in chart_df.columns:
         chart_df = chart_df.set_index("round")
-    if "cumulative_reward" in chart_df.columns and len(chart_df.columns) == 1:
-        chart_df = chart_df.rename(columns={"cumulative_reward": "LinUCB"})
+    if "linucb" in chart_df.columns:
+        chart_df = chart_df.rename(columns={"linucb": "LinUCB"})
     st.line_chart(
         chart_df,
         height=380,

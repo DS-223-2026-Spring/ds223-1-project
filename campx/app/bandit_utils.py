@@ -365,3 +365,88 @@ def render_api_error(exc: APIError) -> None:
         st.error(f"Bad request: {exc}")
     else:
         st.error(f"Backend error: {exc}")
+
+
+def inject_chart_styles() -> None:
+    """Disable zoom/pan on all Vega-Lite charts (st.line_chart, st.bar_chart, etc.).
+
+    Call once at the top of any page that renders charts.
+    """
+    st.markdown(
+        """<style>
+        /* Disable zoom/pan interaction on Vega-Lite chart canvases */
+        [data-testid="stVegaLiteChart"] canvas {
+            pointer-events: none !important;
+        }
+        </style>""",
+        unsafe_allow_html=True,
+    )
+
+
+def render_sidebar_and_css() -> None:
+    """Render the global sidebar and inject navigation CSS across all pages."""
+    
+    # Hide the default sidebar navigation and style the pill buttons
+    st.markdown(
+        """
+        <style>
+        [data-testid='stSidebarNav'] { display: none; }
+        div[data-testid="stSidebarContent"] { padding-top: 2rem; }
+        
+        /* Style for top navigation page links to look like pills */
+        [data-testid="stPageLink-NavLink"] {
+            background-color: #f1f3f5;
+            border-radius: 8px;
+            padding: 8px 12px;
+            text-align: center;
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.2s;
+            border: 1px solid #e9ecef;
+        }
+        [data-testid="stPageLink-NavLink"]:hover {
+            background-color: #e9ecef;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Sidebar Content
+    with st.sidebar:
+        st.markdown("### CampX")
+        
+        st.markdown("**Description**")
+        st.caption("CampX is a live contextual bandit demonstration that uses LinUCB to actively learn and assign optimal promotional actions to different customer segments.")
+        
+        st.markdown("**Main Features**")
+        st.caption("- Live simulated customer environment\n- Real-time policy learning\n- Counterfactual performance evaluation")
+        
+        st.markdown("**Main Goals of the Model**")
+        st.caption("- Maximize overall campaign profit\n- Personalize promotions dynamically\n- Balance exploration vs. exploitation")
+        
+        st.markdown("**Our Advantages**")
+        st.caption("- Adaptive to changing behaviors\n- Cost-aware action selection\n- Continuous interactive learning")
+
+
+def render_top_navigation() -> None:
+    """Render the top navigation buttons."""
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    c1.page_link("app.py", label="Home", icon="🏠", use_container_width=True)
+    c2.page_link("pages/1_create_simulation.py", label="Create", icon="🚀", use_container_width=True)
+    c3.page_link("pages/2_interaction.py", label="Interaction", icon="⚡", use_container_width=True)
+    c4.page_link("pages/3_analytics.py", label="Analytics", icon="📊", use_container_width=True)
+    c5.page_link("pages/4_model.py", label="Model", icon="🧠", use_container_width=True)
+    c6.page_link("pages/5_customers.py", label="Customers", icon="👥", use_container_width=True)
+    
+    st.write("") # Spacer
+
+
+def render_global_navigation() -> None:
+    """Convenience function to render both sidebar and top navigation."""
+    render_sidebar_and_css()
+    render_top_navigation()

@@ -17,6 +17,8 @@ import streamlit as st
 import bandit_utils as bu
 
 st.set_page_config(page_title="Analytics · CampX", layout="wide")
+bu.render_global_navigation()
+bu.inject_chart_styles()
 
 st.title("Analytics")
 st.caption("Results, action distributions, and policy comparison.")
@@ -89,36 +91,6 @@ with right:
     else:
         conv_chart = conv.set_index("label")[["conversion_rate"]]
         st.bar_chart(conv_chart, height=380, y_label="Conversion rate")
-
-st.divider()
-
-# ── Policy comparison ──────────────────────────────────────────
-st.subheader("Policy comparison — LinUCB vs baselines")
-st.caption(
-    "Cumulative reward over time. LinUCB should pull ahead as it learns; "
-    "Random and Heuristic are the zero-intelligence and static-rule baselines."
-)
-
-cum_raw = metrics.get("cumulative_reward_series")
-if cum_raw is None or cum_raw.empty:
-    st.info(
-        "Awaiting `cumulative_reward_series` from `/metrics` "
-        "(needs the LinUCB run + baselines from DS)."
-    )
-else:
-    chart_df = cum_raw.copy()
-    if "round" in chart_df.columns:
-        chart_df = chart_df.set_index("round")
-    if "cumulative_reward" in chart_df.columns and len(chart_df.columns) == 1:
-        chart_df = chart_df.rename(columns={"cumulative_reward": "LinUCB"})
-    st.line_chart(chart_df, height=380, y_label="Cumulative reward (£)", x_label="Round")
-
-    # Final-value bar comparison
-    finals = pd.DataFrame({
-        "Policy": list(chart_df.columns),
-        "Final cumulative reward": [chart_df[c].iloc[-1] for c in chart_df.columns],
-    }).set_index("Policy")
-    st.bar_chart(finals, height=280, y_label="£")
 
 st.divider()
 
