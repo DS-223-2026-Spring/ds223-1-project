@@ -1382,7 +1382,19 @@ def get_metrics_snapshot(
             db,
             """
             SELECT
-                i.*,
+                i.interaction_id,
+                i.simulation_id,
+                i.customer_id,
+                i.action_id,
+                i.round_number,
+                i.decision_at,
+                i.ucb_score,
+                i.cost,
+                i.converted,
+                i.revenue,
+                i.reward,
+                i.converted_at,
+                i.observed_at,
                 a.action_name AS action
             FROM public.interactions AS i
             JOIN public.actions AS a

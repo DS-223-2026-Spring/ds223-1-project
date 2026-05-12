@@ -39,10 +39,10 @@ ACTION_COLORS = {
 
 ACTION_LABELS = {
     "no_action":              "No action",
-    "discount_10":            "10% discount",
-    "free_shipping":          "Free shipping",
-    "product_recommendation": "Product recommendation",
-    "bundle_offer":           "Bundle offer",
+    "discount_10":            "10% off",
+    "free_shipping":          "Free ship.",
+    "product_recommendation": "Product rec.",
+    "bundle_offer":           "Bundle",
 }
 
 ACTION_COSTS = {
@@ -148,8 +148,8 @@ def create_simulation(sim_name: str, num_rounds: float, num_customers: float,
     """POST /simulations — returns the created simulation record."""
     body = {
         "sim_name": sim_name,
-        "num_rounds": float(num_rounds),
-        "num_customers": float(num_customers),
+        "num_rounds": int(num_rounds),
+        "num_customers": int(num_customers),
         "alpha": float(alpha),
         "notes": notes or None,
     }
@@ -220,8 +220,20 @@ def get_metrics(simulation_id: int) -> dict:
 @st.cache_data(ttl=60, show_spinner=False)
 def list_customers() -> pd.DataFrame:
     """GET /customers → DataFrame with RFM features."""
-    payload = _request("GET", "/customers")
-    df = pd.DataFrame(payload or [])
+    limit = 500
+    offset = 0
+    all_customers = []
+    
+    while True:
+        payload = _request("GET", "/customers", params={"limit": limit, "offset": offset})
+        if not payload:
+            break
+        all_customers.extend(payload)
+        if len(payload) < limit:
+            break
+        offset += limit
+        
+    df = pd.DataFrame(all_customers)
     if df.empty:
         return df
     # Normalise dtypes for safer filtering downstream

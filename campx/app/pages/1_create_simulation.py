@@ -47,12 +47,6 @@ with st.form("new_simulation", clear_on_submit=False):
             "Alpha (exploration)", 0.0, 2.0, 0.5, 0.1,
             help="Higher α → more exploration. Lower α → more exploitation.",
         )
-        baselines = st.multiselect(
-            "Compare against baselines",
-            ["Random", "Heuristic"],
-            default=["Random", "Heuristic"],
-            help="Run these policies on the same customer stream.",
-        )
         notes = st.text_area("Notes", placeholder="Why this run?", height=100)
 
     submitted = st.form_submit_button(
@@ -79,10 +73,7 @@ if submitted:
                 f"(id: {resp['simulation_id']}). "
                 "Open Interaction to watch it run."
             )
-            st.info(
-                "ℹ️ The simulation record is saved, but Prefect-triggered "
-                "execution is not wired up yet — see Orchestration TODOs."
-            )
+            st.info("ℹ️ Simulation queued. DS pipeline will process it.")
             # Fresh-fetch the simulations list on next render
             bu.list_simulations.clear()
 
