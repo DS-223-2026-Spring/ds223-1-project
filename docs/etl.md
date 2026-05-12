@@ -80,10 +80,11 @@ python -m campx.ds.run_workflow --storage db
 ```
 
 The in-process simulation runner also computes its rounds sequentially in
-memory, then bulk inserts the generated interaction batch and final model
-state. The live `/decide` and `/feedback` flow still uses the stored procedures
-one interaction at a time, because those requests represent real online
-decisions and delayed outcomes rather than generated initialization data.
+memory, then bulk inserts the generated interaction batch and per-round
+model-state updates. The live `/decide` and `/feedback` flow still uses the
+stored procedures one interaction at a time, because those requests represent
+real online decisions and delayed outcomes rather than generated initialization
+data.
 
 ### Backend
 

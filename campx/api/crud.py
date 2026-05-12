@@ -28,8 +28,11 @@ try:
         get_simulation_summary as db_get_simulation_summary,
         list_action_definitions as db_list_action_definitions,
         list_customer_feature_rows as db_list_customer_feature_rows,
+        list_customer_simulation_rows as db_list_customer_simulation_rows,
         list_observed_simulation_interactions as db_list_observed_simulation_interactions,
         list_simulation_artifacts as db_list_simulation_artifacts,
+        log_interaction as db_log_interaction,
+        observe_outcome as db_observe_outcome,
         upsert_model_state,
         upsert_simulation_artifact as db_upsert_simulation_artifact,
     )
@@ -57,8 +60,11 @@ except ImportError:
         get_simulation_summary as db_get_simulation_summary,
         list_action_definitions as db_list_action_definitions,
         list_customer_feature_rows as db_list_customer_feature_rows,
+        list_customer_simulation_rows as db_list_customer_simulation_rows,
         list_observed_simulation_interactions as db_list_observed_simulation_interactions,
         list_simulation_artifacts as db_list_simulation_artifacts,
+        log_interaction as db_log_interaction,
+        observe_outcome as db_observe_outcome,
         upsert_model_state,
         upsert_simulation_artifact as db_upsert_simulation_artifact,
     )
@@ -88,21 +94,109 @@ DEFAULT_ACTION_TARGET_LATENTS = {
     4: "impulse_tendency",
 }
 
-# Calibrated from DS synthetic config (GeneratorCalibration.simulation)
-_ACTION_BASE_CONVERSION_RATE: dict[int, float] = {
-    0: 0.29,  # no_action
-    1: 0.18,  # discount_10
-    2: 0.20,  # free_shipping
-    3: 0.30,  # product_recommendation
-    4: 0.28,  # bundle_offer
-}
+# Kept in sync with campx.ds.synthetic.config defaults. The backend image does
+# not include the DS package, so the online simulation route carries the same
+# compact calibration locally.
+_P_CONVERT_MIN = 0.02
+_P_CONVERT_MAX = 0.90
+_SEASONALITY_AMPLITUDE = 0.08
+_SEASONALITY_PERIOD = 52.0
+_BASKET_NOISE_MEAN = 1.0
+_BASKET_NOISE_SD = 0.10
+_BASKET_NOISE_MIN = 0.75
+_BASKET_NOISE_MAX = 1.35
 
-_ACTION_REVENUE_RANGE: dict[int, tuple[float, float]] = {
-    0: (60.0, 78.0),
-    1: (65.0, 85.0),
-    2: (62.0, 82.0),
-    3: (70.0, 92.0),
-    4: (92.0, 125.0),
+_ACTION_RESPONSE_MODEL: dict[int, dict[str, float]] = {
+    0: {
+        "non_conversion_cost": 0.00,
+        "converted_cost_floor": 0.00,
+        "converted_cost_rate": 0.00,
+        "conversion_intercept": -2.55,
+        "conversion_price_weight": -0.30,
+        "conversion_loyalty_weight": 3.00,
+        "conversion_impulse_weight": 0.00,
+        "conversion_planner_weight": 0.00,
+        "revenue_base_multiplier": 1.00,
+        "revenue_price_weight": 0.00,
+        "revenue_loyalty_weight": 0.04,
+        "revenue_impulse_weight": 0.00,
+        "revenue_planner_weight": 0.00,
+        "revenue_basket_weight": 0.00,
+        "revenue_noise": 0.10,
+        "max_revenue": 150.0,
+    },
+    1: {
+        "non_conversion_cost": 0.10,
+        "converted_cost_floor": 6.50,
+        "converted_cost_rate": 0.10,
+        "conversion_intercept": -1.80,
+        "conversion_price_weight": 3.50,
+        "conversion_loyalty_weight": -1.60,
+        "conversion_impulse_weight": 0.30,
+        "conversion_planner_weight": 0.00,
+        "revenue_base_multiplier": 1.08,
+        "revenue_price_weight": 0.08,
+        "revenue_loyalty_weight": 0.00,
+        "revenue_impulse_weight": 0.00,
+        "revenue_planner_weight": 0.00,
+        "revenue_basket_weight": 0.00,
+        "revenue_noise": 0.13,
+        "max_revenue": 160.0,
+    },
+    2: {
+        "non_conversion_cost": 0.10,
+        "converted_cost_floor": 4.99,
+        "converted_cost_rate": 0.00,
+        "conversion_intercept": -1.75,
+        "conversion_price_weight": 2.60,
+        "conversion_loyalty_weight": 0.30,
+        "conversion_impulse_weight": -1.40,
+        "conversion_planner_weight": 0.00,
+        "revenue_base_multiplier": 1.03,
+        "revenue_price_weight": 0.05,
+        "revenue_loyalty_weight": 0.00,
+        "revenue_impulse_weight": 0.00,
+        "revenue_planner_weight": 0.03,
+        "revenue_basket_weight": 0.00,
+        "revenue_noise": 0.12,
+        "max_revenue": 152.0,
+    },
+    3: {
+        "non_conversion_cost": 0.30,
+        "converted_cost_floor": 0.30,
+        "converted_cost_rate": 0.00,
+        "conversion_intercept": -2.60,
+        "conversion_price_weight": 0.00,
+        "conversion_loyalty_weight": 2.20,
+        "conversion_impulse_weight": 1.60,
+        "conversion_planner_weight": 0.00,
+        "revenue_base_multiplier": 1.10,
+        "revenue_price_weight": 0.00,
+        "revenue_loyalty_weight": 0.07,
+        "revenue_impulse_weight": 0.06,
+        "revenue_planner_weight": 0.00,
+        "revenue_basket_weight": 0.00,
+        "revenue_noise": 0.10,
+        "max_revenue": 165.0,
+    },
+    4: {
+        "non_conversion_cost": 0.20,
+        "converted_cost_floor": 9.00,
+        "converted_cost_rate": 0.00,
+        "conversion_intercept": -2.55,
+        "conversion_price_weight": 0.40,
+        "conversion_loyalty_weight": 1.00,
+        "conversion_impulse_weight": 2.50,
+        "conversion_planner_weight": 0.00,
+        "revenue_base_multiplier": 1.38,
+        "revenue_price_weight": 0.00,
+        "revenue_loyalty_weight": 0.05,
+        "revenue_impulse_weight": 0.18,
+        "revenue_planner_weight": 0.00,
+        "revenue_basket_weight": 0.04,
+        "revenue_noise": 0.16,
+        "max_revenue": 220.0,
+    },
 }
 
 
@@ -425,19 +519,89 @@ def complete_simulation_record(db: SQLHandler, simulation_id: int) -> dict[str, 
 
 def _simulate_outcome(
     action_id: int,
-    cost: float,
+    customer_row: dict[str, Any],
+    round_number: int,
     rng: np.random.Generator,
-) -> tuple[bool, float, float]:
-    """Return (converted, revenue, reward) for one synthetic interaction."""
+) -> tuple[bool, float, float, float, float]:
+    """Return (converted, revenue, cost, reward, p_convert) for one interaction."""
 
-    conversion_rate = _ACTION_BASE_CONVERSION_RATE.get(action_id, 0.20)
-    converted = bool(rng.random() < conversion_rate)
+    model = _ACTION_RESPONSE_MODEL[int(action_id)]
+    price = _latent_value(customer_row, "z_price_sensitivity")
+    loyalty = _latent_value(customer_row, "z_brand_loyalty")
+    impulse = _latent_value(customer_row, "z_impulse_tendency")
+    planner = 1.0 - impulse
+
+    logit = (
+        model["conversion_intercept"]
+        + model["conversion_price_weight"] * price
+        + model["conversion_loyalty_weight"] * loyalty
+        + model["conversion_impulse_weight"] * impulse
+        + model["conversion_planner_weight"] * planner
+    )
+    p_convert = float(np.clip(1.0 / (1.0 + np.exp(-logit)), _P_CONVERT_MIN, _P_CONVERT_MAX))
+    converted = bool(rng.random() < p_convert)
+
+    revenue = 0.0
     if converted:
-        low, high = _ACTION_REVENUE_RANGE.get(action_id, (60.0, 90.0))
-        revenue = float(rng.uniform(low, high))
-    else:
-        revenue = 0.0
-    return converted, revenue, revenue - cost
+        basket_noise = float(
+            np.clip(
+                rng.normal(_BASKET_NOISE_MEAN, _BASKET_NOISE_SD),
+                _BASKET_NOISE_MIN,
+                _BASKET_NOISE_MAX,
+            )
+        )
+        seasonality = 1.0 + _SEASONALITY_AMPLITUDE * np.sin(
+            2.0 * np.pi * (round_number - 1) / _SEASONALITY_PERIOD
+        )
+        multiplier = (
+            model["revenue_base_multiplier"]
+            + model["revenue_price_weight"] * price
+            + model["revenue_loyalty_weight"] * loyalty
+            + model["revenue_impulse_weight"] * impulse
+            + model["revenue_planner_weight"] * planner
+            + model["revenue_basket_weight"] * float(customer_row["basket_diversity"])
+        )
+        raw_revenue = (
+            float(customer_row["avg_order_size"])
+            * basket_noise
+            * multiplier
+            * seasonality
+            * float(np.clip(rng.normal(1.0, model["revenue_noise"]), 0.70, 1.45))
+        )
+        revenue = float(np.clip(raw_revenue, 15.0, model["max_revenue"]))
+
+    converted_cost = max(
+        model["converted_cost_rate"] * revenue,
+        model["converted_cost_floor"],
+    )
+    cost = converted_cost if converted else model["non_conversion_cost"]
+    revenue = round(float(revenue), 2)
+    cost = round(float(cost), 2)
+    reward = round(revenue - cost, 2)
+    return converted, revenue, cost, reward, round(p_convert, 4)
+
+
+def _latent_value(customer_row: dict[str, Any], field: str) -> float:
+    value = customer_row.get(field)
+    if value is None or _is_missing_scalar(value):
+        raise ValueError(
+            f"Simulation requires customer latent field {field!r}. "
+            "Run the DS generated-data import before launching simulations."
+        )
+    return float(value)
+
+
+def _sample_customer_row(
+    customer_rows: list[dict[str, Any]],
+    rng: np.random.Generator,
+) -> dict[str, Any]:
+    weights = np.asarray(
+        [float(row["frequency"]) + 1.0 for row in customer_rows],
+        dtype=np.float64,
+    )
+    probabilities = weights / weights.sum()
+    index = int(rng.choice(np.arange(len(customer_rows)), p=probabilities))
+    return customer_rows[index]
 
 
 def get_simulation_record(db: SQLHandler, simulation_id: int) -> dict[str, Any] | None:
@@ -473,7 +637,7 @@ def run_simulation_background(simulation_id: int) -> None:
         context_dim = _normalize_context_dim(simulation.get("context_dim"))
         num_customers = int(simulation.get("num_customers") or 500)
 
-        customer_rows = db_list_customer_feature_rows(db, limit=num_customers)
+        customer_rows = db_list_customer_simulation_rows(db, limit=num_customers)
         if not customer_rows:
             raise RuntimeError(
                 f"Simulation {simulation_id} could not start because no customers were found."
@@ -485,7 +649,6 @@ def run_simulation_background(simulation_id: int) -> None:
                 f"Simulation {simulation_id} could not start because no actions were found."
             )
 
-        customer_ids = np.array([row["customer_id"] for row in customer_rows], dtype=int)
         feature_matrix = np.array(
             [[float(row[column]) for column in MODEL_FEATURE_COLUMNS] for row in customer_rows],
             dtype=np.float64,
@@ -493,74 +656,61 @@ def run_simulation_background(simulation_id: int) -> None:
         scales = np.max(np.abs(feature_matrix), axis=0)
         scales = np.where(scales < 1e-8, 1.0, scales)[:context_dim]
 
-        bandit: dict[int, dict[str, Any]] = {
-            int(row["action_id"]): {
-                "action_name": str(row["action_name"]),
-                "cost": float(row["action_cost"]),
-                "a_matrix": np.eye(context_dim, dtype=np.float64),
-                "b_vector": np.zeros(context_dim, dtype=np.float64),
-                "n_pulls": 0,
-            }
-            for row in action_rows
+        bandit = _build_empty_bandit_state(
+            action_rows,
+            alpha=alpha,
+            context_dim=context_dim,
+        )
+        state = {
+            "context_dim": context_dim,
+            "feature_scales": scales,
+            "actions": bandit,
         }
-        sorted_action_ids = np.array(sorted(bandit.keys()), dtype=int)
         rng = np.random.default_rng(simulation_id)
         interaction_rows: list[dict[str, Any]] = []
+        model_state_rows: list[dict[str, Any]] = []
 
         for round_number in range(1, num_rounds + 1):
-            customer_index = int(rng.integers(0, len(customer_ids)))
-            customer_id = int(customer_ids[customer_index])
-            raw_context = feature_matrix[customer_index, :context_dim]
-            scaled_context = raw_context / scales
-
-            best_action_id = int(sorted_action_ids[0])
-            best_ucb = -np.inf
-
-            for action_id in sorted_action_ids:
-                entry = bandit[int(action_id)]
-                theta = np.linalg.solve(entry["a_matrix"], entry["b_vector"])
-                exploit = float(theta @ scaled_context)
-                uncertainty = float(
-                    scaled_context @ np.linalg.solve(entry["a_matrix"], scaled_context)
-                )
-                explore = float(alpha * np.sqrt(max(uncertainty, 0.0)))
-                ucb_score = exploit + explore
-                if ucb_score > best_ucb:
-                    best_ucb = ucb_score
-                    best_action_id = int(action_id)
-
-            best_cost = float(bandit[best_action_id]["cost"])
-            converted, revenue, reward = _simulate_outcome(best_action_id, best_cost, rng)
+            customer_row = _sample_customer_row(customer_rows, rng)
+            customer_id = int(customer_row["customer_id"])
+            raw_context = np.asarray(
+                [float(customer_row[column]) for column in MODEL_FEATURE_COLUMNS],
+                dtype=np.float64,
+            )[:context_dim]
+            selected = _route_linucb_inference(state, raw_context)[0]
+            action_id = int(selected["action_id"])
+            converted, revenue, cost, reward, _ = _simulate_outcome(
+                action_id,
+                customer_row,
+                round_number,
+                rng,
+            )
             interaction_rows.append(
                 {
                     "simulation_id": simulation_id,
                     "customer_id": customer_id,
-                    "action_id": best_action_id,
+                    "action_id": action_id,
                     "round_number": round_number,
                     "context_vector_bytes": _array_to_bytes(raw_context),
-                    "ucb_score": best_ucb,
-                    "cost": best_cost,
+                    "ucb_score": selected["ucb_score"],
+                    "cost": cost,
                     "converted": converted,
                     "revenue": revenue,
                     "reward": reward,
                 }
             )
 
-            entry = bandit[best_action_id]
+            entry = bandit[action_id]
+            scaled_context = selected["scaled_context"]
             entry["a_matrix"] += np.outer(scaled_context, scaled_context)
             entry["b_vector"] += reward * scaled_context
             entry["n_pulls"] += 1
-
-        db_bulk_insert_interactions(db, interaction_rows)
-
-        model_state_rows = []
-        for action_id, entry in bandit.items():
             theta = np.linalg.solve(entry["a_matrix"], entry["b_vector"])
             model_state_rows.append(
                 {
                     "simulation_id": simulation_id,
                     "action_id": action_id,
-                    "round_number": num_rounds,
+                    "round_number": round_number,
                     "n_pulls": entry["n_pulls"],
                     "theta_bytes": _array_to_bytes(theta),
                     "a_bytes": _array_to_bytes(entry["a_matrix"]),
@@ -568,6 +718,8 @@ def run_simulation_background(simulation_id: int) -> None:
                     "alpha": alpha,
                 }
             )
+
+        db_bulk_insert_interactions(db, interaction_rows)
         db_bulk_upsert_model_state(db, model_state_rows)
 
         complete_simulation_record(db, simulation_id)
@@ -576,6 +728,106 @@ def run_simulation_background(simulation_id: int) -> None:
         traceback.print_exc()
     finally:
         db.close()
+
+
+def run_simulation_step(db: SQLHandler, simulation_id: int) -> dict[str, Any] | None:
+    """Run exactly one online LinUCB simulation round for an existing simulation."""
+
+    simulation = _get_simulation_record(db, simulation_id)
+    if simulation is None:
+        return None
+    if simulation.get("completed_at") is not None:
+        raise ConflictError(f"Simulation {simulation_id} is already completed.")
+
+    num_rounds = int(simulation["num_rounds"])
+    next_round = db_get_next_simulation_round(db, simulation_id)
+    if next_round > num_rounds:
+        complete_simulation_record(db, simulation_id)
+        raise ConflictError(f"Simulation {simulation_id} has already run {num_rounds} rounds.")
+
+    num_customers = int(simulation.get("num_customers") or 500)
+    customer_rows = db_list_customer_simulation_rows(db, limit=num_customers)
+    if not customer_rows:
+        raise ValueError(
+            f"Simulation {simulation_id} cannot step because no customers were found."
+        )
+
+    state = _reconstruct_bandit_state(db, simulation_id)
+    if state is None:
+        return None
+
+    rng = np.random.default_rng(simulation_id * 1_000_003 + next_round)
+    customer_row = _sample_customer_row(customer_rows, rng)
+    raw_context = np.asarray(
+        [float(customer_row[column]) for column in MODEL_FEATURE_COLUMNS],
+        dtype=np.float64,
+    )[: state["context_dim"]]
+    selected = _route_linucb_inference(state, raw_context)[0]
+    action_id = int(selected["action_id"])
+
+    converted, revenue, cost, reward, p_convert = _simulate_outcome(
+        action_id,
+        customer_row,
+        next_round,
+        rng,
+    )
+    interaction_id = db_log_interaction(
+        db,
+        simulation_id=simulation_id,
+        customer_id=int(customer_row["customer_id"]),
+        action_id=action_id,
+        round_number=next_round,
+        context_vector_bytes=_array_to_bytes(raw_context),
+        ucb_score=float(selected["ucb_score"]),
+        cost=cost,
+    )
+    feedback = db_observe_outcome(
+        db,
+        interaction_id=interaction_id,
+        converted=converted,
+        revenue=revenue,
+    )
+
+    entry = state["actions"][action_id]
+    scaled_context = selected["scaled_context"]
+    entry["a_matrix"] += np.outer(scaled_context, scaled_context)
+    entry["b_vector"] += reward * scaled_context
+    entry["n_pulls"] += 1
+    theta = _theta_from_state(entry)
+    upsert_model_state(
+        db,
+        simulation_id=simulation_id,
+        action_id=action_id,
+        round_number=next_round,
+        n_pulls=int(entry["n_pulls"]),
+        theta_bytes=_array_to_bytes(theta),
+        a_bytes=_array_to_bytes(entry["a_matrix"]),
+        b_bytes=_array_to_bytes(entry["b_vector"]),
+        alpha=float(simulation["alpha"]),
+    )
+
+    completed = next_round >= num_rounds
+    if completed:
+        complete_simulation_record(db, simulation_id)
+
+    return {
+        "simulation_id": simulation_id,
+        "round_number": next_round,
+        "interaction_id": int(interaction_id),
+        "customer_id": int(customer_row["customer_id"]),
+        "action_id": action_id,
+        "action": selected["action"],
+        "converted": converted,
+        "revenue": revenue,
+        "cost": cost,
+        "reward": float(feedback["reward"]),
+        "p_convert": p_convert,
+        "exploit": float(selected["exploit"]),
+        "explore": float(selected["explore"]),
+        "ucb_score": float(selected["ucb_score"]),
+        "model_updated": True,
+        "completed": completed,
+    }
 
 
 def _row_value(
@@ -1031,6 +1283,40 @@ def _theta_from_state(entry: dict[str, Any]) -> np.ndarray:
     return np.linalg.solve(entry["a_matrix"], entry["b_vector"])
 
 
+def _route_linucb_inference(
+    state: dict[str, Any],
+    raw_context: np.ndarray,
+) -> list[dict[str, Any]]:
+    """Score every action for one raw context using the shared LinUCB path."""
+
+    context_dim = int(state["context_dim"])
+    scaled_context = raw_context[:context_dim] / state["feature_scales"]
+    scores: list[dict[str, Any]] = []
+
+    for _, entry in sorted(state["actions"].items()):
+        theta = _theta_from_state(entry)
+        exploit = float(theta @ scaled_context)
+        uncertainty = float(scaled_context @ np.linalg.solve(entry["a_matrix"], scaled_context))
+        explore = float(entry["alpha"] * np.sqrt(max(uncertainty, 0.0)))
+        scores.append(
+            {
+                "action": entry["action_name"],
+                "action_id": entry["action_id"],
+                "cost": float(entry["cost"]),
+                "exploit": exploit,
+                "explore": explore,
+                "ucb_score": exploit + explore,
+                "raw_context": raw_context[:context_dim],
+                "scaled_context": scaled_context,
+            }
+        )
+
+    scores.sort(
+        key=lambda row: (-row["ucb_score"], -row["exploit"], row["action_id"]),
+    )
+    return scores
+
+
 def _reconstruct_bandit_state(db: SQLHandler, simulation_id: int) -> dict[str, Any] | None:
     simulation = _get_simulation_record(db, simulation_id)
     if simulation is None:
@@ -1114,30 +1400,7 @@ def _decision_scores_with_metadata(
     if raw_context is None:
         return None
 
-    scaled_context = raw_context[: state["context_dim"]] / state["feature_scales"]
-    scores: list[dict[str, Any]] = []
-
-    for _, entry in sorted(state["actions"].items()):
-        theta = _theta_from_state(entry)
-        exploit = float(theta @ scaled_context)
-        uncertainty = float(scaled_context @ np.linalg.solve(entry["a_matrix"], scaled_context))
-        explore = float(entry["alpha"] * np.sqrt(max(uncertainty, 0.0)))
-        scores.append(
-            {
-                "action": entry["action_name"],
-                "action_id": entry["action_id"],
-                "cost": float(entry["cost"]),
-                "exploit": exploit,
-                "explore": explore,
-                "ucb_score": exploit + explore,
-                "raw_context": raw_context[: state["context_dim"]],
-            }
-        )
-
-    scores.sort(
-        key=lambda row: (-row["ucb_score"], -row["exploit"], row["action_id"]),
-    )
-    return scores
+    return _route_linucb_inference(state, raw_context)
 
 
 def score_customer_actions(
@@ -1265,7 +1528,7 @@ def submit_feedback(db: SQLHandler, payload: FeedbackRequest) -> dict[str, Any] 
             db,
             simulation_id=simulation_id,
             action_id=action_id,
-            round_number=int(action_state["n_pulls"]),
+            round_number=int(interaction["round_number"]),
             n_pulls=int(action_state["n_pulls"]),
             theta_bytes=_array_to_bytes(theta),
             a_bytes=_array_to_bytes(action_state["a_matrix"]),

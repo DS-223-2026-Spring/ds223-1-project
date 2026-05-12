@@ -404,6 +404,13 @@ def _prepare_model_state(
     actions: pd.DataFrame,
 ) -> pd.DataFrame:
     state = model_state.copy()
+    if "round_number" in state.columns:
+        state = (
+            state.sort_values(["action_id", "round_number"])
+            .groupby("action_id", as_index=False)
+            .tail(1)
+            .reset_index(drop=True)
+        )
     action_metadata_columns = [
         column
         for column in ["action_id", "action_name", "base_cost"]

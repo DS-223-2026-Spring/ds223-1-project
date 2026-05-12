@@ -149,6 +149,33 @@ def list_customer_feature_rows(db: SQLHandler, limit: int | None = None):
     )
 
 
+def list_customer_simulation_rows(db: SQLHandler, limit: int | None = None):
+    """Fetch customer feature and latent rows used by backend simulation."""
+
+    logger.info(f"Fetching customer simulation rows limit={limit}")
+    base_query = """
+        SELECT
+            customer_id,
+            gender,
+            segment_label,
+            recency,
+            frequency,
+            monetary,
+            basket_diversity,
+            avg_order_size,
+            purchase_regularity,
+            z_price_sensitivity,
+            z_brand_loyalty,
+            z_impulse_tendency
+        FROM public.view_customer_with_latents
+        ORDER BY customer_id
+    """
+    if limit is None:
+        return db.fetch_all(base_query)
+
+    return db.fetch_all(f"{base_query} LIMIT %s", (limit,))
+
+
 def insert_customer(
     db: SQLHandler,
     gender,
@@ -614,6 +641,7 @@ def get_interaction_summary(db: SQLHandler, interaction_id: int):
             interaction_id,
             simulation_id,
             action_id,
+            round_number,
             observed_at
         FROM public.interactions
         WHERE interaction_id = %s

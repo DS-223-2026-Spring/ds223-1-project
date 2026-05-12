@@ -138,6 +138,7 @@ class LinUCBPolicy:
         self,
         simulation_id: str,
         policy_mode: str,
+        round_number: int | None = None,
     ) -> pd.DataFrame:
         """Serialize learned per-action state for CSV and DB persistence."""
 
@@ -153,6 +154,7 @@ class LinUCBPolicy:
                     "policy_mode": policy_mode,
                     "action_id": action_key,
                     "action_name": self.action_names[action_key],
+                    "round_number": int(round_number or 0),
                     "alpha": self.alpha,
                     "context_dim": len(self.feature_columns),
                     "n_pulls": self.n_pulls[action_key],
