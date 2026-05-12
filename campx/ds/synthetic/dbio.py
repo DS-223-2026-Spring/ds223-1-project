@@ -146,23 +146,42 @@ def _read_required_csv(input_dir: Path, file_name: str) -> pd.DataFrame:
     return pd.read_csv(path)
 
 
+def _db_records(frame: pd.DataFrame) -> list[dict[str, Any]]:
+    """Return records with pandas missing values converted to None."""
+
+    normalized = frame.astype(object).where(pd.notna(frame), None)
+    return normalized.to_dict(orient="records")
+
+
 def _persist_actions(db_crud, db, actions: pd.DataFrame) -> None:
     """Upsert generated action metadata before interactions reference it."""
 
-    for row in actions.itertuples(index=False):
-        action_id = int(row.action_id)
-        action_cost = float(getattr(row, "action_cost", getattr(row, "base_cost", 0.0)))
+    action_rows = []
+    for row in _db_records(actions):
+        action_id = int(row["action_id"])
+        action_rows.append(
+            {
+                "action_id": action_id,
+                "action_name": row.get("action_name") or f"action_{action_id}",
+                "action_cost": float(row.get("action_cost") or row.get("base_cost") or 0.0),
+                "target_latent": row.get("target_latent")
+                or DEFAULT_ACTION_TARGET_LATENTS.get(action_id, "unknown"),
+                "description": row.get("description") or "Generated DS action",
+            }
+        )
+
+    if hasattr(db_crud, "bulk_upsert_actions"):
+        db_crud.bulk_upsert_actions(db, action_rows)
+        return
+
+    for row in action_rows:
         db_crud.upsert_action(
             db,
-            action_id=action_id,
-            action_name=getattr(row, "action_name", f"action_{action_id}"),
-            action_cost=action_cost,
-            target_latent=getattr(
-                row,
-                "target_latent",
-                DEFAULT_ACTION_TARGET_LATENTS.get(action_id, "unknown"),
-            ),
-            description=getattr(row, "description", "Generated DS action"),
+            action_id=row["action_id"],
+            action_name=row["action_name"],
+            action_cost=row["action_cost"],
+            target_latent=row["target_latent"],
+            description=row["description"],
         )
 
 
@@ -174,28 +193,54 @@ def _persist_customers_and_latents(
 ) -> dict[int, int]:
     """Insert generated customers and latents, returning synthetic->DB id mapping."""
 
-    latents_by_customer = customer_latents.set_index("customer_id").to_dict("index")
-    customer_id_map: dict[int, int] = {}
-
-    for row in customers.itertuples(index=False):
-        synthetic_customer_id = int(row.customer_id)
+    latents_by_customer = {
+        int(row["customer_id"]): row
+        for row in _db_records(customer_latents)
+    }
+    customer_rows = []
+    for row in _db_records(customers):
+        synthetic_customer_id = int(row["customer_id"])
         latent_row = latents_by_customer[synthetic_customer_id]
+        customer_rows.append(
+            {
+                "source_customer_id": synthetic_customer_id,
+                "customer_id": synthetic_customer_id,
+                "gender": row.get("gender") or _customer_gender(row, synthetic_customer_id),
+                "segment_label": row.get("segment_label") or row.get("segment"),
+                "recency": row["recency"],
+                "frequency": row["frequency"],
+                "monetary": row["monetary"],
+                "basket_diversity": row["basket_diversity"],
+                "avg_order_size": row["avg_order_size"],
+                "purchase_regularity": row["purchase_regularity"],
+                "z_price_sensitivity": latent_row["z_price_sensitivity"],
+                "z_brand_loyalty": latent_row["z_brand_loyalty"],
+                "z_impulse_tendency": latent_row["z_impulse_tendency"],
+            }
+        )
+
+    if hasattr(db_crud, "bulk_insert_customers_with_latents"):
+        return db_crud.bulk_insert_customers_with_latents(db, customer_rows)
+
+    customer_id_map: dict[int, int] = {}
+    for row in customer_rows:
+        synthetic_customer_id = int(row["source_customer_id"])
         db_customer_id = db_crud.upsert_customer(
             db,
             customer_id=None,
-            gender=_customer_gender(row, synthetic_customer_id),
-            segment_label=row.segment,
-            recency=row.recency,
-            frequency=row.frequency,
-            monetary=row.monetary,
-            basket_diversity=row.basket_diversity,
-            avg_order_size=row.avg_order_size,
-            purchase_regularity=row.purchase_regularity,
-            z_price_sensitivity=latent_row["z_price_sensitivity"],
-            z_brand_loyalty=latent_row["z_brand_loyalty"],
-            z_impulse_tendency=latent_row["z_impulse_tendency"],
+            gender=row["gender"],
+            segment_label=row["segment_label"],
+            recency=row["recency"],
+            frequency=row["frequency"],
+            monetary=row["monetary"],
+            basket_diversity=row["basket_diversity"],
+            avg_order_size=row["avg_order_size"],
+            purchase_regularity=row["purchase_regularity"],
+            z_price_sensitivity=row["z_price_sensitivity"],
+            z_brand_loyalty=row["z_brand_loyalty"],
+            z_impulse_tendency=row["z_impulse_tendency"],
         )
-        customer_id_map[synthetic_customer_id] = db_customer_id
+        customer_id_map[synthetic_customer_id] = int(db_customer_id)
 
     return customer_id_map
 
@@ -208,39 +253,60 @@ def _persist_interactions(
     customer_id_map: dict[int, int],
     simulation_id: int,
 ) -> None:
-    """Insert interactions via CRUD and immediately record observed outcomes."""
+    """Insert generated interactions, preferably through the bulk DB helper."""
 
     customer_features = get_model_feature_frame(
         customers=customers.set_index("customer_id"),
         feature_columns=FEATURE_COLUMNS,
     )
 
-    for row in interactions.itertuples(index=False):
-        synthetic_customer_id = int(row.customer_id)
+    interaction_rows = []
+    for row in _db_records(interactions):
+        synthetic_customer_id = int(row["customer_id"])
         db_customer_id = customer_id_map[synthetic_customer_id]
         context_vector_bytes = np.asarray(
             customer_features.loc[synthetic_customer_id].to_numpy(dtype=float),
             dtype=np.float64,
         ).tobytes()
-
-        interaction_id = db_crud.log_interaction(
-            db,
-            simulation_id=simulation_id,
-            customer_id=db_customer_id,
-            action_id=int(row.action_id),
-            round_number=int(row.round_number),
-            context_vector_bytes=context_vector_bytes,
-            ucb_score=_interaction_score(row),
-            cost=float(row.cost),
+        interaction_rows.append(
+            {
+                "simulation_id": simulation_id,
+                "customer_id": db_customer_id,
+                "action_id": int(row["action_id"]),
+                "round_number": int(row["round_number"]),
+                "context_vector_bytes": context_vector_bytes,
+                "ucb_score": _interaction_score(row),
+                "converted": _bool_or_none(row.get("converted")),
+                "revenue": float(row.get("revenue") or 0.0),
+                "cost": float(row.get("cost") or 0.0),
+                "reward": row.get("reward"),
+            }
         )
 
+    if hasattr(db_crud, "bulk_insert_interactions"):
+        db_crud.bulk_insert_interactions(db, interaction_rows)
+        return
+
+    for row in interaction_rows:
+        interaction_id = db_crud.log_interaction(
+            db,
+            simulation_id=row["simulation_id"],
+            customer_id=row["customer_id"],
+            action_id=row["action_id"],
+            round_number=row["round_number"],
+            context_vector_bytes=row["context_vector_bytes"],
+            ucb_score=row["ucb_score"],
+            cost=row["cost"],
+        )
+
+        converted = bool(row["converted"])
         observed_at = datetime.now(UTC).replace(tzinfo=None)
-        converted_at = observed_at if bool(row.converted) else None
+        converted_at = observed_at if converted else None
         db_crud.observe_outcome(
             db,
             interaction_id=interaction_id,
-            converted=bool(row.converted),
-            revenue=float(row.revenue),
+            converted=converted,
+            revenue=row["revenue"],
             converted_at=converted_at,
             observed_at=observed_at,
         )
@@ -252,22 +318,38 @@ def _persist_model_state(
     model_state: pd.DataFrame,
     simulation_id: int,
 ) -> None:
-    """Persist placeholder model state via CRUD."""
+    """Persist model state via CRUD, preferably in one batch."""
 
-    for row in model_state.itertuples(index=False):
-        theta_bytes = _json_array_to_bytes(row.theta_json)
-        a_bytes = _json_array_to_bytes(row.a_json)
-        b_bytes = _json_array_to_bytes(row.b_json)
+    model_state_rows = []
+    for row in _db_records(model_state):
+        model_state_rows.append(
+            {
+                "simulation_id": simulation_id,
+                "action_id": int(row["action_id"]),
+                "round_number": int(row.get("round_number") or 0),
+                "n_pulls": int(row["n_pulls"]),
+                "theta_bytes": _json_array_to_bytes(row["theta_json"]),
+                "a_bytes": _json_array_to_bytes(row["a_json"]),
+                "b_bytes": _json_array_to_bytes(row["b_json"]),
+                "alpha": float(row["alpha"]),
+            }
+        )
+
+    if hasattr(db_crud, "bulk_upsert_model_state"):
+        db_crud.bulk_upsert_model_state(db, model_state_rows)
+        return
+
+    for row in model_state_rows:
         db_crud.upsert_model_state(
             db,
-            simulation_id=simulation_id,
-            action_id=int(row.action_id),
-            round_number=int(getattr(row, "round_number", 0)),
-            n_pulls=int(row.n_pulls),
-            theta_bytes=theta_bytes,
-            a_bytes=a_bytes,
-            b_bytes=b_bytes,
-            alpha=float(row.alpha),
+            simulation_id=row["simulation_id"],
+            action_id=row["action_id"],
+            round_number=row["round_number"],
+            n_pulls=row["n_pulls"],
+            theta_bytes=row["theta_bytes"],
+            a_bytes=row["a_bytes"],
+            b_bytes=row["b_bytes"],
+            alpha=row["alpha"],
         )
 
 
@@ -511,7 +593,7 @@ def _json_ready(value: Any) -> Any:
 def _customer_gender(row, synthetic_customer_id: int) -> str:
     """Return a DB-valid gender value for generated customers."""
 
-    gender = getattr(row, "gender", None)
+    gender = row.get("gender") if isinstance(row, dict) else getattr(row, "gender", None)
     if gender in {"M", "F"}:
         return gender
     return "F" if synthetic_customer_id % 2 == 0 else "M"
@@ -520,10 +602,25 @@ def _customer_gender(row, synthetic_customer_id: int) -> str:
 def _interaction_score(row) -> float:
     """Return the decision score stored by the DB schema."""
 
-    score = getattr(row, "ucb_score", None)
+    score = row.get("ucb_score") if isinstance(row, dict) else getattr(row, "ucb_score", None)
     if score is None or pd.isna(score):
         return 0.0
     return float(score)
+
+
+def _bool_or_none(value: Any) -> bool | None:
+    """Normalize CSV/API truthy values without treating 'False' as true."""
+
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "t", "yes", "y"}
+    return bool(value)
 
 
 def _connect(sql_handler_cls):

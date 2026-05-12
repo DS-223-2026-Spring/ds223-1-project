@@ -19,8 +19,12 @@ SUPPORTED_POLICY_MODES = _config.SUPPORTED_POLICY_MODES
 SyntheticDataConfig = _config.SyntheticDataConfig
 BaselineComparisonArtifacts = load_ds_attr("baselines", "BaselineComparisonArtifacts")
 run_baseline_comparison = load_ds_attr("baselines", "run_baseline_comparison")
+DatabasePersistenceResult = load_ds_attr("synthetic.dbio", "DatabasePersistenceResult")
+persist_csv_artifacts_to_db = load_ds_attr("synthetic.dbio", "persist_csv_artifacts_to_db")
 SyntheticArtifacts = load_ds_attr("synthetic.pipeline", "SyntheticArtifacts")
 run_pipeline = load_ds_attr("synthetic.pipeline", "run_pipeline")
+
+STORAGE_MODES = ("csv", "db", "both")
 
 
 @dataclass(slots=True)
@@ -31,6 +35,7 @@ class WorkflowArtifacts:
     baseline_output_dir: Path | None
     manifest_path: Path
     report_path: Path
+    db_result: DatabasePersistenceResult | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,10 +55,15 @@ class WorkflowConfig:
     baseline_eval_rounds: int = 5000
     baseline_output_dir: Path | None = None
     baseline_ridge_penalty: float = 5.0
+    storage: str = "csv"
+    db_notes: str | None = None
 
 
 def run_workflow(config: WorkflowConfig) -> WorkflowArtifacts:
     """Run the deterministic DS pipeline and write a manifest."""
+
+    if config.storage not in STORAGE_MODES:
+        raise ValueError(f"storage must be one of {list(STORAGE_MODES)}")
 
     output_dir = Path(config.output_dir)
     baseline_output_dir = (
@@ -101,11 +111,20 @@ def run_workflow(config: WorkflowConfig) -> WorkflowArtifacts:
     report_path = output_dir / "workflow_report.md"
     report_path.write_text(_render_workflow_report(manifest) + "\n")
 
+    db_result = None
+    if config.storage in {"db", "both"}:
+        db_result = persist_csv_artifacts_to_db(
+            input_dir=output_dir,
+            config=synthetic_config,
+            notes=config.db_notes,
+        )
+
     return WorkflowArtifacts(
         output_dir=output_dir,
         baseline_output_dir=baseline_output_dir if config.run_baselines else None,
         manifest_path=manifest_path,
         report_path=report_path,
+        db_result=db_result,
     )
 
 
@@ -150,6 +169,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="Directory for baseline artifacts. Defaults to <output-dir>/baselines.",
     )
     parser.add_argument("--baseline-ridge-penalty", type=float, default=5.0)
+    parser.add_argument(
+        "--storage",
+        choices=STORAGE_MODES,
+        default="csv",
+        help=(
+            "Where workflow artifacts are stored. DB mode still writes the local "
+            "directory first, then recursively loads it into PostgreSQL."
+        ),
+    )
+    parser.add_argument(
+        "--db-notes",
+        type=str,
+        default=None,
+        help="Optional notes stored with the created simulation record in DB mode.",
+    )
     return parser
 
 
@@ -173,6 +207,8 @@ def main(argv: list[str] | None = None) -> int:
             baseline_eval_rounds=args.baseline_eval_rounds,
             baseline_output_dir=args.baseline_output_dir,
             baseline_ridge_penalty=args.baseline_ridge_penalty,
+            storage=args.storage,
+            db_notes=args.db_notes,
         )
     )
     print(artifacts.report_path.read_text())
@@ -180,6 +216,15 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Workflow artifacts written to: {artifacts.output_dir}")
     if artifacts.baseline_output_dir is not None:
         print(f"Baseline artifacts written to: {artifacts.baseline_output_dir}")
+    if artifacts.db_result is not None:
+        print(
+            "Persisted to DB: "
+            f"simulation_id={artifacts.db_result.simulation_id}, "
+            f"customers={artifacts.db_result.customers_inserted}, "
+            f"interactions={artifacts.db_result.interactions_inserted}, "
+            f"model_state_rows={artifacts.db_result.model_state_rows_upserted}, "
+            f"artifacts={artifacts.db_result.artifacts_stored}"
+        )
     return 0
 
 
@@ -225,6 +270,7 @@ def _build_manifest(
             "python -m campx.ds.generate_final_outputs",
             "python -m campx.ds.generate_eda_report",
             "python -m campx.ds.run_baseline_comparison",
+            "python -m campx.ds.verify_reproducibility",
         ],
     }
     if baseline_artifacts is not None and baseline_output_dir is not None:

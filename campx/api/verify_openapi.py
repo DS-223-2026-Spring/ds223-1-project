@@ -101,6 +101,25 @@ SAMPLE_FEEDBACK = {
     "model_updated": True,
 }
 
+SAMPLE_SIMULATION_STEP = {
+    "simulation_id": 1,
+    "round_number": 5,
+    "interaction_id": 2,
+    "customer_id": 1,
+    "action_id": 1,
+    "action": "discount_10",
+    "converted": True,
+    "revenue": 15.0,
+    "cost": 6.5,
+    "reward": 8.5,
+    "p_convert": 0.42,
+    "exploit": 1.2,
+    "explore": 0.4,
+    "ucb_score": 1.6,
+    "model_updated": True,
+    "completed": False,
+}
+
 SAMPLE_METRICS = {
     "simulation_id": 1,
     "status": "completed",
@@ -322,6 +341,11 @@ def _install_endpoint_stubs() -> dict[str, object]:
     def run_simulation_background_stub(simulation_id):
         return None
 
+    def run_simulation_step_stub(db, simulation_id):
+        if simulation_id != 1:
+            return None
+        return dict(SAMPLE_SIMULATION_STEP, simulation_id=simulation_id)
+
     def complete_simulation_record_stub(db, simulation_id):
         if simulation_id != 1:
             return None
@@ -387,6 +411,7 @@ def _install_endpoint_stubs() -> dict[str, object]:
         "get_simulation_record": get_simulation_record_stub,
         "create_simulation_record": create_simulation_record_stub,
         "run_simulation_background": run_simulation_background_stub,
+        "run_simulation_step": run_simulation_step_stub,
         "complete_simulation_record": complete_simulation_record_stub,
         "score_customer_actions": score_customer_actions_stub,
         "log_scored_decision": log_scored_decision_stub,
@@ -484,6 +509,7 @@ def _verify_endpoints(client: TestClient) -> bool:
             ),
             201,
         ),
+        ("POST /simulations/1/step", client.post("/simulations/1/step"), 200),
         ("PUT /simulations/1/complete", client.put("/simulations/1/complete"), 200),
         (
             "POST /ds/artifacts",

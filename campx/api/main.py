@@ -26,6 +26,7 @@ try:
         list_simulations,
         log_scored_decision,
         run_simulation_background,
+        run_simulation_step,
         score_customer_actions,
         submit_feedback,
         upsert_customer_record,
@@ -64,6 +65,7 @@ try:
         ModelStateResponse,
         SimulationCreate,
         SimulationResponse,
+        SimulationStepResponse,
     )
 except ImportError:
     from SQLHandler import SQLHandler
@@ -84,6 +86,7 @@ except ImportError:
         list_simulations,
         log_scored_decision,
         run_simulation_background,
+        run_simulation_step,
         score_customer_actions,
         submit_feedback,
         upsert_customer_record,
@@ -122,6 +125,7 @@ except ImportError:
         ModelStateResponse,
         SimulationCreate,
         SimulationResponse,
+        SimulationStepResponse,
     )
 
 
@@ -399,6 +403,10 @@ def get_simulation(
 def create_simulation(
     payload: SimulationCreate,
     background_tasks: BackgroundTasks,
+    autostart: bool = Query(
+        default=True,
+        description="When false, create the simulation at t=0 without launching the background run.",
+    ),
     db: SQLHandler = Depends(get_db),
 ) -> SimulationResponse:
     """Create a simulation record and enqueue the in-process simulation runner."""
@@ -407,8 +415,32 @@ def create_simulation(
         simulation = create_simulation_record(db, payload)
     except ConflictError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
-    background_tasks.add_task(run_simulation_background, int(simulation["simulation_id"]))
+    if autostart:
+        background_tasks.add_task(run_simulation_background, int(simulation["simulation_id"]))
     return SimulationResponse(**simulation)
+
+
+@app.post(
+    "/simulations/{simulation_id}/step",
+    response_model=SimulationStepResponse,
+    tags=["simulations"],
+    summary="Run one LinUCB simulation round",
+)
+def step_simulation(
+    simulation_id: int,
+    db: SQLHandler = Depends(get_db),
+) -> SimulationStepResponse:
+    """Run one t -> t+1 LinUCB decision, outcome, and model update."""
+
+    try:
+        step = run_simulation_step(db, simulation_id)
+    except ConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if step is None:
+        raise HTTPException(status_code=404, detail=f"Simulation {simulation_id} was not found.")
+    return SimulationStepResponse(**step)
 
 
 @app.put(

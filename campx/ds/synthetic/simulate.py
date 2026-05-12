@@ -219,6 +219,7 @@ def simulate_linucb_interactions(
     model_state = policy.to_model_state_frame(
         simulation_id=config.simulation_id,
         policy_mode=config.policy_mode,
+        round_number=config.n_rounds,
     )
     return interactions, model_state
 
@@ -441,6 +442,7 @@ def initialize_model_state(
                 "policy_mode": config.policy_mode,
                 "action_id": action.action_id,
                 "action_name": action.action_name,
+                "round_number": 0,
                 "alpha": config.alpha,
                 "context_dim": context_dim,
                 "n_pulls": 0,

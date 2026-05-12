@@ -157,6 +157,25 @@ class SimulationResponse(BaseModel):
     rounds_completed: int = 0
 
 
+class SimulationStepResponse(BaseModel):
+    simulation_id: int
+    round_number: int
+    interaction_id: int
+    customer_id: int
+    action_id: int
+    action: str
+    converted: bool
+    revenue: float
+    cost: float
+    reward: float
+    p_convert: float
+    exploit: float
+    explore: float
+    ucb_score: float
+    model_updated: bool
+    completed: bool
+
+
 class SimulationsResponse(BaseModel):
     items: list[SimulationResponse]
     count: int
