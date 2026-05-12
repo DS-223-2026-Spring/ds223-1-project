@@ -7,6 +7,18 @@ import streamlit as st
 
 import bandit_utils as bu
 
+import base64
+from pathlib import Path
+
+APP_DIR = Path(__file__).parent
+LOGO_PATH = APP_DIR / "assets" / "campx_logo.png"
+
+try:
+    with open(LOGO_PATH, "rb") as f:
+        logo_b64 = base64.b64encode(f.read()).decode("utf-8")
+except FileNotFoundError:
+    logo_b64 = ""
+
 st.set_page_config(
     page_title="CampX",
     layout="wide",
@@ -14,37 +26,87 @@ st.set_page_config(
 
 bu.render_sidebar_and_css()
 
+# ── Business Context Banner ───────────────────────────────────
+st.info("💡 **Fashion retailers spend 15-30% of promotional budget on non-converting customers.** CampX learns who responds to what — and gets smarter with every interaction.")
+
 # ── Hero ──────────────────────────────────────────────────────
-# Logo in a white rounded container — works in both dark and light mode
 st.markdown(
-    """
-    <div style="
-        max-width: 480px;
-        margin: 1.5rem auto;
-        background: #ffffff;
-        border-radius: 16px;
-        padding: 1.2rem 2rem;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    ">
-        <svg width="100%" viewBox="0 0 680 280" role="img" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="220" cy="140" r="62" fill="none" stroke="#1e40af" stroke-width="10"/>
-            <circle cx="220" cy="140" r="40" fill="none" stroke="#3b82f6" stroke-width="8"/>
-            <circle cx="220" cy="140" r="22" fill="#dc2626"/>
-            <line x1="208" y1="128" x2="232" y2="152" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-            <line x1="232" y1="128" x2="208" y2="152" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-            <text x="310" y="162" fill="#141413"
-                  style="font-size:60px; font-weight:500; letter-spacing:-1px;
-                         font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;">
-                Camp<tspan fill="#dc2626">X</tspan>
-            </text>
-        </svg>
+    f"""
+    <style>
+    .hero-container {{
+        margin: 0.5rem 0 1.5rem 0;
+        padding: 2.5rem 3rem;
+        border: 1px solid color-mix(in srgb, var(--text-color) 15%, transparent);
+        border-radius: 20px;
+        background: color-mix(in srgb, var(--secondary-background-color) 70%, transparent);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        box-shadow: 0 10px 32px color-mix(in srgb, var(--text-color) 15%, transparent);
+        display: flex;
+        align-items: center;
+        gap: 2.5rem;
+    }}
+    .hero-content {{
+        flex: 1;
+    }}
+    .hero-kicker {{
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.15em;
+        color: var(--primary-color);
+        margin-bottom: 0.8rem;
+        text-transform: uppercase;
+    }}
+    .hero-title {{
+        font-size: 2.8rem;
+        font-weight: 850;
+        color: var(--text-color);
+        line-height: 1.15;
+        margin-bottom: 0.8rem;
+        letter-spacing: -0.02em;
+    }}
+    .hero-subtitle {{
+        font-size: 1.15rem;
+        color: var(--text-color);
+        opacity: 0.8;
+        line-height: 1.6;
+        max-width: 650px;
+    }}
+    .hero-logo-wrapper {{
+        flex-shrink: 0;
+        width: 140px;
+        height: 140px;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 12px 24px color-mix(in srgb, var(--primary-color) 30%, transparent);
+        border: 2px solid color-mix(in srgb, var(--text-color) 10%, transparent);
+    }}
+    .hero-logo-wrapper img {{
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }}
+    </style>
+
+    <div class="hero-container">
+        <div class="hero-content">
+            <div class="hero-kicker">Campaign Optimization Engine</div>
+            <div class="hero-title">Camp<span style="color: #0f766e;">X</span></div>
+            <div class="hero-subtitle">
+                A live contextual bandit platform using LinUCB to actively learn and assign optimal promotional actions to distinct customer segments.
+            </div>
+        </div>
+        <div class="hero-logo-wrapper">
+            <img src="data:image/png;base64,{logo_b64}" alt="CampX Contextual Bandit Logo" />
+        </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
-st.title("CampX")
+
 st.write("") # Spacer
 bu.render_top_navigation()
+st.write("") # Spacer
 
 # ── KPI tiles ─────────────────────────────────────────────────
 st.subheader("System status")
@@ -71,8 +133,8 @@ c2.metric("Currently running", running)
 c3.metric("Best cumulative reward", bu.format_currency(best))
 c4.metric("Customer pool", customer_count)
 
-st.divider()
-
+st.write("") # Spacer
+st.write("") # Spacer
 # ── Action catalog ────────────────────────────────────────────
 st.subheader("Action catalog")
 st.write("The five promotional arms. LinUCB picks one per customer per decision.")

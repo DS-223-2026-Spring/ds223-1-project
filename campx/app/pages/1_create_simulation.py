@@ -1,12 +1,6 @@
 """
 Page 1 — Create Simulation
 Owner: Armine Babajanyan (frontend branch)
-
-Wired to:
-  POST /simulations    : create a new run
-  GET  /simulations    : list past and running simulations
-
-Built-in Streamlit components only.
 """
 import pandas as pd
 import streamlit as st
@@ -52,7 +46,7 @@ with st.form("new_simulation", clear_on_submit=False):
         notes = st.text_area("Notes", placeholder="Why this run?", height=100)
 
     submitted = st.form_submit_button(
-        "▶ Launch run", type="primary", width="stretch",
+        "Launch run", type="primary", width="stretch",
     )
 
 if submitted:
@@ -75,11 +69,11 @@ if submitted:
                 f"(id: {resp['simulation_id']}). "
                 "Open Interaction to watch it run."
             )
-            st.info("ℹ️ Simulation queued. DS pipeline will process it.")
+            st.info("Simulation queued. DS pipeline will process it.")
             # Fresh-fetch the simulations list on next render
             bu.list_simulations.clear()
 
-st.divider()
+st.write("")
 
 # ── Past simulations ───────────────────────────────────────────
 st.subheader("Past simulations")

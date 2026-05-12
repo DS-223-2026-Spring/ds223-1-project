@@ -3,15 +3,6 @@ Page 4 — Model Inspector
 Owner: Armine Babajanyan (frontend branch)
 
 What LinUCB has learned: θ matrix, pull counts, UCB decomposition.
-
-Wired to:
-  GET  /simulations
-  GET  /model/state?simulation_id=...
-  POST /decide?customer_id=...&simulation_id=...&preview=true
-
-Built-in Streamlit components only:
-  - θ heatmap is a styled DataFrame (pandas Styler + st.dataframe)
-  - bar charts use st.bar_chart
 """
 import pandas as pd
 import streamlit as st
@@ -20,7 +11,7 @@ import bandit_utils as bu
 
 st.set_page_config(page_title="Model · CampX", layout="wide")
 bu.render_global_navigation()
-bu.inject_chart_styles()
+
 
 st.title("Model Inspector")
 st.caption("What LinUCB has learned — θ vectors, pull counts, UCB decomposition.")
@@ -43,7 +34,7 @@ m1.metric("Alpha (exploration)", f"{state['alpha']:.2f}")
 m2.metric("Round number", f"{state['round_number']:,}")
 m3.metric("Total pulls", f"{sum(state['n_pulls'].values()):,}")
 
-st.divider()
+st.write("")
 
 # ── Theta matrix (heatmap-style via pandas Styler) ─────────────
 st.subheader("θ matrix — learned feature weights per action")
@@ -64,25 +55,34 @@ def _theta_cell_style(val) -> str:
     if val is None or pd.isna(val):
         return ""
     v = float(val) / theta_max_abs  # → [-1, 1]
-    if v >= 0:
-        # Toward red: blend white (255,255,255) → red (239, 68, 68)
-        r = int(255 - (255 - 239) * v)
-        g = int(255 - (255 - 68) * v)
-        b = int(255 - (255 - 68) * v)
+    base_theme = st.get_option("theme.base")
+    if base_theme == "dark":
+        base_r, base_g, base_b = 15, 23, 42
     else:
-        # Toward blue: blend white (255,255,255) → blue (59, 130, 246)
+        base_r, base_g, base_b = 255, 255, 255
+
+    if v >= 0:
+        r = int(base_r + (239 - base_r) * v)
+        g = int(base_g + (68 - base_g) * v)
+        b = int(base_b + (68 - base_b) * v)
+    else:
         v = -v
-        r = int(255 - (255 - 59) * v)
-        g = int(255 - (255 - 130) * v)
-        b = int(255 - (255 - 246) * v)
-    text_color = "white" if abs(v) > 0.55 else "#1F2937"
+        r = int(base_r + (59 - base_r) * v)
+        g = int(base_g + (130 - base_g) * v)
+        b = int(base_b + (246 - base_b) * v)
+        
+    if base_theme == "dark":
+        text_color = "white" if abs(v) > 0.55 else "#f8fafc"
+    else:
+        text_color = "white" if abs(v) > 0.55 else "#1F2937"
+        
     return f"background-color: rgb({r},{g},{b}); color: {text_color};"
 
 
 styled_theta = theta.style.map(_theta_cell_style).format("{:.3f}")
 st.dataframe(styled_theta, width="stretch")
 
-st.divider()
+st.write("")
 
 # ── n_pulls bars ───────────────────────────────────────────────
 st.subheader("Pull counts per action")
@@ -92,9 +92,13 @@ pulls_df = pd.DataFrame([
     {"Action": bu.ACTION_LABELS.get(k, k), "Times chosen": v}
     for k, v in state["n_pulls"].items()
 ]).set_index("Action")
-st.bar_chart(pulls_df, height=320, y_label="Times chosen")
+st.bar_chart(
+    pulls_df,
+    height=320,
+    color="#10b981"
+)
 
-st.divider()
+st.write("")
 
 # ── UCB decomposition for one customer ─────────────────────────
 st.subheader("UCB decomposition — predict for a customer")
@@ -132,14 +136,43 @@ with c2:
                 f"cost {bu.format_currency(chosen['cost'])}"
             )
 
+            # Natural language explanation
+            try:
+                cust = bu.get_customer(int(cid))
+                chosen_act = chosen["action"]
+                act_theta = state["theta"][chosen_act]
+                
+                contribs = {}
+                for feat in act_theta.index:
+                    if feat in cust and feat != "intercept":
+                        try:
+                            val = float(cust[feat])
+                            contribs[feat] = act_theta[feat] * val
+                        except (ValueError, TypeError):
+                            pass
+                
+                if contribs:
+                    sorted_c = sorted(contribs.items(), key=lambda x: x[1], reverse=True)
+                    pos_f = sorted_c[0][0]
+                    neg_f = sorted_c[-1][0]
+                    pos_val = float(cust.get(pos_f, 0))
+                    neg_val = float(cust.get(neg_f, 0))
+                    
+                    st.info(
+                        f"Recommending {chosen['action_label'].lower()} because this customer has "
+                        f"**high {pos_f}** ({pos_val:.1f}) but **low {neg_f}** ({neg_val:.1f}) — "
+                        "suggesting this is the most profitable action to explore or exploit."
+                    )
+            except Exception as e:
+                pass
+
             # Stacked horizontal bar: exploit + explore per action
             chart_df = breakdown.set_index("action_label")[["exploit", "explore"]]
             st.bar_chart(
                 chart_df,
+                color=["#0f766e", "#cbd5e1"],
                 horizontal=True,
-                stack=True,
-                height=320,
-                x_label="UCB score",
+                height=320
             )
 
             with st.expander("Raw per-action scores"):

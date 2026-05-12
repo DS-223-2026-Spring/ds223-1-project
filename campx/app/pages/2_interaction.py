@@ -3,18 +3,6 @@ Page 2 — Interaction
 Owner: Armine Babajanyan (frontend branch)
 
 Live bandit loop — LinUCB picking actions for customers.
-
-Wired to:
-  GET /simulations
-  GET /metrics?simulation_id=...
-
-Built-in Streamlit components only (st.line_chart, st.bar_chart,
-st.dataframe, st.metric, st.toggle).
-
-NOTE on /metrics: backend currently returns lightweight counters
-(total_interactions, total_reward, total_revenue, total_cost,
-conversions). The chart sections gracefully degrade when richer
-arrays (cumulative_reward_series, recent_interactions, …) are missing.
 """
 import time
 
@@ -25,7 +13,7 @@ import bandit_utils as bu
 
 st.set_page_config(page_title="Interaction · CampX", layout="wide")
 bu.render_global_navigation()
-bu.inject_chart_styles()
+
 
 st.title("Live Interaction")
 st.caption("LinUCB is picking actions for customers. Watch it learn.")
@@ -44,7 +32,7 @@ with c1:
         help="Re-fetch metrics every 30 seconds.",
     )
 with c2:
-    if st.button("🔄 Refresh now"):
+    if st.button("Refresh now"):
         bu.get_metrics.clear()
         st.rerun()
 
@@ -78,32 +66,9 @@ conv_rate = (metrics["conversions"] / metrics["rounds_completed"]
              if metrics["rounds_completed"] else 0.0)
 k8.metric("Overall conversion rate", bu.format_pct(conv_rate))
 
-st.divider()
+st.write("")
 
-# ── Cumulative reward chart ────────────────────────────────────
-st.subheader("Cumulative reward")
 cum = metrics.get("cumulative_reward_series")
-if cum is None or cum.empty:
-    st.info(
-        "Cumulative reward series not yet available from `/metrics`. "
-        "This chart will populate once the backend ships the "
-        "`cumulative_reward_series` array."
-    )
-else:
-    # Expect columns: round, linucb, [random, heuristic, …]
-    chart_df = cum.copy()
-    if "round" in chart_df.columns:
-        chart_df = chart_df.set_index("round")
-    if "linucb" in chart_df.columns:
-        chart_df = chart_df.rename(columns={"linucb": "LinUCB"})
-    st.line_chart(
-        chart_df,
-        height=380,
-        y_label="Cumulative reward (£)",
-        x_label="Round",
-    )
-
-st.divider()
 
 # ── Reward per round ───────────────────────────────────────────
 st.subheader("Reward per round")
@@ -127,11 +92,10 @@ else:
     st.line_chart(
         rpr[["Per round", "Rolling avg"]],
         height=320,
-        y_label="Reward (£)",
-        x_label="Round",
+        color=["#cbd5e1", "#0f766e"]
     )
 
-st.divider()
+st.write("")
 
 # ── Action distribution over time ──────────────────────────────
 st.subheader("Action distribution over time")
@@ -162,7 +126,7 @@ else:
         y_label="Times chosen",
     )
 
-st.divider()
+st.write("")
 
 # ── Recent interactions table ──────────────────────────────────
 st.subheader("Recent interactions")
