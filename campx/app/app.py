@@ -2,111 +2,231 @@
 Campaign Optimization Engine — Streamlit entry point.
 Owner: Armine Babajanyan (frontend branch)
 """
+
+import base64
+import textwrap
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 import bandit_utils as bu
 
-import base64
-from pathlib import Path
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Paths / assets
+# ─────────────────────────────────────────────────────────────────────────────
 APP_DIR = Path(__file__).parent
-LOGO_PATH = APP_DIR / "assets" / "campx_logo.png"
+ASSETS_DIR = APP_DIR / "assets"
 
-try:
-    with open(LOGO_PATH, "rb") as f:
-        logo_b64 = base64.b64encode(f.read()).decode("utf-8")
-except FileNotFoundError:
-    logo_b64 = ""
+CAMPAIGN_IMAGE = ASSETS_DIR / "campaign_flow.png"
+LOGO_IMAGE = ASSETS_DIR / "campx_logo.png"
 
+
+def image_to_base64(path: Path) -> str:
+    """Convert an image file to base64 for inline HTML rendering."""
+    try:
+        with open(path, "rb") as f:
+            return base64.b64encode(f.read()).decode("utf-8")
+    except FileNotFoundError:
+        return ""
+
+
+logo_b64 = image_to_base64(LOGO_IMAGE)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Page config
+# ─────────────────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="CampX",
+    page_icon=str(LOGO_IMAGE) if LOGO_IMAGE.exists() else "📈",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
 bu.render_sidebar_and_css()
 
-# ── Business Context Banner ───────────────────────────────────
-# ── Hero ──────────────────────────────────────────────────────
-st.markdown(
-    f"""
-    <style>
-    .hero-container {{
-        margin: 0.5rem 0 1.5rem 0;
-        padding: 2.5rem 3rem;
-        border: 1px solid color-mix(in srgb, var(--text-color) 15%, transparent);
-        border-radius: 20px;
-        background: color-mix(in srgb, var(--secondary-background-color) 70%, transparent);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        box-shadow: 0 10px 32px color-mix(in srgb, var(--text-color) 15%, transparent);
-        display: flex;
-        align-items: center;
-        gap: 2.5rem;
-    }}
-    .hero-content {{
-        flex: 1;
-    }}
-    .hero-kicker {{
-        font-size: 0.8rem;
-        font-weight: 800;
-        letter-spacing: 0.15em;
-        color: var(--primary-color);
-        margin-bottom: 0.8rem;
-        text-transform: uppercase;
-    }}
-    .hero-title {{
-        font-size: 2.8rem;
-        font-weight: 850;
-        color: var(--text-color);
-        line-height: 1.15;
-        margin-bottom: 0.8rem;
-        letter-spacing: -0.02em;
-    }}
-    .hero-subtitle {{
-        font-size: 1.15rem;
-        color: var(--text-color);
-        opacity: 0.8;
-        line-height: 1.6;
-        max-width: 650px;
-    }}
-    .hero-logo-wrapper {{
-        flex-shrink: 0;
-        width: 140px;
-        height: 140px;
-        border-radius: 24px;
-        overflow: hidden;
-        box-shadow: 0 12px 24px color-mix(in srgb, var(--primary-color) 30%, transparent);
-        border: 2px solid color-mix(in srgb, var(--text-color) 10%, transparent);
-    }}
-    .hero-logo-wrapper img {{
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }}
-    </style>
 
-    <div class="hero-container">
-        <div class="hero-content">
-            <div class="hero-kicker">Campaign Optimization Engine</div>
-            <div class="hero-title">Camp<span style="color: var(--primary-color);">X</span></div>
-            <div class="hero-subtitle">
-                CampX helps marketing teams choose the right promotion for the right customer. It uses customer behavior and campaign outcomes to learn which offers create incremental value, reducing wasted discounts and improving campaign profitability over time.
-            </div>
-        </div>
-        <div class="hero-logo-wrapper">
-            <img src="data:image/png;base64,{logo_b64}" alt="CampX Contextual Bandit Logo" />
-        </div>
-    </div>
+# Keep page wide, but not absurdly stretched.
+st.markdown(
+    """
+    <style>
+    .block-container {
+        max-width: 1420px;
+        padding-top: 3rem;
+        padding-bottom: 4rem;
+    }
+    </style>
     """,
     unsafe_allow_html=True,
 )
 
-st.write("") # Spacer
-bu.render_top_navigation()
-st.write("") # Spacer
 
-# ── KPI tiles ─────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# Hero
+# ─────────────────────────────────────────────────────────────────────────────
+def render_campaign_hero() -> None:
+    """Render the CampX hero with text on the left and logo on the right."""
+
+    logo_html = ""
+    if logo_b64:
+        logo_html = f"""
+        <div class="cx-logo-panel">
+            <img class="cx-logo" src="data:image/png;base64,{logo_b64}" alt="CampX logo" />
+        </div>
+        """
+
+    html = textwrap.dedent(
+        f"""
+        <style>
+        .cx-hero {{
+            position: relative;
+            width: 100%;
+            margin: 0.75rem 0 1.85rem 0;
+            border: 1px solid rgba(15, 118, 110, 0.14);
+            border-radius: 24px;
+            background:
+                radial-gradient(circle at 86% 24%, rgba(20, 184, 166, 0.16), transparent 30%),
+                radial-gradient(circle at 12% 92%, rgba(15, 118, 110, 0.055), transparent 28%),
+                linear-gradient(135deg, #ffffff 0%, #f8fafc 54%, #eef7f6 100%);
+            box-shadow: 0 16px 42px rgba(15, 23, 42, 0.065);
+            overflow: hidden;
+        }}
+
+        .cx-hero-inner {{
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 170px;
+            align-items: center;
+            gap: 2.75rem;
+            min-height: 265px;
+            padding: 2.45rem 3rem;
+            box-sizing: border-box;
+        }}
+
+        .cx-copy {{
+            min-width: 0;
+            max-width: 780px;
+        }}
+
+        .cx-kicker {{
+            font-size: 0.72rem;
+            font-weight: 850;
+            letter-spacing: 0.16em;
+            color: #0f766e;
+            margin-bottom: 0.72rem;
+            text-transform: uppercase;
+        }}
+
+        .cx-title {{
+            font-size: 3rem;
+            font-weight: 850;
+            color: #0f172a;
+            line-height: 1.05;
+            margin-bottom: 0.95rem;
+            letter-spacing: -0.04em;
+        }}
+
+        .cx-title-x {{
+            color: #0f766e;
+            font-weight: 900;
+        }}
+
+        .cx-subtitle {{
+            font-size: 1.03rem;
+            color: #334155;
+            line-height: 1.58;
+            max-width: 740px;
+        }}
+
+        .cx-logo-panel {{
+            justify-self: end;
+            align-self: center;
+            width: 136px;
+            height: 136px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }}
+
+        .cx-logo {{
+            width: 122px;
+            height: 122px;
+            object-fit: cover;
+            display: block;
+            border-radius: 50%;
+            clip-path: circle(49% at 50% 50%);
+            filter: drop-shadow(0 14px 26px rgba(15, 23, 42, 0.16));
+        }}
+
+        @media (max-width: 900px) {{
+            .cx-hero-inner {{
+                grid-template-columns: 1fr;
+                min-height: auto;
+                padding: 1.8rem 1.5rem;
+                gap: 1.15rem;
+            }}
+
+            .cx-title {{
+                font-size: 2.25rem;
+            }}
+
+            .cx-subtitle {{
+                font-size: 0.96rem;
+                max-width: 100%;
+            }}
+
+            .cx-logo-panel {{
+                justify-self: start;
+                width: 86px;
+                height: 86px;
+            }}
+
+            .cx-logo {{
+                width: 78px;
+                height: 78px;
+            }}
+        }}
+        </style>
+
+        <div class="cx-hero">
+            <div class="cx-hero-inner">
+                <div class="cx-copy">
+                    <div class="cx-kicker">CAMPAIGN OPTIMIZATION ENGINE</div>
+                    <div class="cx-title">Camp<span class="cx-title-x">X</span></div>
+                    <div class="cx-subtitle">
+                        CampX helps marketing teams choose the right promotion for each customer.
+                        It learns from customer behavior and campaign outcomes to reduce wasted discounts,
+                        test uncertain actions, and improve campaign profitability over time.
+                    </div>
+                </div>
+
+                {logo_html}
+            </div>
+        </div>
+        """
+    )
+
+    if hasattr(st, "html"):
+        st.html(html)
+    else:
+        components.html(html, height=330, scrolling=False)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Top layout
+# ─────────────────────────────────────────────────────────────────────────────
+render_campaign_hero()
+
+st.write("")
+bu.render_top_navigation()
+st.write("")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# KPI tiles
+# ─────────────────────────────────────────────────────────────────────────────
 st.subheader("System status")
 
 try:
@@ -131,26 +251,45 @@ c2.metric("Currently running", running)
 c3.metric("Best cumulative reward", bu.format_currency(best))
 c4.metric("Customer pool", customer_count)
 
-st.write("") # Spacer
-st.write("") # Spacer
-# ── Action catalog ────────────────────────────────────────────
+st.write("")
+st.write("")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Action catalog
+# ─────────────────────────────────────────────────────────────────────────────
 st.subheader("Action catalog")
-st.write("The five promotional arms. LinUCB picks one per customer per decision.")
+st.write("The five promotional actions CampX can assign at each customer decision point.")
 
 intended_segments = [
-    "Champions — buy regardless",
-    "Price-sensitive, lapsed",
-    "Moderate-basket planners",
+    "Likely buyers — avoid unnecessary incentives",
+    "Price-sensitive or lapsed customers",
+    "Moderate-intent basket planners",
     "Loyal, engaged browsers",
     "Impulse buyers with basket diversity",
 ]
-action_df = pd.DataFrame([
-    {
-        "Action": bu.ACTION_LABELS[k],
-        "Cost to brand": bu.format_currency(v),
-        "Intended segment": segment,
-    }
-    for (k, v), segment in zip(bu.ACTION_COSTS.items(), intended_segments)
-])
+
+action_df = pd.DataFrame(
+    [
+        {
+            "Action": bu.ACTION_LABELS[k],
+            "Cost to brand": bu.format_currency(v),
+            "Intended segment": segment,
+        }
+        for (k, v), segment in zip(bu.ACTION_COSTS.items(), intended_segments)
+    ]
+)
+
 st.dataframe(action_df, hide_index=True, width="stretch")
 
+st.write("")
+st.write("")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Bottom campaign-flow visual
+# ─────────────────────────────────────────────────────────────────────────────
+if CAMPAIGN_IMAGE.exists():
+    st.image(str(CAMPAIGN_IMAGE), use_container_width=True)
+else:
+    st.caption("Campaign flow image not found. Expected: app/assets/campaign_flow.png")

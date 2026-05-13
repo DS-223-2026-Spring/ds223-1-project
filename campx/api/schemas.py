@@ -229,6 +229,14 @@ class ConversionByActionItem(BaseModel):
     n_pulls: int
 
 
+class SegmentPerformanceItem(BaseModel):
+    segment_label: str
+    action_label: str
+    pulls: int
+    conversions: int
+    avg_reward: float | None = None
+
+
 class RecentInteractionItem(BaseModel):
     interaction_id: int
     customer_id: int
@@ -254,6 +262,7 @@ class MetricsResponse(BaseModel):
     cumulative_reward_series: list[PolicyCumulativeRewardPoint]
     action_distribution: list[ActionDistributionPoint]
     conversion_by_action: list[ConversionByActionItem]
+    segment_performance: list[SegmentPerformanceItem]
     recent_interactions: list[RecentInteractionItem]
     total_interactions: int
     conversions: int

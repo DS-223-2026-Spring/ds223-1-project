@@ -1,5 +1,5 @@
 """
-Page 1 — Create Simulation
+Page 1 — Campaign Setup
 Owner: Armine Babajanyan (frontend branch)
 """
 import pandas as pd
@@ -7,51 +7,57 @@ import streamlit as st
 
 import bandit_utils as bu
 
-st.set_page_config(
-    page_title="Create Simulation · CampX",
-    layout="wide",
-)
-
+st.set_page_config(page_title="Campaign Setup · CampX", layout="wide")
 bu.render_global_navigation()
 
-st.title("Create Simulation")
-st.caption("Configure a new bandit run or inspect past ones.")
+st.title("Campaign Setup")
+st.caption("Configure a new campaign run or inspect previous runs.")
+bu.render_mvp_note()
 
 # ── Launch form ────────────────────────────────────────────────
-st.subheader("Launch a new simulation")
+st.subheader("Launch a new campaign run")
+st.caption("For the final demo, use a short run if launching live. Keep one known-good completed run available as backup.")
 
 with st.form("new_simulation", clear_on_submit=False):
     c1, c2 = st.columns(2)
     with c1:
         sim_name = st.text_input(
-            "Name",
-            placeholder="e.g. baseline_alpha_0.5",
-            help="Human-readable label for this run. Must be unique.",
+            "Run name",
+            placeholder="e.g. demo_alpha_0_8_seed42",
+            help="Human-readable label for this campaign run. Must be unique.",
         )
         num_rounds = st.number_input(
-            "Rounds", min_value=100, max_value=50000,
-            value=5000, step=500,
-            help="How many (customer, action) decisions to simulate.",
+            "Decision rounds",
+            min_value=100,
+            max_value=50000,
+            value=5000,
+            step=500,
+            help="Number of customer-action decisions to simulate.",
         )
         num_customers = st.number_input(
-            "Customers", min_value=50, max_value=10000,
-            value=500, step=50,
-            help="Size of the customer pool LinUCB samples from.",
+            "Customer pool size",
+            min_value=50,
+            max_value=10000,
+            value=500,
+            step=50,
+            help="Number of customers available to the decision policy.",
         )
     with c2:
         alpha = st.slider(
-            "Alpha (exploration)", 0.0, 2.0, 0.5, 0.1,
-            help="Higher α → more exploration. Lower α → more exploitation.",
+            "Alpha: exploration strength",
+            0.0,
+            2.0,
+            0.8,
+            0.1,
+            help="Higher α collects more evidence for uncertain actions. Lower α exploits learned high-value actions sooner.",
         )
-        notes = st.text_area("Notes", placeholder="Why this run?", height=100)
+        notes = st.text_area("Notes", placeholder="Purpose of this run", height=100)
 
-    submitted = st.form_submit_button(
-        "Launch run", type="primary", width="stretch",
-    )
+    submitted = st.form_submit_button("Launch campaign run", type="primary", width="stretch")
 
 if submitted:
     if not sim_name.strip():
-        st.error("Please enter a name.")
+        st.error("Please enter a run name.")
     else:
         try:
             resp = bu.create_simulation(
@@ -64,19 +70,19 @@ if submitted:
         except bu.APIError as exc:
             bu.render_api_error(exc)
         else:
+            st.session_state["selected_simulation_id"] = resp["simulation_id"]
             st.success(
-                f"Simulation `{resp['sim_name']}` created "
-                f"(id: {resp['simulation_id']}). "
-                "Open Interaction to watch it run."
+                f"Campaign run `{resp['sim_name']}` created "
+                f"(id: {resp['simulation_id']}). Open Live Decisions to monitor it."
             )
-            st.info("Simulation queued. DS pipeline will process it.")
-            # Fresh-fetch the simulations list on next render
             bu.list_simulations.clear()
+            bu.get_metrics.clear()
+            bu.get_model_state.clear()
 
 st.write("")
 
-# ── Past simulations ───────────────────────────────────────────
-st.subheader("Past simulations")
+# ── Past campaign runs ─────────────────────────────────────────
+st.subheader("Past campaign runs")
 
 try:
     sims = bu.list_simulations()
@@ -85,19 +91,17 @@ except bu.APIError as exc:
     st.stop()
 
 if sims.empty:
-    st.info("No simulations yet. Launch one above.")
+    st.info("No campaign runs yet. Launch one above.")
     st.stop()
 
-# Filters
 fcol1, fcol2, fcol3 = st.columns([1, 1, 2])
 with fcol1:
-    status_options = ["All"] + sorted(sims["status"].dropna().unique().tolist()) \
-        if "status" in sims else ["All"]
+    status_options = ["All"] + sorted(sims["status"].dropna().unique().tolist()) if "status" in sims else ["All"]
     status_filter = st.selectbox("Status", options=status_options, index=0)
 with fcol2:
-    name_filter = st.text_input("Name contains", value="", placeholder="filter…")
+    name_filter = st.text_input("Run name contains", value="", placeholder="filter…")
 with fcol3:
-    st.caption(" ")  # vertical alignment
+    st.caption(" ")
 
 display = sims.copy()
 if status_filter != "All" and "status" in display:
@@ -105,20 +109,13 @@ if status_filter != "All" and "status" in display:
 if name_filter:
     display = display[display["sim_name"].str.contains(name_filter, case=False, na=False)]
 
-# Friendly formatting for the table
 fmt = display.copy()
 if "started_at" in fmt:
-    fmt["started_at"] = fmt["started_at"].apply(
-        lambda x: x.strftime("%Y-%m-%d %H:%M") if pd.notna(x) else "—"
-    )
+    fmt["started_at"] = fmt["started_at"].apply(lambda x: x.strftime("%Y-%m-%d %H:%M") if pd.notna(x) else "—")
 if "completed_at" in fmt:
-    fmt["completed_at"] = fmt["completed_at"].apply(
-        lambda x: x.strftime("%Y-%m-%d %H:%M") if pd.notna(x) else "—"
-    )
+    fmt["completed_at"] = fmt["completed_at"].apply(lambda x: x.strftime("%Y-%m-%d %H:%M") if pd.notna(x) else "—")
 if "cumulative_reward" in fmt:
-    fmt["cumulative_reward"] = fmt["cumulative_reward"].apply(
-        lambda x: f"£{x:,.2f}" if pd.notna(x) else "—"
-    )
+    fmt["cumulative_reward"] = fmt["cumulative_reward"].apply(lambda x: f"£{x:,.2f}" if pd.notna(x) else "—")
 
 cols_to_show = [c for c in [
     "simulation_id", "sim_name", "status", "num_rounds",
@@ -132,7 +129,7 @@ st.dataframe(
     width="stretch",
     column_config={
         "simulation_id": "ID",
-        "sim_name": "Name",
+        "sim_name": "Run name",
         "status": "Status",
         "num_rounds": "Rounds",
         "num_customers": "Customers",
@@ -144,27 +141,25 @@ st.dataframe(
 )
 
 if display.empty:
-    st.caption("No simulations match the current filters.")
+    st.caption("No campaign runs match the current filters.")
     st.stop()
 
-# ── Quick-jump to other pages with the selected sim ─────────────
 sim_id = st.selectbox(
-    "Select a simulation to open",
+    "Select a campaign run to open",
     options=display["simulation_id"].tolist(),
-    format_func=lambda x: (
-        f"#{x} · {display.loc[display.simulation_id == x, 'sim_name'].iloc[0]}"
-    ),
+    format_func=lambda x: f"#{x} · {display.loc[display.simulation_id == x, 'sim_name'].iloc[0]}",
 )
+
 col_a, col_b, col_c = st.columns(3)
 with col_a:
-    if st.button("Watch live (Interaction) →", width="stretch"):
+    if st.button("Monitor live decisions →", width="stretch"):
         st.session_state["selected_simulation_id"] = sim_id
         st.switch_page("pages/2_interaction.py")
 with col_b:
-    if st.button("See results (Analytics) →", width="stretch"):
+    if st.button("View performance →", width="stretch"):
         st.session_state["selected_simulation_id"] = sim_id
         st.switch_page("pages/3_analytics.py")
 with col_c:
-    if st.button("Inspect model →", width="stretch"):
+    if st.button("Review decision logic →", width="stretch"):
         st.session_state["selected_simulation_id"] = sim_id
         st.switch_page("pages/4_model.py")
