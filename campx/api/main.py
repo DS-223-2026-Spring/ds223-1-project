@@ -388,6 +388,23 @@ def get_simulation(
         raise HTTPException(status_code=404, detail=f"Simulation {simulation_id} was not found.")
     return SimulationResponse(**simulation)
 
+@app.get(
+    "/baselines",
+    tags=["baselines"],
+    summary="Get random policy baseline cumulative reward",
+)
+def get_baselines():
+    """Return the cumulative reward array for the random uniform baseline."""
+    import pandas as pd
+    from pathlib import Path
+
+    csv_path = Path("baselines/policy_round_traces.csv")
+    if not csv_path.exists():
+        raise HTTPException(status_code=404, detail="Baselines file not found.")
+
+    df = pd.read_csv(csv_path)
+    random_df = df[df["policy_name"] == "random_uniform"].sort_values("round_number")
+    return {"random_baseline_rewards": random_df["cumulative_reward"].tolist()}
 
 @app.post(
     "/simulations",
