@@ -1,6 +1,8 @@
 """FastAPI backend service for the campaign optimization project."""
 
 from __future__ import annotations
+from pathlib import Path
+import pandas as pd
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -631,3 +633,48 @@ def get_metrics(
     if metrics is None:
         raise HTTPException(status_code=404, detail=f"Simulation {simulation_id} was not found.")
     return MetricsResponse(**metrics)
+
+
+
+@app.get(
+    "/baselines",
+    tags=["baselines"],
+    summary="Get random policy baseline cumulative reward",
+)
+def get_baselines():
+    """Return the cumulative reward array for the random uniform baseline."""
+
+    candidate_paths = [
+        Path("/app/baselines/policy_round_traces.csv"),
+        Path("/app/outputs/baselines/policy_round_traces.csv"),
+        Path("/app/outputs/synthetic_data/baselines/policy_round_traces.csv"),
+        Path("baselines/policy_round_traces.csv"),
+    ]
+
+    csv_path = next((p for p in candidate_paths if p.exists()), None)
+
+    if csv_path is None:
+        return {
+            "random_baseline_rewards": [],
+            "available": False,
+            "message": "Baseline file not found in backend container.",
+        }
+
+    df = pd.read_csv(csv_path)
+
+    if "policy_name" not in df.columns or "round_number" not in df.columns or "cumulative_reward" not in df.columns:
+        raise HTTPException(
+            status_code=500,
+            detail="Baseline CSV is missing required columns.",
+        )
+
+    random_df = (
+        df[df["policy_name"] == "random_uniform"]
+        .sort_values("round_number")
+    )
+
+    return {
+        "random_baseline_rewards": random_df["cumulative_reward"].tolist(),
+        "available": True,
+        "source": str(csv_path),
+    }
