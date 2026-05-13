@@ -604,6 +604,42 @@ def _sample_customer_row(
     return customer_rows[index]
 
 
+def _build_warm_start_action_ids(
+    action_ids: np.ndarray,
+    num_rounds: int,
+    simulation_id: int,
+    pulls_per_action: int = 10,
+) -> np.ndarray:
+    """Return deterministic forced-action coverage for the first simulation rounds."""
+
+    warm_start_rounds = min(int(num_rounds), len(action_ids) * pulls_per_action)
+    if warm_start_rounds <= 0:
+        return np.array([], dtype=int)
+
+    rng = np.random.default_rng(simulation_id)
+    warm_start_actions: list[int] = []
+    while len(warm_start_actions) < warm_start_rounds:
+        warm_start_actions.extend(rng.permutation(action_ids).astype(int).tolist())
+    return np.array(warm_start_actions[:warm_start_rounds], dtype=int)
+
+
+def _select_action_for_round(
+    scores: list[dict[str, Any]],
+    warm_start_action_ids: np.ndarray,
+    round_number: int,
+) -> tuple[dict[str, Any], str]:
+    """Select the forced warm-start action or the max-UCB action for a round."""
+
+    warm_index = round_number - 1
+    if 0 <= warm_index < len(warm_start_action_ids):
+        forced_action_id = int(warm_start_action_ids[warm_index])
+        for score in scores:
+            if int(score["action_id"]) == forced_action_id:
+                return score, "warm_start"
+        raise ValueError(f"Warm-start action {forced_action_id} is not available.")
+    return scores[0], "ucb"
+
+
 def get_simulation_record(db: SQLHandler, simulation_id: int) -> dict[str, Any] | None:
     return _get_simulation_record(db, simulation_id)
 
@@ -666,6 +702,12 @@ def run_simulation_background(simulation_id: int) -> None:
             "feature_scales": scales,
             "actions": bandit,
         }
+        action_ids = np.array(sorted(bandit), dtype=int)
+        warm_start_action_ids = _build_warm_start_action_ids(
+            action_ids=action_ids,
+            num_rounds=num_rounds,
+            simulation_id=simulation_id,
+        )
         rng = np.random.default_rng(simulation_id)
         interaction_rows: list[dict[str, Any]] = []
         model_state_rows: list[dict[str, Any]] = []
@@ -677,7 +719,12 @@ def run_simulation_background(simulation_id: int) -> None:
                 [float(customer_row[column]) for column in MODEL_FEATURE_COLUMNS],
                 dtype=np.float64,
             )[:context_dim]
-            selected = _route_linucb_inference(state, raw_context)[0]
+            scores = _route_linucb_inference(state, raw_context)
+            selected, _ = _select_action_for_round(
+                scores=scores,
+                warm_start_action_ids=warm_start_action_ids,
+                round_number=round_number,
+            )
             action_id = int(selected["action_id"])
             converted, revenue, cost, reward, _ = _simulate_outcome(
                 action_id,
@@ -762,7 +809,18 @@ def run_simulation_step(db: SQLHandler, simulation_id: int) -> dict[str, Any] | 
         [float(customer_row[column]) for column in MODEL_FEATURE_COLUMNS],
         dtype=np.float64,
     )[: state["context_dim"]]
-    selected = _route_linucb_inference(state, raw_context)[0]
+    scores = _route_linucb_inference(state, raw_context)
+    action_ids = np.array(sorted(state["actions"]), dtype=int)
+    warm_start_action_ids = _build_warm_start_action_ids(
+        action_ids=action_ids,
+        num_rounds=num_rounds,
+        simulation_id=simulation_id,
+    )
+    selected, selection_reason = _select_action_for_round(
+        scores=scores,
+        warm_start_action_ids=warm_start_action_ids,
+        round_number=next_round,
+    )
     action_id = int(selected["action_id"])
 
     converted, revenue, cost, reward, p_convert = _simulate_outcome(
@@ -825,6 +883,8 @@ def run_simulation_step(db: SQLHandler, simulation_id: int) -> dict[str, Any] | 
         "exploit": float(selected["exploit"]),
         "explore": float(selected["explore"]),
         "ucb_score": float(selected["ucb_score"]),
+        "warm_start": selection_reason == "warm_start",
+        "selection_reason": selection_reason,
         "model_updated": True,
         "completed": completed,
     }

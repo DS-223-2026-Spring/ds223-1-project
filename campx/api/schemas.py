@@ -172,6 +172,8 @@ class SimulationStepResponse(BaseModel):
     exploit: float
     explore: float
     ucb_score: float
+    warm_start: bool = False
+    selection_reason: Literal["warm_start", "ucb"] = "ucb"
     model_updated: bool
     completed: bool
 
