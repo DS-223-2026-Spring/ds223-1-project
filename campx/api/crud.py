@@ -1715,6 +1715,26 @@ def get_metrics_snapshot(
             (simulation_id,),
         )
     ]
+    segment_performance = [
+        _serialize_record(row)
+        for row in _fetchall_raw(
+            db,
+            """
+            SELECT
+                c.segment_label,
+                a.action_name AS action_label,
+                COUNT(*)::int AS pulls,
+                COALESCE(SUM(i.converted::int), 0)::int AS conversions,
+                AVG(i.reward) AS avg_reward
+            FROM public.interactions AS i
+            JOIN public.customers AS c ON i.customer_id = c.customer_id
+            JOIN public.actions AS a ON i.action_id = a.action_id
+            WHERE i.simulation_id = %s
+            GROUP BY c.segment_label, a.action_name
+            """,
+            (simulation_id,),
+        )
+    ]
     recent_interactions = [
         _serialize_record(row)
         for row in _fetchall_raw(
@@ -1765,6 +1785,7 @@ def get_metrics_snapshot(
         "cumulative_reward_series": cumulative_reward_series,
         "action_distribution": action_distribution,
         "conversion_by_action": conversion_by_action,
+        "segment_performance": segment_performance,
         "recent_interactions": recent_interactions,
         "total_interactions": rounds_completed,
         "conversions": int(totals["conversions"]) if totals else 0,
