@@ -1,12 +1,15 @@
-# Backend Requirements
+# Historical Backend Requirements + Planning
 
 ---
 
 ## What this document is
 
-The frontend is already built as a skeleton with mock data. To make it actually work, the backend needs to provide a set of HTTP endpoints that return data in specific shapes. This document describes every endpoint the frontend will call, what it needs back, and where that data lives in the database.
+> This file records the frontend/backend endpoint planning used during M3. It is not the final API contract. The final implemented API behavior is documented in `docs/api.md` and visible through FastAPI Swagger at `/docs`.
 
-If there is ever a conflict between this document and the frontend code, this document is correct — the frontend can be updated to match.
+> Major scope changes after this draft:
+> - Dedicated Prefect/orchestration execution was removed from final MVP scope.
+> - The final demo path uses the DS batch workflow, PostgreSQL, FastAPI, and Streamlit.
+> - `/metrics`, `/model/state`, `/baselines`, and dashboard-facing endpoints were finalized after this draft.
 
 ---
 

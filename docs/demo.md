@@ -1,104 +1,176 @@
-# Demo
-
-# CampX — Campaign Optimization Engine
-**Course:** DS 223 Marketing Analytics — Group 1, Spring 2026
-
----
+# DS223 Marketing Analytics — Group Project Demo
 
 ## Product Overview
 
-**Product Name:** CampX — Campaign Optimization Engine  
-**Course:** DS 223 Group Project
+**Product Name:** CampX  
+**Course:** DS223 Marketing Analytics — Group Project  
+**Project Type:** Marketing Analytics MVP
 
-CampX is a contextual bandit system that learns which promotional 
-action maximises net profit for each customer profile in a fashion 
-retail setting. It replaces static rule-based promotion logic with 
-an adaptive model that improves with every observed interaction.
+CampX is a campaign decision-support platform for promotional marketing. It demonstrates how a microservice architecture can connect a database, backend API, frontend dashboard, and data science pipeline into a working MVP.
+
+The product demonstrates how marketing teams could choose among promotional action types for synthetic retail customers. Given RFM-style customer features, the system evaluates actions such as no action, discount, free shipping, product recommendation, and bundle offer. Campaign outcomes are stored and visualized as simulated net campaign value.
+
+CampX uses synthetic retail-style data. The goal is to demonstrate architecture, integration, and decision-support logic, not production deployment or validated business lift on real customers.
 
 ---
 
 ## Problem Definition
 
-E-commerce marketing teams allocate promotional budgets across 
-customer segments using fixed rules or periodic A/B tests. This 
-approach is slow to adapt, wastes budget on non-converting customers, 
-and cannot personalise decisions at the individual level.
+Marketing teams often need to decide which offer or promotional action should be shown to each customer. Sending the same discount to everyone can waste budget, reduce margins, and ignore differences in customer behavior.
 
-CampX addresses suboptimal promotional allocation — the gap between 
-what a customer would respond to and what they actually receive — 
-using a LinUCB contextual bandit that balances exploration of 
-uncertain actions with exploitation of learned preferences.
+Different customer profiles may respond differently:
 
-**Promotional actions:** No action · Discount · Free shipping · 
-Product recommendation · Bundle offer
+- Some customers may need a discount.
+- Some may respond to free shipping.
+- Some may engage with a recommendation or bundle.
+- Some may convert without any promotion.
+
+CampX frames this as a campaign optimization problem: use customer context to select a promotional action type and evaluate the result using simulated revenue minus promotional cost.
 
 ---
 
 ## Solution Architecture
 
-**Microservice Components:**
+CampX is implemented as a containerized microservice-style project.
 
-- **Frontend:** Streamlit interface for creating simulations, 
-  monitoring interactions, inspecting model state, and exploring 
-  customer profiles.
-- **Backend:** FastAPI service exposing 8 endpoints covering 
-  simulation lifecycle, real-time decision scoring, feedback 
-  collection, and analytics aggregation.
-- **Database:** PostgreSQL storing customers, interactions, 
-  model state (theta/A/b matrices), and simulation records.
-- **Data Science:** LinUCB implementation with synthetic customer 
-  generation, RFM feature engineering, baseline comparisons, 
-  and reproducibility verification.
-- **Documentation:** MkDocs site with module-level docs and 
-  governance guidelines.
+### Microservice Components
+
+| Component | Technology | Role in the MVP |
+|---|---|---|
+| Frontend | Streamlit | User-facing dashboard for campaign setup, live decisions, performance, model behavior, and customers |
+| Backend | FastAPI | API layer exposing application logic, campaign metrics, customers, actions, model state, and baselines |
+| Database | PostgreSQL | Storage for customers, actions, simulations, interactions, model state, and artifacts |
+| Data Science | Python | Synthetic data generation, LinUCB-style contextual bandit logic, baselines, and reproducibility outputs |
+| Documentation | MkDocs | Project documentation, architecture notes, API overview, and module-specific explanations |
+
+### Data Flow
+
+```text
+Data Science pipeline → PostgreSQL → FastAPI → Streamlit dashboard
+```
+
+The DS pipeline creates synthetic customer profiles, campaign interactions, model state, and output artifacts. PostgreSQL stores these outputs. FastAPI exposes them through documented endpoints. Streamlit consumes the API responses and presents the campaign workflow to the user.
 
 ---
 
 ## Live Demo Flow
 
 ### 1. Product Overview
-- Problem statement and business cost of suboptimal allocation
-- MVP scope: 5 actions, RFM context, single simulation at a time
-- Architecture diagram and service interaction map
+
+CampX addresses a common marketing decision: which promotional action should be shown to which customer. A single blanket discount can be wasteful because customers differ in purchase history, price sensitivity, loyalty, and likely response to incentives.
+
+The MVP focuses on **promotional action-type selection**. Given synthetic retail customer profiles with RFM-style features, CampX evaluates five possible actions: no action, 10% discount, free shipping, product recommendation, and bundle offer. The outcome is measured as simulated net campaign value:
+
+```text
+reward = simulated realized revenue - promotional action cost
+
+The system is implemented as a runnable microservice MVP. The Python DS workflow generates synthetic customers, LinUCB campaign interactions, model state, baselines, and artifacts. PostgreSQL stores the campaign data. FastAPI exposes the data and decision endpoints. Streamlit presents the campaign dashboard. MkDocs documents the product, architecture, API, database, and modeling assumptions.
+```
+
+---
 
 ### 2. Frontend
-- Navigate through the 5-page Streamlit interface
-- Create a new simulation: set rounds, customer pool size, alpha
-- Watch the Interaction page update as the background loop runs
-- Review the Analytics page: cumulative reward curve, 
-  conversion by action, segment performance table
-- Inspect the Model page: theta heatmap, per-customer UCB preview
-- Explore the Customer page: filter by RFM segment
+
+The Streamlit frontend presents the product experience.
+
+![CampX streamlit landing page](images/campx_home.png) 
+
+<http://localhost:8501>
+
+
+Main pages:
+
+| Page | Purpose |
+|---|---|
+| Home | Product overview and service summary |
+| Campaign Setup | Campaign-run configuration and existing run selection |
+| Live Decisions | Round-level campaign decisions and recent interactions |
+| Performance | Cumulative campaign value, baseline comparison, action distribution, conversion, reward, and segment performance |
+| Decision Logic | Model-state inspection and action-score breakdown |
+| Customers | Customer profiles, RFM-style features, segments, and interaction history |
+
+The frontend is intended to make the system understandable to a marketing analyst rather than only to a developer.
+
+---
 
 ### 3. Backend
-- FastAPI endpoints and Swagger documentation at `/docs`
-- POST `/simulations` → triggers background simulation loop
-- POST `/decide` → LinUCB scoring with exploit/explore breakdown
-- POST `/feedback` → weight update and model_state upsert
-- GET `/metrics` → cumulative series, action distribution, 
-  conversion rates
+
+The FastAPI backend acts as the contract layer between the frontend, database, and data science outputs.
+
+<http://localhost:8000/docs>
+
+Representative endpoints:
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /health` | Confirms backend availability |
+| `GET /actions` | Returns the promotional action definitions |
+| `GET /customers` | Returns synthetic customer profiles |
+| `GET /simulations` | Lists campaign runs |
+| `GET /metrics` | Provides dashboard-ready campaign metrics |
+| `GET /model/state` | Provides model-state information for decision logic |
+| `POST /decide` | Returns an action recommendation or preview for a customer |
+| `GET /baselines` | Returns baseline comparison data |
+| `POST /simulations/{simulation_id}/step` | Advances one campaign decision step for incremental simulation |
+
+The backend exposes Swagger documentation through FastAPI and provides a clear request-response interface for the frontend.
+
+---
 
 ### 4. Database
-- Schema: customers, customer_latents, interactions, 
-  model_state, simulations, actions
-- views: view_customer_with_latents, view_simulation_summary
-- Stored procedures: sp_log_interaction, sp_submit_feedback
-- Example records: 5000 interactions from a completed 
-  simulation run, 200 customers with RFM + latent traits
+
+PostgreSQL stores the core entities used by the MVP.
+
+Main database objects:
+
+| Object | Purpose |
+|---|---|
+| `customers` | Synthetic customer profile features |
+| `customer_latents` | Simulation-only hidden variables used for synthetic outcome generation |
+| `actions` | Promotional action definitions and costs |
+| `simulations` | Campaign-run metadata |
+| `interactions` | Round-level decisions, conversions, revenue, costs, and rewards |
+| `model_state` | Stored model-state outputs |
+| `simulation_artifacts` | Data science artifacts and output references |
+
+The database supports the full path from generated customer data to dashboard metrics.
+
+### ERD
+
+![CampX database schema](images/campx_erd.png)
+
+---
 
 ### 5. Documentation
-- MkDocs site: problem definition, modeling approach, 
-  API contract, frontend structure, governance
-- GitHub Pages: [link]
-- Demo script: this page
+
+MkDocs is used to document the project structure, service responsibilities, data model, API contract, data science pipeline, and demo flow.
+
+Documentation sections include:
+
+- Product overview
+- Backend API
+- Database
+- Data science/modeling
+- Frontend app
+- Integration map
+- Docker/local run notes
+- Demo overview
+
+<https://ds-223-2026-spring.github.io/ds223-1-project/>
+
+The deployed documentation provides a central reference for understanding both the product concept and the implementation.
 
 ---
 
 ## Final Notes
 
-Use this page as the demo script and keep implementation 
-details in the module-specific tabs.
+CampX is a course MVP. Its value is in demonstrating a working, integrated marketing analytics system rather than claiming production readiness.
 
-**Fallback:** If live simulation is slow, select the existing 
-5000-round simulation from the sidebar — all charts populate 
-instantly from real data already in the database.
+Important scope boundaries:
+
+- Data is synthetic retail-style data.
+- Reward is simulated revenue minus promotional action cost.
+- The model selects promotional action types, not exact product SKUs or exact bundles.
+- Product and bundle tables are included as catalog scaffolding for future item-level personalization.
+- Dedicated workflow scheduling is out of final MVP scope.
+- The current system is intended for demo and educational purposes, not real campaign deployment.

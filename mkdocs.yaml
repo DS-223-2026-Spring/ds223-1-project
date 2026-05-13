@@ -1,25 +1,27 @@
-site_name: DS223 Group Project
-site_description: CampX contextual bandit system for promotional action selection
+site_name: CampX — Marketing Campaign Optimization MVP
+site_description: DS 223 Marketing Analytics Group Project — contextual bandit campaign decision support
 site_author: Group 1, AUA Spring 2026
+site_url: https://ds-223-2026-spring.github.io/ds223-1-project/
 
 nav:
-  - Product: index.md
-  - Docker: docker.md
-  - Git: git.md
-  - Database | PostgreSQL: database.md
-  - Data Science | Modeling: modeling.md
-  - Frontend | Streamlit: app.md
-  - Backend | FastAPI: api.md
+  - Product Overview: index.md
+  - Demo: demo.md
+  - Database: database.md
+  - Data Science: modeling.md
+  - Backend API: api.md
+  - Frontend App: app.md
   - Project Notes:
-      - Demo: demo.md
-      - Governance: governance.md
-      - MkDocs Setup Notes: mkdocs_setup.md
-      - ETL: etl.md
+      - Integration Map: integration.md
+      - Docker: docker.md
+      - Git Workflow: git.md
+      - MkDocs Setup: mkdocs_setup.md
+      - ETL Notes: etl.md
       - DS Feature & Reward Spec: ds_data_spec.md
-      - PM Review: pm_endpoint_review.md
 
 theme:
   name: material
+  logo: images/campx_logo.png
+  favicon: images/campx_logo.png
   features:
     - navigation.tabs
     - navigation.sections
@@ -50,7 +52,7 @@ plugins:
       handlers:
         python:
           paths: ["."]
-          
+
 markdown_extensions:
   - admonition
   - pymdownx.highlight

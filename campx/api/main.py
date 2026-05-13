@@ -204,6 +204,17 @@ async def unhandled_exception_handler(_: Request, exc: Exception) -> JSONRespons
     return _error_response(500, str(exc))
 
 
+@app.get("/", tags=["system"], summary="API root")
+def root():
+    """Return a brief service description and links to docs and health endpoints."""
+    return {
+        "service": "CampX API",
+        "status": "running",
+        "docs": "/docs",
+        "health": "/health",
+    }
+
+
 @app.get("/health", response_model=HealthResponse, tags=["system"], summary="Health check")
 def health_check() -> HealthResponse:
     """Confirm that the FastAPI service is running."""

@@ -53,8 +53,20 @@ if cum is not None and not cum.empty:
     except Exception:
         pass
 
-    colors = ["#0f766e", "#cbd5e1"][:len(chart_df.columns)]
+    # Keep only the two primary curves; extra baselines go in the expander below.
+    keep_cols = [c for c in ["CampX policy", "Random baseline"] if c in chart_df.columns]
+    chart_df = chart_df[keep_cols]
+
+    color_map = {
+        "CampX policy": "#0f766e",      # teal
+        "Random baseline": "#374151",   # dark gray, visible but professional
+    }
+    colors = [color_map.get(col, "#2563eb") for col in chart_df.columns]
     st.line_chart(chart_df, height=380, color=colors)
+    st.caption(
+        "Campaign value is cumulative simulated net reward: realized revenue minus promotional action cost. "
+        "The random baseline is shown as a reference policy over the same action set."
+    )
 else:
     st.info("Cumulative reward chart will appear once `/metrics` returns the cumulative reward series.")
 
@@ -80,7 +92,9 @@ if conv_raw is not None and not conv_raw.empty:
 else:
     value_label = "Est. reward / pull"
 
+# Policy summary is computed from the selected simulation's /metrics response, not static placeholder text.
 st.subheader("Policy summary")
+st.caption("Metrics shown for the selected campaign run. Reward is simulated revenue minus promotional action cost.")
 if conv.empty:
     st.info("Policy summary is unavailable until `/metrics` returns `conversion_by_action`.")
 else:
@@ -93,13 +107,13 @@ else:
     most_selected_label = bu.ACTION_LABELS.get(most_selected, most_selected) if most_selected else "—"
 
     st.info(
-        f"• **Highest estimated value:** {best_value['label']} ({bu.format_currency(best_value['value_metric'])} per pull)  \n"
+        f"• **Highest observed net value:** {best_value['label']} ({bu.format_currency(best_value['value_metric'])} per pull)  \n"
         f"• **Highest conversion rate:** {best_conversion['label']} ({bu.format_pct(best_conversion['conversion_rate'])})  \n"
-        f"• **Most selected action:** {most_selected_label}"
+        f"• **Most selected action in this run:** {most_selected_label}"
     )
 
     st.success(
-        f"**Highest estimated value action:** {best_value['label']} · "
+        f"**Highest observed net value action:** {best_value['label']} · "
         f"{value_label.lower()} {bu.format_currency(best_value['value_metric'])} · "
         f"{int(best_value['n_pulls'])} pulls"
     )

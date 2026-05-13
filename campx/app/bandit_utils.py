@@ -412,11 +412,6 @@ def render_sidebar_and_css() -> None:
             border-color: #0b5f59 !important;
         }}
 
-        [data-testid="stVegaLiteChart"],
-        [data-testid="stArrowVegaLiteChart"] {{
-            pointer-events: none !important;
-        }}
-
         [data-testid="stDataFrame"] {{
             border: 1px solid rgba(15, 23, 42, 0.10);
             border-radius: 10px;

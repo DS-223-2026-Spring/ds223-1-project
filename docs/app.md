@@ -1,34 +1,38 @@
-# Frontend | Streamlit
+# Frontend App — Streamlit
 
 ## Overview
 
-The frontend is a Streamlit app for simulation launch, interaction monitoring,
-analytics, and model inspection.
+The CampX frontend is a Streamlit multi-page app that connects to the FastAPI backend and provides an interactive dashboard for campaign management and analysis.
 
-App URL:
+![CampX streamlit landing page](images/campx_home.png) 
 
-```text
+App URL (local):
+
+```
 http://localhost:8501
 ```
 
-## Main pages
+## Pages
 
-| Page | Purpose |
-|------|---------|
-| Home | Project overview and navigation |
-| Create Simulation | Launch and review simulation runs |
-| Interaction | Watch reward and recent decisions |
-| Analytics | Review distributions and policy results |
-| Model | Inspect learned weights and action scores |
-| Customers | View and filter customer profiles |
+| Page | File | Purpose |
+|------|------|---------|
+| Home | `app.py` | Product overview, navigation, and key metrics summary |
+| Campaign Setup | `pages/1_create_simulation.py` | Configure and launch a new campaign run; review existing runs |
+| Live Decisions | `pages/2_interaction.py` | Monitor reward per round and action selection over time |
+| Performance | `pages/3_analytics.py` | Cumulative campaign value, policy summary, action distribution, conversion by action, segment performance |
+| Decision Logic | `pages/4_model.py` | Inspect learned LinUCB weights, promotion selection volume, and per-customer action score breakdown |
+| Customers | `pages/5_customers.py` | Browse and filter customer profiles by segment and RFM features; view interaction history |
 
-## Frontend reference
+## Design Notes
+
+- All pages use a shared `bandit_utils.py` helper module for API calls, formatting, and UI components.
+- Navigation is rendered as a tab bar at the top of every page.
+- Charts use native Streamlit components (`st.line_chart`, `st.bar_chart`, `st.area_chart`, `st.dataframe`).
+- The sidebar campaign run selector is shared across Performance, Live Decisions, Decision Logic, and Customers.
+- The DS container runs as a batch job and exits with code 0 after persisting data. The frontend does not depend on it being running.
+
+## Frontend Reference
 
 ### `bandit_utils.py`
 
 ::: campx.app.bandit_utils
-
-## Notes
-
-- The current UI structure is in place.
-- The Streamlit app is fully wired to the live FastAPI backend (mocks removed).

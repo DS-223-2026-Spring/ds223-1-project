@@ -1,157 +1,139 @@
-# CampX — Campaign Optimization Engine
+# CampX — Marketing Campaign Optimization MVP
 
 **DS 223 · Marketing Analytics · Group 1 · Spring 2026 · AUA**
 
-A contextual bandit system (LinUCB) that selects the optimal promotional action for each fashion retail customer — learning which offer maximises net profit for which customer profile, updating after every interaction.
+CampX is a marketing analytics MVP for campaign optimization. It demonstrates how a marketing team could use customer context to choose among promotional action types, track simulated outcomes, and inspect campaign performance through an end-to-end microservice architecture.
 
----
+The project connects a Streamlit frontend, FastAPI backend, PostgreSQL database, and Python data science pipeline using Docker Compose. The data is synthetic retail-style customer data, designed for a course MVP rather than production deployment.
+
+## Problem
+
+Marketing teams often send the same discount or offer to broad customer groups. This can waste budget because different customers respond differently to promotions, and some customers may not need an incentive at all.
+
+CampX addresses this as a decision-support problem: given customer behavioral features, choose a promotional action that balances expected value and promotional cost.
+
+## Solution
+
+CampX models campaign decisions as a contextual bandit problem using LinUCB-style logic. For each customer interaction, the system uses RFM-style customer features to select one of five promotional action types:
+
+- no action
+- 10% discount
+- free shipping
+- product recommendation
+- bundle offer
+
+Reward is defined as:
+
+```text
+simulated realized revenue - promotional action cost
+```
+
+The system tracks cumulative net campaign value, compares the selected policy against a random baseline, and exposes action-level performance, customer-level features, and model state through the dashboard.
+
+The recommended action is the highest-scoring action under the current model. It should not be interpreted as a guaranteed optimal business decision.
+
+## Architecture
+
+| Layer | Service | Path | Purpose |
+|---|---|---|---|
+| Frontend | Streamlit | `campx/app` | User-facing campaign dashboard |
+| Backend | FastAPI | `campx/api` | API contract and application logic |
+| Database | PostgreSQL | `campx/db` | Tables, views, procedures, seed data, simulation storage |
+| Data Science | Python DS pipeline | `campx/ds` | Synthetic data, contextual bandit logic, baselines, artifacts |
+| Documentation | MkDocs | `docs/` | Project documentation and demo guide |
+
+Docker Compose runs the services locally and connects the frontend, backend, database, and data science workflow.
+
+## Repository Structure
+
+```text
+ds223-1-project/
+├── docker-compose.yml        # Local multi-service runtime
+├── README.md                 # Repository entry point
+├── mkdocs.yaml               # MkDocs configuration
+├── LICENSE
+├── docs/                     # Source documentation for MkDocs
+└── campx/                    # Product source code
+    ├── api/                  # FastAPI backend
+    ├── app/                  # Streamlit frontend
+    ├── db/                   # PostgreSQL schema, views, procedures, seed data
+    ├── ds/                   # Synthetic data, LinUCB, baselines, final outputs
+    └── etl/                  # ETL-related project folder
+```
+
+## Data Flow
+
+1. The DS pipeline generates synthetic customers, campaign interactions, model state, and artifacts.
+2. DS outputs are persisted to PostgreSQL.
+3. FastAPI reads from and writes to PostgreSQL through API endpoints.
+4. Streamlit calls the FastAPI backend and visualizes campaign setup, live decisions, performance, decision logic, and customer profiles.
+
+## Quickstart
+
+Build and run the local stack:
+
+```bash
+docker compose up --build
+```
+
+Service URLs:
+
+| Service | URL |
+|---|---|
+| Streamlit frontend | <http://localhost:8501> |
+| FastAPI Swagger docs | <http://localhost:8000/docs> |
+| pgAdmin | <http://localhost:5050> |
+| Mkdocs documentation | <https://ds-223-2026-spring.github.io/ds223-1-project/> |
+
+## Verify the Stack
+
+After startup, run:
+
+```bash
+curl http://localhost:8000/health
+curl http://localhost:8000/actions
+curl "http://localhost:8000/customers?limit=2"
+curl http://localhost:8000/simulations
+curl "http://localhost:8000/metrics?simulation_id=1"
+curl "http://localhost:8000/model/state?simulation_id=1"
+```
+
+A working demo run should include customers, five promotional actions, at least one completed campaign run, and non-empty metrics.
+
+## Documentation
+
+Full project documentation is available at:
+
+<https://ds-223-2026-spring.github.io/ds223-1-project/>
+
+The documentation includes the demo guide, API overview, database notes, data science pipeline, frontend pages, and integration map.
+
+## Demo Notes
+
+The default local demo uses a synthetic campaign run with 500 customers and 5000 interaction rounds. The DS container runs as a batch job: it generates or persists data and then exits successfully. This is expected behavior.
+
+For the safest demo, use the existing completed campaign run rather than launching a new long run live.
+
+## Products and Bundles
+
+The current model selects promotional action types. Product and bundle tables are included as catalog scaffolding and future extension points for item-level personalization. The current MVP does not recommend exact product SKUs or exact bundle configurations.
+
+## Scope and Limitations
+
+- Synthetic retail-style data only
+- No real customer profiles or production campaign deployment
+- Simplified five-action promotional action space
+- Simplified one-step reward model
+- No item-level SKU or bundle recommendation in the current model
+- No production monitoring or alerting
+- Dedicated workflow scheduling was removed from final MVP scope; the runnable path is DS batch workflow → PostgreSQL → FastAPI → Streamlit
 
 ## Team
 
 | Role | Member | Branch |
-|------|--------|--------|
+|---|---|---|
 | PM | Anna Asatryan | `main` |
 | DB Developer | Hayk Alekyan | `db` |
 | Backend | Victoria Makaryan | `backend` |
 | Frontend | Armine Babajanyan | `front` |
 | Data Scientist | Davit Badalyan | `ds` |
-| Orchestration | *(shared)* | `orchestration` |
-
----
-
-## Quick Start
-
-```bash
-git clone https://github.com/DS-223-2026-Spring/ds223-1-project
-cd ds223-1-project
-docker compose up --build
-```
-
-| Service | URL |
-|---------|-----|
-| Streamlit dashboard | http://localhost:8501 |
-| FastAPI docs (Swagger) | http://localhost:8000/docs |
-| pgAdmin | http://localhost:5050 |
-
----
-
-## Project Structure
-
-```
-ds223-1-project/              ← repo root
-├── docker-compose.yml        ← run from here
-├── README.md
-├── mkdocs.yml
-├── docs/                     ← MkDocs documentation
-│   ├── index.md
-│   ├── governance.md
-│   ├── database.md
-│   ├── modeling.md
-│   ├── ds_data_spec.md
-│   ├── api.md
-│   └── app.md
-└── campx/                    ← product folder
-    ├── .env                  ← all service credentials
-    ├── __init__.py
-    ├── api/                  ← FastAPI backend (Victoria)
-    │   ├── Dockerfile
-    │   ├── main.py
-    │   ├── database.py
-    │   ├── models.py
-    │   ├── schema.py
-    │   ├── SQLHandler.py
-    │   ├── db_interactions.py
-    │   ├── requirements.txt
-    │   └── routes/
-    │       ├── customers.py
-    │       ├── bandit.py
-    │       └── simulations.py
-    ├── app/                  ← Streamlit frontend (Armine)
-    │   ├── Dockerfile
-    │   ├── app.py
-    │   ├── bandit_utils.py
-    │   ├── requirements.txt
-    │   └── pages/
-    │       ├── 1_create_simulation.py
-    │       ├── 2_interaction.py
-    │       ├── 3_analytics.py
-    │       ├── 4_model.py
-    │       └── 5_customers.py
-    ├── ds/                   ← Data Science (Davit)
-    │   ├── _routing.py
-    │   ├── Dockerfile
-    │   ├── main.py
-    │   ├── etl.py
-    │   ├── eda.py
-    │   ├── baselines.py
-    │   ├── linucb.py
-    │   ├── model.py
-    │   ├── experiments.ipynb
-    │   ├── generate_eda_report.py
-    │   ├── generate_final_outputs.py
-    │   ├── final_outputs.py
-    │   ├── generate_synthetic_data.py
-    │   ├── run_baseline_comparison.py
-    │   ├── run_workflow.py
-    │   ├── verify_reproducibility.py
-    │   ├── requirements.txt
-    │   └── synthetic/        ← synthetic data generation module
-    ├── db/                   ← DB schema & helpers (Hayk)
-    │   ├── 1_schema.sql
-    │   ├── 2_indexes.sql
-    │   ├── 3_initial_insert.sql
-    │   ├── 4_views.sql
-    │   └── 5_stored_procedures.sql
-    └── orchestration/        ← Prefect flows (shared)
-        ├── Dockerfile
-        ├── flows.py
-        └── requirements.txt
-```
-
-All Dockerfiles use `python:3.13-slim`.
-
----
-
-## Branching & Commits
-
-```
-main  ← protected, PM merges here
-├── db
-├── backend
-├── ds
-├── front
-└── orchestration
-```
-
-Commit format: `role: short description`
-Examples: `db: add crud helpers` · `ds: implement linucb` · `backend: add /decide endpoint`
-
-Full contribution rules: [`docs/governance.md`](docs/governance.md)
-
-
----
-
-## Milestones
-
-| Milestone | Due | Focus |
-|-----------|-----|-------|
-| M1 | Apr 12 | Problem definition, roles, roadmap, prototype |
-| M2 | Apr 21 | DB schema, customer generation, LinUCB |
-| M3 | May 1 | API, Streamlit, Prefect integration |
-| M4 | May 8 | Testing, documentation, polish |
-| Demo | May 14 | Live demonstration |
-
-### Current Milestone (M3) API Specifications & Product Mapping
-
-The following endpoints have been designed to unblock the live frontend integration. For full structured JSON schemas and request/response shapes, refer to [`campx/app/backend_requirements.md`](campx/app/backend_requirements.md).
-
-| Endpoint | Method | Product Functionality | Description / Specification Summary |
-|----------|--------|-----------------------|-------------------------------------|
-| `/simulations` | `GET` | All pages (Sidebar) | Returns list of all past and running simulation objects with `status` and `cumulative_reward`. |
-| `/simulations` | `POST` | Create Simulation page | Accepts parameters (`sim_name`, `num_rounds`, `alpha`, etc.), creates a new run, and triggers orchestration. |
-| `/metrics` | `GET` | Interaction & Analytics pages | Returns aggregated arrays (`cumulative_reward_series`, `action_distribution`) and top-level KPI counters. |
-| `/customers` | `GET` | Customer Explorer page | Returns the full list of customers with RFM features. |
-| `/customers/{id}` | `GET` | Customer Detail view | Returns RFM features, interaction history, and (if `?debug=true`) latent variables. |
-| `/model/state` | `GET` | Model Inspection page | Returns the learned `theta` matrix (6x5) and `n_pulls` action counts for the LinUCB model. |
-| `/decide` | `POST` | Model page / Simulation loop | Computes `exploit`, `explore`, and `ucb_score`. If `preview=false`, it logs the interaction. |
-| `/feedback` | `POST` | Internal / Orchestration | Updates model weights (`theta`, `A`) based on conversion outcome and computed reward. |
