@@ -114,9 +114,6 @@ The default local demo uses a synthetic campaign run with 500 customers and 5000
 
 For the safest demo, use the existing completed campaign run rather than launching a new long run live.
 
-## Products and Bundles
-
-The current model selects promotional action types. Product and bundle tables are included as catalog scaffolding and future extension points for item-level personalization. The current MVP does not recommend exact product SKUs or exact bundle configurations.
 
 ## Scope and Limitations
 
