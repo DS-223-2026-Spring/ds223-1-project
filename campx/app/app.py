@@ -27,8 +27,6 @@ st.set_page_config(
 bu.render_sidebar_and_css()
 
 # ── Business Context Banner ───────────────────────────────────
-st.info("💡 **Fashion retailers spend 15-30% of promotional budget on non-converting customers.** CampX learns who responds to what — and gets smarter with every interaction.")
-
 # ── Hero ──────────────────────────────────────────────────────
 st.markdown(
     f"""
@@ -91,9 +89,9 @@ st.markdown(
     <div class="hero-container">
         <div class="hero-content">
             <div class="hero-kicker">Campaign Optimization Engine</div>
-            <div class="hero-title">Camp<span style="color: #0f766e;">X</span></div>
+            <div class="hero-title">Camp<span style="color: var(--primary-color);">X</span></div>
             <div class="hero-subtitle">
-                A live contextual bandit platform using LinUCB to actively learn and assign optimal promotional actions to distinct customer segments.
+                CampX helps marketing teams choose the right promotion for the right customer. It uses customer behavior and campaign outcomes to learn which offers create incremental value, reducing wasted discounts and improving campaign profitability over time.
             </div>
         </div>
         <div class="hero-logo-wrapper">
