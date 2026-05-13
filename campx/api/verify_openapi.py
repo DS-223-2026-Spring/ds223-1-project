@@ -116,6 +116,8 @@ SAMPLE_SIMULATION_STEP = {
     "exploit": 1.2,
     "explore": 0.4,
     "ucb_score": 1.6,
+    "warm_start": True,
+    "selection_reason": "warm_start",
     "model_updated": True,
     "completed": False,
 }
