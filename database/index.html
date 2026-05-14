@@ -1,0 +1,1131 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="DS 223 Marketing Analytics Group Project — contextual bandit campaign decision support">
+      
+      
+        <meta name="author" content="Group 1, AUA Spring 2026">
+      
+      
+        <link rel="canonical" href="https://ds-223-2026-spring.github.io/ds223-1-project/database/">
+      
+      
+        <link rel="prev" href="../demo/">
+      
+      
+        <link rel="next" href="../modeling/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../images/campx_logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Database - CampX — Marketing Campaign Optimization MVP</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#database-postgresql" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="CampX — Marketing Campaign Optimization MVP" class="md-header__button md-logo" aria-label="CampX — Marketing Campaign Optimization MVP" data-md-component="logo">
+      
+  <img src="../images/campx_logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CampX — Marketing Campaign Optimization MVP
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Database
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="lime"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Product Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../demo/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Demo
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Database
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../modeling/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Data Science
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Backend API
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../app/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Frontend App
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../integration/" class="md-tabs__link">
+          
+  
+  
+  Project Notes
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="CampX — Marketing Campaign Optimization MVP" class="md-nav__button md-logo" aria-label="CampX — Marketing Campaign Optimization MVP" data-md-component="logo">
+      
+  <img src="../images/campx_logo.png" alt="logo">
+
+    </a>
+    CampX — Marketing Campaign Optimization MVP
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Product Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#erd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ERD
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#time-dimension-in-interactions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time dimension in interactions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pgadmin-setup-first-time-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pgAdmin setup (first time only)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#crud-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CRUD helpers
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../modeling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Science
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frontend App
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project Notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../git/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git Workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mkdocs_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MkDocs Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../etl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ETL Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ds_data_spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DS Feature & Reward Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="database-postgresql">Database — PostgreSQL</h1>
+<p><strong>Owner:</strong> Hayk Alekyan · Branch: <code>db</code></p>
+<hr />
+<h2 id="erd">ERD</h2>
+<p><img alt="CampX database schema" src="../images/campx_erd.png" /></p>
+<h2 id="schema-overview">Schema overview</h2>
+<p>Nine tables in three layers.</p>
+<p><strong>Simulation layer</strong> — generated once before bandit runs:</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>customers</code></td>
+<td>One row per simulated customer — RFM context vector for LinUCB</td>
+</tr>
+<tr>
+<td><code>customer_latents</code></td>
+<td>Simulation-only hidden variables — latent traits that generated RFM features and drive simulated conversion</td>
+</tr>
+<tr>
+<td><code>products</code></td>
+<td>Static fashion product catalog included as scaffolding for future item-level personalization</td>
+</tr>
+<tr>
+<td><code>bundles</code></td>
+<td>Pre-defined curated outfits included as scaffolding for future bundle-level personalization</td>
+</tr>
+</tbody>
+</table>
+<p>The current MVP does not select exact product SKUs or exact bundle configurations. The bandit selects promotional action types.</p>
+<p><strong>Bandit layer</strong> — grows during simulation:</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>actions</code></td>
+<td>5 promotional arms — static, seeded once</td>
+</tr>
+<tr>
+<td><code>simulations</code></td>
+<td>One row per experiment run</td>
+</tr>
+<tr>
+<td><code>interactions</code></td>
+<td>Every (customer, action, reward) decision — core training log</td>
+</tr>
+<tr>
+<td><code>model_state</code></td>
+<td>LinUCB A, b, θ per action — persists across container restarts</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Artifact layer</strong> — stores generated file payloads after the local CSV/report
+directory is written:</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>simulation_artifacts</code></td>
+<td>JSON/text payloads for generated DS files keyed by simulation</td>
+</tr>
+</tbody>
+</table>
+<p>The DS generator keeps the local artifacts and then loads those files into the
+database.</p>
+<hr />
+<h2 id="schema-files">Schema files</h2>
+<p>The schema is split across five files, run in order by PostgreSQL on first container start:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>db/1_schema.sql</code></td>
+<td>All table definitions</td>
+</tr>
+<tr>
+<td><code>db/2_indexes.sql</code></td>
+<td>Performance indexes</td>
+</tr>
+<tr>
+<td><code>db/3_initial_insert.sql</code></td>
+<td>Seed data — actions, products, bundles</td>
+</tr>
+<tr>
+<td><code>db/4_views.sql</code></td>
+<td>Read views for customer latents and simulation summaries</td>
+</tr>
+<tr>
+<td><code>db/5_stored_procedures.sql</code></td>
+<td>Write procedures for customer upsert, interaction logging, and feedback</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="time-dimension-in-interactions">Time dimension in <code>interactions</code></h2>
+<p>Three timestamps capture the decision-to-outcome gap:
+<div class="highlight"><pre><span></span><code>decision_at   ← when the system assigned the action
+│
+│  [conversion_window_hours — default 48h]
+│
+converted_at  ← when purchase occurred (NULL until observed)
+observed_at   ← when model received outcome and updated
+</code></pre></div></p>
+<p><code>converted</code>, <code>revenue</code>, <code>reward</code> are NULL until <code>observed_at</code> is set.
+In the MVP, outcomes are generated by the DS batch workflow or API simulation logic. A future scheduled workflow could handle delayed outcome observation after the conversion window.</p>
+<hr />
+<h2 id="setup">Setup</h2>
+<div class="highlight"><pre><span></span><code>docker-compose<span class="w"> </span>up<span class="w"> </span>db<span class="w"> </span>pgadmin
+</code></pre></div>
+<p>Schema initialises automatically. All 8 tables and seed data are created on first start.</p>
+<hr />
+<h2 id="pgadmin-setup-first-time-only">pgAdmin setup (first time only)</h2>
+<p>pgAdmin does not auto-connect. After running the command above:</p>
+<ol>
+<li>Open http://localhost:5050</li>
+<li>Login: <code>admin@admin.com</code> / <code>admin123</code></li>
+<li>Right-click <strong>Servers</strong> → <strong>Register</strong> → <strong>Server</strong></li>
+<li><strong>General tab</strong> — Name: <code>campaign</code></li>
+<li><strong>Connection tab</strong>:</li>
+<li>Host: <code>db</code></li>
+<li>Port: <code>5432</code></li>
+<li>Database: <code>campaign</code></li>
+<li>Username: <code>campaign_user</code></li>
+<li>Password: <code>campaign_pass</code></li>
+<li>Save password: on</li>
+<li>Click <strong>Save</strong></li>
+</ol>
+<p>Navigate to:
+<code>Servers → campaign → Databases → campaign → Schemas → public → Tables</code></p>
+<p>You should see 9 tables. <code>actions</code> has 5 rows, <code>products</code> has 12 rows, <code>bundles</code> has 6 rows.</p>
+<hr />
+<h2 id="crud-helpers">CRUD helpers</h2>
+<p>All DB access goes through <code>campx/api/db_interactions.py</code>. No raw SQL elsewhere.
+Every function takes a <code>SQLHandler</code> instance as its first argument.</p>
+<p><div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">SQLHandler</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQLHandler</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">db_interactions</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dbi</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>db = SQLHandler(
+    host=os.getenv(&quot;DB_HOST&quot;, &quot;db&quot;),
+    dbname=os.getenv(&quot;POSTGRES_DB&quot;, &quot;campaign&quot;),
+    user=os.getenv(&quot;POSTGRES_USER&quot;, &quot;campaign_user&quot;),
+    password=os.getenv(&quot;POSTGRES_PASSWORD&quot;, &quot;campaign_pass&quot;),
+)
+</code></pre></div></p>
+<h1 id="customers">Customers</h1>
+<div class="highlight"><pre><span></span><code>dbi.get_all_customers(db)
+dbi.get_customer_by_id(db, customer_id)
+dbi.get_customer_latents(db, customer_id)
+dbi.insert_customer(db, gender, segment_label, recency, frequency,
+                    monetary, basket_diversity, avg_order_size, purchase_regularity)
+dbi.insert_customer_latent(db, customer_id, z_price_sensitivity,
+                           z_brand_loyalty, z_impulse_tendency)
+</code></pre></div>
+<h1 id="interactions">Interactions</h1>
+<div class="highlight"><pre><span></span><code>dbi.log_interaction(db, simulation_id, customer_id, action_id,
+                    round_number, context_vector_bytes, ucb_score, cost)
+dbi.observe_outcome(db, interaction_id, converted, revenue,
+                    converted_at, observed_at)
+dbi.get_pending_interactions(db, older_than_hours=48)
+</code></pre></div>
+<h1 id="model-state">Model state</h1>
+<div class="highlight"><pre><span></span><code>dbi.get_model_state(db, simulation_id, action_id)
+dbi.upsert_model_state(db, simulation_id, action_id, round_number,
+                       n_pulls, theta_bytes, a_bytes, b_bytes, alpha)
+</code></pre></div>
+<h1 id="simulations">Simulations</h1>
+<div class="highlight"><pre><span></span><code>dbi.create_simulation(db, sim_name, num_rounds, num_customers, alpha)
+dbi.complete_simulation(db, simulation_id)
+</code></pre></div>
+<h1 id="ds-artifacts">DS artifacts</h1>
+<div class="highlight"><pre><span></span><code>dbi.upsert_simulation_artifact(db, simulation_id, artifact_name,
+                               artifact_type, content_type,
+                               payload_json=rows_or_object)
+dbi.list_simulation_artifacts(db, simulation_id)
+dbi.get_simulation_artifact(db, simulation_id, artifact_name)
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "toc.integrate", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

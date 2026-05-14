@@ -1,0 +1,1534 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="DS 223 Marketing Analytics Group Project — contextual bandit campaign decision support">
+      
+      
+        <meta name="author" content="Group 1, AUA Spring 2026">
+      
+      
+        <link rel="canonical" href="https://ds-223-2026-spring.github.io/ds223-1-project/ds_data_spec/">
+      
+      
+        <link rel="prev" href="../etl/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../images/campx_logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>DS Feature & Reward Spec - CampX — Marketing Campaign Optimization MVP</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ds-feature-reward-spec" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="CampX — Marketing Campaign Optimization MVP" class="md-header__button md-logo" aria-label="CampX — Marketing Campaign Optimization MVP" data-md-component="logo">
+      
+  <img src="../images/campx_logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CampX — Marketing Campaign Optimization MVP
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              DS Feature & Reward Spec
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="lime"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Product Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../demo/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Demo
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../database/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Database
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../modeling/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Data Science
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Backend API
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../app/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Frontend App
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../integration/" class="md-tabs__link">
+          
+  
+  
+  Project Notes
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="CampX — Marketing Campaign Optimization MVP" class="md-nav__button md-logo" aria-label="CampX — Marketing Campaign Optimization MVP" data-md-component="logo">
+      
+  <img src="../images/campx_logo.png" alt="logo">
+
+    </a>
+    CampX — Marketing Campaign Optimization MVP
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Product Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../modeling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Science
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frontend App
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project Notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../git/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git Workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mkdocs_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MkDocs Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../etl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ETL Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DS Feature & Reward Spec
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DS Feature & Reward Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Inputs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Model Inputs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#executable-feature-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Executable feature contract
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#feature-availability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature availability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#leakage-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Leakage rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature-generation-assumptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature-generation assumptions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Feature-generation assumptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#latent-traits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Latent traits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#directional-assumptions-behind-observed-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Directional assumptions behind observed features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#segment-assignment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Segment assignment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action set
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#target-variable-definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Target variable definition
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Target variable definition">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#primary-target-reward" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Primary target: reward
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secondary-target-converted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secondary target: converted
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimization-target-vs-observed-label" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optimization target vs observed label
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#auxiliary-simulator-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Auxiliary simulator columns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#baseline-model-framing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Baseline-model framing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#assumptions-and-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Assumptions and limitations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Assumptions and limitations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#business-assumptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Business assumptions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#simulation-assumptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Simulation assumptions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#modeling-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modeling limitations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#practical-usage-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Practical usage rules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#source-of-truth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Source of truth
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="ds-feature-reward-spec">DS Feature &amp; Reward Spec</h1>
+<p><strong>Owner:</strong> Davit Badalyan · Branch: <code>ds</code></p>
+<p>This document defines the model-facing features, the core synthetic-data
+assumptions, and the target variable used for baseline models and the
+contextual bandit.</p>
+<hr />
+<h2 id="purpose">Purpose</h2>
+<p>The project is not predicting "who will convert" in isolation. The decision
+problem is:</p>
+<blockquote>
+<p>given a customer context <code>x</code> and an action <code>a</code>, choose the action that
+maximizes expected net business value.</p>
+</blockquote>
+<p>So the primary learning target is <strong>reward</strong>, not raw conversion.</p>
+<hr />
+<h2 id="model-inputs">Model Inputs</h2>
+<p>The current customer context vector has <strong>6 observed features</strong>. These are the
+only behavioral features intended to be visible to the bandit or baseline
+models.</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Type</th>
+<th>Unit / scale</th>
+<th>Meaning</th>
+<th>Intended signal</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>recency</code></td>
+<td>integer</td>
+<td>days</td>
+<td>Days since the customer's last purchase</td>
+<td>Lower is better / more recent</td>
+</tr>
+<tr>
+<td><code>frequency</code></td>
+<td>integer</td>
+<td>count</td>
+<td>Number of purchases in the observation window</td>
+<td>Higher indicates stronger engagement</td>
+</tr>
+<tr>
+<td><code>monetary</code></td>
+<td>float</td>
+<td>GBP-like currency</td>
+<td>Total spend in the observation window</td>
+<td>Higher indicates customer value</td>
+</tr>
+<tr>
+<td><code>basket_diversity</code></td>
+<td>float</td>
+<td>approx. item/category breadth score</td>
+<td>How varied the customer's basket tends to be</td>
+<td>Higher suggests broader shopping behavior</td>
+</tr>
+<tr>
+<td><code>avg_order_size</code></td>
+<td>float</td>
+<td>GBP-like currency</td>
+<td>Average value per order</td>
+<td>Higher suggests larger baskets or premium buying</td>
+</tr>
+<tr>
+<td><code>purchase_regularity</code></td>
+<td>float</td>
+<td>normalized <code>0..1</code> score</td>
+<td>How steady the purchase cadence is</td>
+<td>Higher suggests more consistent repeat behavior</td>
+</tr>
+</tbody>
+</table>
+<p>These feature names and metadata are defined centrally in
+<code>campx/ds/synthetic/config.py</code>. The executable extraction helper is
+<code>build_context_matrix(...)</code> in <code>campx/ds/synthetic/features.py</code>.</p>
+<h3 id="executable-feature-contract">Executable feature contract</h3>
+<p>Model-facing feature extraction must go through:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">campx.ds.synthetic.features</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_context_matrix</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">build_context_matrix</span><span class="p">(</span><span class="n">customers</span><span class="p">)</span>
+</code></pre></div>
+<p>The helper validates that all six model-visible columns are present, numeric,
+finite, and ordered according to <code>FEATURE_COLUMNS</code>. This keeps LinUCB,
+baseline models, and DB context-vector persistence aligned on the same feature
+order.</p>
+<p>LinUCB then max-scales the six observed features using the generated customer
+pool. The model state exports this preprocessing as
+<code>context_encoding = "max_scaled_observed_features"</code> plus JSON columns for the
+feature order and scale values.</p>
+<h3 id="feature-availability">Feature availability</h3>
+<ul>
+<li>These 6 fields are the intended <strong>model inputs</strong>.</li>
+<li><code>segment</code> is a derived marketing label and can be used for heuristics or
+  reporting, but it is not the core continuous context representation.</li>
+<li><code>customer_id</code> is an identifier only, not a predictive feature.</li>
+<li><code>action_id</code> is part of the decision, not part of the customer context.</li>
+</ul>
+<h3 id="leakage-rules">Leakage rules</h3>
+<p>The following values must <strong>not</strong> be used as model inputs:</p>
+<ul>
+<li>latent traits from <code>customer_latents.csv</code></li>
+<li><code>z_price_sensitivity</code></li>
+<li><code>z_brand_loyalty</code></li>
+<li><code>z_impulse_tendency</code></li>
+<li><code>p_convert</code></li>
+<li>this is simulator internals, not an observable business feature</li>
+<li>realized <code>revenue</code>, <code>cost</code>, <code>reward</code>, or <code>converted</code> from the current
+  decision row before the decision is made</li>
+</ul>
+<p>Those fields are valid for evaluation and debugging, but not as pre-decision
+features.</p>
+<hr />
+<h2 id="feature-generation-assumptions">Feature-generation assumptions</h2>
+<p>The synthetic generator is built around <strong>two-channel consistency</strong>:</p>
+<ol>
+<li>latent traits generate the observed customer behavior</li>
+<li>the same latent traits also generate action response</li>
+</ol>
+<p>This matters because otherwise the learning problem collapses into noise or
+becomes trivially gameable.</p>
+<h3 id="latent-traits">Latent traits</h3>
+<p>Each customer has three unobserved traits:</p>
+<table>
+<thead>
+<tr>
+<th>Trait</th>
+<th>Range</th>
+<th>Prior</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>z_price_sensitivity</code></td>
+<td><code>0..1</code></td>
+<td><code>Beta(2, 5)</code></td>
+<td>More responsive to discounts and shipping friction</td>
+</tr>
+<tr>
+<td><code>z_brand_loyalty</code></td>
+<td><code>0..1</code></td>
+<td><code>Beta(3, 3)</code></td>
+<td>More likely to buy repeatedly and convert without heavy incentives</td>
+</tr>
+<tr>
+<td><code>z_impulse_tendency</code></td>
+<td><code>0..1</code></td>
+<td><code>Beta(2, 4)</code></td>
+<td>More likely to respond to recommendations and bundles</td>
+</tr>
+</tbody>
+</table>
+<p>The model never sees these values directly.</p>
+<h3 id="directional-assumptions-behind-observed-features">Directional assumptions behind observed features</h3>
+<p>The generator enforces the following qualitative relationships:</p>
+<ul>
+<li>higher loyalty increases <code>frequency</code></li>
+<li>higher loyalty lowers <code>recency</code></li>
+<li>higher loyalty increases <code>monetary</code></li>
+<li>higher loyalty increases <code>purchase_regularity</code></li>
+<li>higher impulse increases <code>basket_diversity</code></li>
+<li>higher impulse increases <code>avg_order_size</code></li>
+<li>higher price sensitivity reduces spend and basket value on average</li>
+</ul>
+<p>These relationships are implemented with noise so the features remain
+imperfect proxies rather than deterministic copies of the latents.</p>
+<h3 id="segment-assignment">Segment assignment</h3>
+<p>Segments are derived from observed features only:</p>
+<table>
+<thead>
+<tr>
+<th>Segment</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Champion</code></td>
+<td><code>recency &lt; 30</code> and <code>frequency &gt;= 8</code> and <code>monetary &gt; 400</code></td>
+</tr>
+<tr>
+<td><code>Loyal</code></td>
+<td><code>recency &lt; 60</code> and <code>frequency &gt;= 4</code></td>
+</tr>
+<tr>
+<td><code>At-Risk</code></td>
+<td><code>recency &gt; 90</code> and <code>frequency &gt;= 3</code></td>
+</tr>
+<tr>
+<td><code>Lost</code></td>
+<td>otherwise</td>
+</tr>
+</tbody>
+</table>
+<p>These segment rules live in <code>campx/ds/synthetic/config.py</code>.</p>
+<h3 id="action-set">Action set</h3>
+<p>The canonical actions are:</p>
+<table>
+<thead>
+<tr>
+<th>Action ID</th>
+<th>Action name</th>
+<th>Business interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td><code>no_action</code></td>
+<td>Control / organic conversion</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td><code>discount_10</code></td>
+<td>Margin-reducing discount for price-sensitive users</td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td><code>free_shipping</code></td>
+<td>Shipping-friction relief</td>
+</tr>
+<tr>
+<td><code>3</code></td>
+<td><code>product_recommendation</code></td>
+<td>Cheap personalization message</td>
+</tr>
+<tr>
+<td><code>4</code></td>
+<td><code>bundle_offer</code></td>
+<td>Basket-expanding bundle promotion</td>
+</tr>
+</tbody>
+</table>
+<p>The exact action economics and simulator coefficients are defined in
+<code>campx/ds/synthetic/config.py</code>.</p>
+<hr />
+<h2 id="target-variable-definition">Target variable definition</h2>
+<h3 id="primary-target-reward">Primary target: <code>reward</code></h3>
+<p>For the project goal, the main target is:</p>
+<div class="highlight"><pre><span></span><code>reward = revenue - cost
+</code></pre></div>
+<p>This is the value optimized by the bandit and the main metric used in baseline
+comparison.</p>
+<p>Interpretation:</p>
+<ul>
+<li><code>revenue</code> is realized gross merchandise value from a conversion</li>
+<li><code>cost</code> is the action cost paid by the business</li>
+<li>a non-converting action can still have positive cost</li>
+<li>higher reward is better</li>
+</ul>
+<p>Why this is the correct target:</p>
+<ul>
+<li>conversion alone ignores margin</li>
+<li>revenue alone ignores promotion spend</li>
+<li>reward directly aligns the model with business value</li>
+</ul>
+<h3 id="secondary-target-converted">Secondary target: <code>converted</code></h3>
+<p><code>converted</code> is a useful auxiliary outcome for reporting and sanity checks, but
+it is <strong>not</strong> the main optimization target. A policy can improve conversion
+while still reducing profit if it overuses expensive promotions.</p>
+<h3 id="optimization-target-vs-observed-label">Optimization target vs observed label</h3>
+<p>There are two related concepts:</p>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>optimization target</td>
+<td>expected reward <code>E[reward | x, a]</code></td>
+</tr>
+<tr>
+<td>observed training label</td>
+<td>realized one-step reward for the chosen action</td>
+</tr>
+</tbody>
+</table>
+<p>The contextual bandit never observes the counterfactual rewards for actions it
+did not choose on that round. It only sees the realized reward for the chosen
+action.</p>
+<h3 id="auxiliary-simulator-columns">Auxiliary simulator columns</h3>
+<p>Some exported columns are for diagnostics rather than model training:</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>p_convert</code></td>
+<td>latent simulator probability used to sample conversion</td>
+</tr>
+<tr>
+<td><code>simulation_id</code></td>
+<td>run identifier</td>
+</tr>
+<tr>
+<td><code>round_number</code></td>
+<td>order of interactions within one simulation run</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="baseline-model-framing">Baseline-model framing</h2>
+<p>The current baseline comparison script in <code>campx/ds/baselines.py</code> uses the
+following framing:</p>
+<ul>
+<li>train on logged random-policy interactions</li>
+<li>use observed customer features plus chosen action</li>
+<li>compare policies by holdout <strong>total reward</strong></li>
+</ul>
+<p>Implemented baseline families:</p>
+<table>
+<thead>
+<tr>
+<th>Policy</th>
+<th>What it represents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>random_uniform</code></td>
+<td>no intelligence / control baseline</td>
+</tr>
+<tr>
+<td><code>best_historical_action</code></td>
+<td>one static action for everyone</td>
+</tr>
+<tr>
+<td><code>segment_heuristic</code></td>
+<td>hand-written marketing rules</td>
+</tr>
+<tr>
+<td><code>segment_reward_lookup</code></td>
+<td>segment-level empirical lookup</td>
+</tr>
+<tr>
+<td><code>linear_reward_model</code></td>
+<td>simple contextual supervised baseline</td>
+</tr>
+</tbody>
+</table>
+<p>For these baselines, the effective supervised label is still realized
+<strong>reward</strong>, because that is the quantity aligned with the project goal.</p>
+<hr />
+<h2 id="assumptions-and-limitations">Assumptions and limitations</h2>
+<p>These assumptions are explicit and should be treated as part of the simulator
+contract.</p>
+<h3 id="business-assumptions">Business assumptions</h3>
+<ul>
+<li>retailer is online fashion, men and women, mid-market pricing</li>
+<li>typical product prices are about <code>£15</code> to <code>£120</code></li>
+<li>mean average order value should be near <code>£65</code></li>
+<li>some customers buy seasonally, while strong customers buy year-round</li>
+<li>promotions can increase conversion but may reduce margin</li>
+</ul>
+<h3 id="simulation-assumptions">Simulation assumptions</h3>
+<ul>
+<li>one interaction produces one immediate reward outcome</li>
+<li>action effects are one-step and do not yet model long-term customer fatigue
+  or carryover</li>
+<li>seasonality is present in simulated revenue</li>
+<li>customers are sampled by purchase propensity, not uniformly</li>
+<li>observed features are noisy proxies for latent preferences</li>
+<li>bundle offers should produce higher converted revenue than <code>no_action</code> on
+  average</li>
+</ul>
+<h3 id="modeling-limitations">Modeling limitations</h3>
+<ul>
+<li>the environment is calibrated, not learned from real retailer data</li>
+<li>numeric coefficients are hand-tuned and stored centrally in
+  <code>campx/ds/synthetic/config.py</code></li>
+<li>offline baselines are evaluated in the same synthetic environment that
+  generated the logged data</li>
+<li>current reward is immediate and does not include customer lifetime value</li>
+</ul>
+<hr />
+<h2 id="practical-usage-rules">Practical usage rules</h2>
+<p>When training or evaluating models in this repo:</p>
+<ul>
+<li>use only the 6 observed customer features as the default context vector</li>
+<li>optimize and compare on <code>reward</code></li>
+<li>treat <code>converted</code> as a secondary diagnostic metric</li>
+<li>never train on latent traits or <code>p_convert</code></li>
+<li>report both business metrics and behavior metrics</li>
+<li>total reward</li>
+<li>mean reward</li>
+<li>conversion rate</li>
+<li>action distribution</li>
+</ul>
+<hr />
+<h2 id="source-of-truth">Source of truth</h2>
+<p>This document explains the modeling contract in prose. The exact numeric
+calibration lives in:</p>
+<ul>
+<li><code>campx/ds/synthetic/config.py</code></li>
+<li><code>campx/ds/synthetic/features.py</code></li>
+<li><code>campx/ds/synthetic/simulate.py</code></li>
+<li><code>campx/ds/linucb.py</code></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "toc.integrate", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

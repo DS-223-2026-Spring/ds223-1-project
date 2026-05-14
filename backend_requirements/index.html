@@ -1,0 +1,1295 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="DS 223 Marketing Analytics Group Project — contextual bandit campaign decision support">
+      
+      
+        <meta name="author" content="Group 1, AUA Spring 2026">
+      
+      
+        <link rel="canonical" href="https://ds-223-2026-spring.github.io/ds223-1-project/backend_requirements/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../images/campx_logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Historical Backend Requirements + Planning - CampX — Marketing Campaign Optimization MVP</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#historical-backend-requirements-planning" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="CampX — Marketing Campaign Optimization MVP" class="md-header__button md-logo" aria-label="CampX — Marketing Campaign Optimization MVP" data-md-component="logo">
+      
+  <img src="../images/campx_logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CampX — Marketing Campaign Optimization MVP
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Historical Backend Requirements + Planning
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="lime"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Product Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../demo/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Demo
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../database/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Database
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../modeling/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Data Science
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Backend API
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../app/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Frontend App
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../integration/" class="md-tabs__link">
+          
+  
+  
+  Project Notes
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="CampX — Marketing Campaign Optimization MVP" class="md-nav__button md-logo" aria-label="CampX — Marketing Campaign Optimization MVP" data-md-component="logo">
+      
+  <img src="../images/campx_logo.png" alt="logo">
+
+    </a>
+    CampX — Marketing Campaign Optimization MVP
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Product Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../modeling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Science
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frontend App
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project Notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../git/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git Workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mkdocs_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MkDocs Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../etl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ETL Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ds_data_spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DS Feature & Reward Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="historical-backend-requirements-planning">Historical Backend Requirements + Planning</h1>
+<hr />
+<h2 id="what-this-document-is">What this document is</h2>
+<blockquote>
+<p>This file records the frontend/backend endpoint planning used during M3. It is not the final API contract. The final implemented API behavior is documented in <code>docs/api.md</code> and visible through FastAPI Swagger at <code>/docs</code>.</p>
+<p>Major scope changes after this draft:
+- Dedicated Prefect/orchestration execution was removed from final MVP scope.
+- The final demo path uses the DS batch workflow, PostgreSQL, FastAPI, and Streamlit.
+- <code>/metrics</code>, <code>/model/state</code>, <code>/baselines</code>, and dashboard-facing endpoints were finalized after this draft.</p>
+</blockquote>
+<hr />
+<h2 id="how-the-frontend-talks-to-the-backend">How the frontend talks to the backend</h2>
+<p>The frontend is a Streamlit app running in the <code>front</code> container. The backend is a FastAPI app running in the <code>backend</code> container. They communicate over HTTP inside the Docker network.</p>
+<ul>
+<li>Base URL from inside Docker: <code>http://backend:8000</code></li>
+<li>Base URL from your host machine (for testing in the browser): <code>http://localhost:8000</code></li>
+</ul>
+<p>The frontend reads the base URL from an environment variable called <code>API_URL</code>.</p>
+<p>The actual switch from mock data to real API calls happens in one line in <code>app/bandit_utils.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">USE_MOCKS</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># change to False when endpoints are ready</span>
+</code></pre></div>
+<p>So the goal is to build the endpoints described below, then flip that flag.</p>
+<hr />
+<h3 id="format">Format</h3>
+<p>Everything is JSON. Content type is <code>application/json</code>.</p>
+<h3 id="timestamps">Timestamps</h3>
+<p>Always in ISO 8601 format, UTC, with a <code>Z</code> at the end:</p>
+<div class="highlight"><pre><span></span><code>&quot;2026-04-21T10:15:00Z&quot;
+</code></pre></div>
+<p>Not Unix timestamps. Not local time. The database stores <code>TIMESTAMP</code> without a timezone — the backend is responsible for adding the <code>Z</code> before sending.</p>
+<h3 id="money">Money</h3>
+<p>Return monetary values as plain JSON numbers, with two decimals:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;cumulative_reward&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3214.55</span>
+</code></pre></div>
+<h3 id="percentages-and-rates">Percentages and rates</h3>
+<p>Always floats between 0 and 1, not percentages:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;conversion_rate&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.23</span><span class="w">   </span><span class="c1">// means 23%</span>
+</code></pre></div>
+<p>The frontend converts to <code>23%</code> for display.</p>
+<h3 id="missing-data">Missing data</h3>
+<p>Use JSON <code>null</code>, not <code>0</code>, not an empty string, and don't omit the key. For example, a simulation that is still running has no <code>completed_at</code> yet, so:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;completed_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;cumulative_reward&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>This lets the frontend distinguish "this run hasn't finished" from "this run made zero profit."</p>
+<h3 id="action-names">Action names</h3>
+<p>The five actions are identified by their string keys — same keys used in <code>actions.action_name</code> in the database:</p>
+<div class="highlight"><pre><span></span><code>no_action
+discount_10
+free_shipping
+product_recommendation
+bundle_offer
+</code></pre></div>
+<p>The frontend turns these into display labels like "10% discount" or "Product recommendation" using its own lookup table. The API should only ever return the string key.</p>
+<p>Note: <code>actions.action_id</code> in the database goes from 0 to 4 (see <code>db/3_initial_insert.sql</code>). The API should return the string key, not the number.</p>
+<h3 id="errors">Errors</h3>
+<p>When something goes wrong, return a JSON body with a consistent shape, and the matching HTTP status code:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;not_found&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Simulation 42 does not exist.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">404</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Error slugs the frontend recognizes:</p>
+<table>
+<thead>
+<tr>
+<th>HTTP code</th>
+<th><code>error</code> slug</th>
+<th>When to use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>400</td>
+<td><code>bad_request</code></td>
+<td>Missing or invalid query parameters</td>
+</tr>
+<tr>
+<td>404</td>
+<td><code>not_found</code></td>
+<td>The ID doesn't exist in the database</td>
+</tr>
+<tr>
+<td>409</td>
+<td><code>conflict</code></td>
+<td>Duplicate name, or trying to do something that already happened</td>
+</tr>
+<tr>
+<td>422</td>
+<td><code>validation_error</code></td>
+<td>Request body has the wrong shape</td>
+</tr>
+<tr>
+<td>500</td>
+<td><code>internal_error</code></td>
+<td>Any unhandled exception</td>
+</tr>
+<tr>
+<td>503</td>
+<td><code>service_unavailable</code></td>
+<td>Database is down or unreachable</td>
+</tr>
+</tbody>
+</table>
+<p>These can be discussed and changed if needed.</p>
+<hr />
+<h2 id="the-endpoints">The endpoints</h2>
+<p>Eight endpoints total. Seven are consumed by the frontend. One (<code>POST /feedback</code>) isn't called by the frontend directly but is documented here because it controls the lifecycle of data the frontend does see.</p>
+<h3 id="1-get-simulations">1. GET /simulations</h3>
+<p><strong>Who uses it:</strong> Every page. The simulation selector dropdown appears in the sidebar and needs to list all runs.</p>
+<p><strong>What it does:</strong> Returns a list of all simulations — past and currently running.</p>
+<p><strong>Request:</strong> No parameters. Just <code>GET /simulations</code>.</p>
+<p><strong>Response:</strong> An array of simulation objects, newest first.</p>
+<div class="highlight"><pre><span></span><code><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;simulation_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;sim_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;alpha_0.5_baseline&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;num_rounds&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;num_customers&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;alpha&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;context_dim&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;conversion_window_hours&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">48</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;notes&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;first real run&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;started_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-21T09:00:00Z&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;completed_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-21T10:12:00Z&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;completed&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;cumulative_reward&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3214.55</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;rounds_completed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+<p><strong>Where each field comes from:</strong></p>
+<p>Most fields are just direct SELECTs from the <code>simulations</code> table: <code>simulation_id</code>, <code>sim_name</code>, <code>num_rounds</code>, <code>num_customers</code>, <code>alpha</code>, <code>context_dim</code>, <code>conversion_window_hours</code>, <code>notes</code>, <code>started_at</code>, <code>completed_at</code>.</p>
+<p>Three fields need to be computed:</p>
+<ul>
+<li><code>status</code> — if <code>completed_at IS NOT NULL</code>, return <code>"completed"</code>. Otherwise return <code>"running"</code>.</li>
+<li><code>cumulative_reward</code> — <code>SELECT SUM(reward) FROM interactions WHERE simulation_id = X AND observed_at IS NOT NULL</code>. If the simulation is still running and has no observed rows yet, return <code>null</code>.</li>
+<li><code>rounds_completed</code> — <code>SELECT COUNT(*) FROM interactions WHERE simulation_id = X</code>.</li>
+</ul>
+<p><strong>Tables touched:</strong> <code>simulations</code>, <code>interactions</code>.</p>
+<hr />
+<h3 id="2-post-simulations">2. POST /simulations</h3>
+<p><strong>Who uses it:</strong> The launch form on the Create Simulation page.</p>
+<p><strong>What it does:</strong> Creates a new simulation record and triggers the Prefect flow that runs it.</p>
+<p><strong>Request body:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;sim_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;alpha_0.5_baseline&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;num_rounds&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;num_customers&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;alpha&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;notes&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;first real run&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Validation rules:</strong></p>
+<ul>
+<li><code>sim_name</code> — required string, 1–100 chars, must be unique across all simulations</li>
+<li><code>num_rounds</code> — required integer, 100 to 50000</li>
+<li><code>num_customers</code> — required integer, 50 to 10000</li>
+<li><code>alpha</code> — required float, 0.0 to 2.0</li>
+<li><code>notes</code> — optional string, up to 500 chars</li>
+</ul>
+<p>If anything fails validation, return 422 with <code>error: "validation_error"</code>. If the name is a duplicate, return 409 with <code>error: "conflict"</code>.</p>
+<p><strong>Response (HTTP 201):</strong></p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;simulation_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;sim_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;alpha_0.5_baseline&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;queued&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;started_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-21T11:30:00Z&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>What the backend needs to do:</strong></p>
+<ol>
+<li>Insert a row into <code>simulations</code> with <code>completed_at = NULL</code> and <code>started_at = now()</code>.</li>
+<li>Trigger the Prefect <code>decision_loop_flow</code> for the new <code>simulation_id</code>, asynchronously.</li>
+<li>Return 201 immediately, without waiting for the simulation to finish.</li>
+</ol>
+<p><strong>Current implementation note:</strong> the backend route now exists as <code>POST /simulations</code> and enforces the validation rules above, but it currently creates the simulation record only. Orchestration-triggered execution is still a follow-up integration step.</p>
+<p><strong>Tables touched:</strong> <code>simulations</code>.</p>
+<hr />
+<h3 id="3-get-metrics">3. GET /metrics</h3>
+<p><strong>Who uses it:</strong> Interaction page and Analytics page. This is the heaviest endpoint — it feeds every chart on both pages.</p>
+<p><strong>What it does:</strong> Returns all the aggregated numbers for one simulation in a single response. Bundling everything into one endpoint keeps the dashboard fast and avoids sending 6 requests per page load.</p>
+<p><strong>Request:</strong> <code>GET /metrics?simulation_id=3</code></p>
+<p>If <code>simulation_id</code> is missing, return 400. If it doesn't exist, return 404.</p>
+<p><strong>Response:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;simulation_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;running&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;rounds_completed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">847</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;cumulative_reward&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3214.55</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;avg_reward_per_round&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.79</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;pending_observations&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">22</span><span class="p">,</span>
+
+<span class="w">  </span><span class="nt">&quot;cumulative_reward_series&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;round&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">   </span><span class="nt">&quot;linucb&quot;</span><span class="p">:</span><span class="w">   </span><span class="mf">2.4</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;random&quot;</span><span class="p">:</span><span class="w">   </span><span class="mf">1.1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;heuristic&quot;</span><span class="p">:</span><span class="w">   </span><span class="mf">1.8</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;round&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;linucb&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">340.2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;random&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">180.5</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;heuristic&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">255.1</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+
+<span class="w">  </span><span class="nt">&quot;action_distribution&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;round&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;discount_10&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;round&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;free_shipping&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+
+<span class="w">  </span><span class="nt">&quot;conversion_by_action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;no_action&quot;</span><span class="p">,</span><span class="w">              </span><span class="nt">&quot;conversion_rate&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.28</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;n_pulls&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">110</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;discount_10&quot;</span><span class="p">,</span><span class="w">            </span><span class="nt">&quot;conversion_rate&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.23</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;n_pulls&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">340</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;free_shipping&quot;</span><span class="p">,</span><span class="w">          </span><span class="nt">&quot;conversion_rate&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.18</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;n_pulls&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">180</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;product_recommendation&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;conversion_rate&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.31</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;n_pulls&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">250</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bundle_offer&quot;</span><span class="p">,</span><span class="w">           </span><span class="nt">&quot;conversion_rate&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.21</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;n_pulls&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+
+<span class="w">  </span><span class="nt">&quot;recent_interactions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;interaction_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10001</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;customer_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;discount_10&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;converted&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;revenue&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">72.50</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;reward&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">66.00</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;decision_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-21T10:15:00Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;observed_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-21T10:15:03Z&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>How to compute each field:</strong></p>
+<p>Top-level counters:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- rounds_completed</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">interactions</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">simulation_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">:</span><span class="n">id</span><span class="p">;</span>
+
+<span class="c1">-- cumulative_reward</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">reward</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">interactions</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">simulation_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">:</span><span class="n">id</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">observed_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
+
+<span class="c1">-- avg_reward_per_round</span>
+<span class="c1">-- just cumulative_reward / rounds_completed in Python (handle divide-by-zero)</span>
+
+<span class="c1">-- pending_observations</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">interactions</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">simulation_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">:</span><span class="n">id</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">observed_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
+</code></pre></div>
+<p>The three arrays:</p>
+<ul>
+<li><code>cumulative_reward_series</code> — running sum of <code>reward</code> over <code>round_number</code>, one column per policy. See the section below on baselines.</li>
+<li><code>action_distribution</code> — one row per interaction: just <code>round_number</code> and the action name. The frontend aggregates client-side.</li>
+<li><code>conversion_by_action</code> — grouped by action, showing the conversion rate and total pull count for each. Conversion rate is the average of <code>converted</code> (treated as 0/1), computed only on rows where <code>observed_at IS NOT NULL</code>. <code>n_pulls</code> is the total regardless.</li>
+<li><code>recent_interactions</code> — the last 20 rows by <code>decision_at</code> descending. Pending rows (where <code>observed_at IS NULL</code>) are included too — <code>converted</code>, <code>revenue</code>, <code>reward</code> will just be null for those.</li>
+</ul>
+<p><strong>Performance tip:</strong> at 5000 rounds with 3 policies, <code>cumulative_reward_series</code> has 15000 points. If the response gets too big, we can add a <code>?sample_rate=10</code> parameter to return every 10th point. Not urgent for now.</p>
+<p><strong>Tables touched:</strong> <code>interactions</code>, <code>actions</code>, <code>simulations</code>.</p>
+<hr />
+<h3 id="4-get-customers">4. GET /customers</h3>
+<p><strong>Who uses it:</strong> Optional Customer Explorer page — not strictly required for M3 but the mocks are ready if you have time.</p>
+<p><strong>What it does:</strong> Returns the full list of customers with their RFM features.</p>
+<p><strong>Request:</strong> <code>GET /customers</code></p>
+<p><strong>Response:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;customer_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;segment_label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Champion&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;gender&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;F&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;recency&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">12.3</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;frequency&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">8.0</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;monetary&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">452.10</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;basket_diversity&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">4.2</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;avg_order_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;purchase_regularity&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">14.5</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+<p>Every field comes straight from the <code>customers</code> table. Filtering is done client-side in the frontend — no need to add query parameters.</p>
+<p>Reminder: per <code>db/1_schema.sql</code>, <code>segment_label</code> is always one of <code>"Champion"</code>, <code>"Loyal"</code>, <code>"At-Risk"</code>, <code>"Lost"</code> and <code>gender</code> is always <code>"M"</code> or <code>"F"</code>.</p>
+<p><strong>Tables touched:</strong> <code>customers</code>.</p>
+<hr />
+<h3 id="5-get-customerscustomer_id">5. GET /customers/{customer_id}</h3>
+<p><strong>Who uses it:</strong> Optional — the detail panel on the Customer Explorer page.</p>
+<p><strong>What it does:</strong> Returns one customer's profile, their interaction history, and (optionally, for debugging) their latent traits.</p>
+<p><strong>Request:</strong> <code>GET /customers/42</code> or <code>GET /customers/42?debug=true</code></p>
+<p><strong>Response:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;customer_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;segment_label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Champion&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;gender&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;F&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;rfm&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;recency&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">12.3</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;frequency&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">8.0</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;monetary&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">452.10</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;basket_diversity&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">4.2</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;avg_order_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;purchase_regularity&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">14.5</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;interactions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;interaction_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10001</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;simulation_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;discount_10&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;converted&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;revenue&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">72.50</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;reward&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">66.00</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;decision_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-21T10:15:00Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;observed_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-21T10:15:03Z&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;latents&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;z_price_sensitivity&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.72</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;z_brand_loyalty&quot;</span><span class="p">:</span><span class="w">     </span><span class="mf">0.44</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;z_impulse_tendency&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.12</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Important:</strong> the <code>latents</code> object is only included when <code>?debug=true</code> is passed. Otherwise, don't include the <code>latents</code> key at all (not even as null). This protects the project's core assumption that LinUCB never observes latent traits — it only sees RFM features. The debug view is for instructor demos only.</p>
+<p><strong>Tables touched:</strong> <code>customers</code>, <code>interactions</code>, <code>actions</code>, <code>customer_latents</code> (only if <code>debug=true</code>).</p>
+<hr />
+<h3 id="6-get-modelstate">6. GET /model/state</h3>
+<p><strong>Who uses it:</strong> The Model page.</p>
+<p><strong>What it does:</strong> Returns the current state of LinUCB — the θ vectors it has learned, how many times each action has been pulled, and the alpha used.</p>
+<p><strong>Request:</strong> <code>GET /model/state?simulation_id=3</code></p>
+<p><strong>Response:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;simulation_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;alpha&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;round_number&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">847</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;updated_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-21T10:15:03Z&quot;</span><span class="p">,</span>
+
+<span class="w">  </span><span class="nt">&quot;n_pulls&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;no_action&quot;</span><span class="p">:</span><span class="w">              </span><span class="mi">110</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;discount_10&quot;</span><span class="p">:</span><span class="w">            </span><span class="mi">340</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;free_shipping&quot;</span><span class="p">:</span><span class="w">          </span><span class="mi">180</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;product_recommendation&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">250</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;bundle_offer&quot;</span><span class="p">:</span><span class="w">           </span><span class="mi">120</span>
+<span class="w">  </span><span class="p">},</span>
+
+<span class="w">  </span><span class="nt">&quot;theta&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;recency&quot;</span><span class="p">:</span><span class="w">             </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;no_action&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.12</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;discount_10&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">-0.33</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;free_shipping&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.05</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;product_recommendation&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.21</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;bundle_offer&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">-0.08</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;frequency&quot;</span><span class="p">:</span><span class="w">           </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;no_action&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.45</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;discount_10&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">-0.10</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;free_shipping&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.15</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;product_recommendation&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.60</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;bundle_offer&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.22</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;monetary&quot;</span><span class="p">:</span><span class="w">            </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;no_action&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.30</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;discount_10&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.05</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;free_shipping&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.25</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;product_recommendation&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.40</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;bundle_offer&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.18</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;basket_diversity&quot;</span><span class="p">:</span><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;no_action&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.08</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;discount_10&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.02</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;free_shipping&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.12</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;product_recommendation&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.18</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;bundle_offer&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.55</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;avg_order_size&quot;</span><span class="p">:</span><span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;no_action&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.15</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;discount_10&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.10</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;free_shipping&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.30</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;product_recommendation&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.20</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;bundle_offer&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.42</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;purchase_regularity&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;no_action&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.22</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;discount_10&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">-0.05</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;free_shipping&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.18</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;product_recommendation&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.35</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;bundle_offer&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.10</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Important shape rule:</strong> <code>theta</code> must be exactly 6 feature rows by 5 action columns. The frontend heatmap expects this exact shape and will break if any row or column is missing. The order of features should follow what's in <code>bandit_utils.RFM_FEATURES</code>:</p>
+<div class="highlight"><pre><span></span><code>recency, frequency, monetary, basket_diversity, avg_order_size, purchase_regularity
+</code></pre></div>
+<p><strong>Current implementation note:</strong> the backend now serves this route, but the current implementation reconstructs model state from observed interactions in the database and the stored action metadata. It does not rely only on reading a fully prebuilt DS-side snapshot.</p>
+<p><strong>The theta_vector bytea column:</strong> when persisted in <code>model_state</code>, it is stored as raw numpy bytes. To deserialize, do:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">frombuffer</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;theta_vector&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;&lt;f8&quot;</span><span class="p">)</span>
+<span class="c1"># theta is now a length-6 numpy array in the feature order above</span>
+</code></pre></div>
+<p>If the DS team is using a different dtype or byte order, this bit needs to change. Worth confirming with Davit before you wire this up.</p>
+<p><strong>Tables touched:</strong> <code>simulations</code>, <code>customers</code>, <code>actions</code>, <code>interactions</code>, and <code>model_state</code> for persisted snapshots.</p>
+<hr />
+<h3 id="7-post-decide">7. POST /decide</h3>
+<p><strong>Who uses it:</strong> The Model page uses it in "preview" mode — the user picks a customer, hits the button, and the page shows them what LinUCB would choose and why. In production, this endpoint also drives the actual simulation loop.</p>
+<p><strong>What it does:</strong> Computes UCB scores for a given customer across all 5 actions. If <code>preview=true</code>, it just returns the scores. If <code>preview=false</code>, it also writes a new row to <code>interactions</code> for the chosen action.</p>
+<p><strong>Request:</strong> <code>POST /decide?customer_id=42&amp;simulation_id=3&amp;preview=true</code></p>
+<p><strong>Response in preview mode (<code>preview=true</code>):</strong> an array of 5 objects, sorted by <code>ucb_score</code> descending (best action first):</p>
+<div class="highlight"><pre><span></span><code><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;discount_10&quot;</span><span class="p">,</span><span class="w">            </span><span class="nt">&quot;exploit&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">2.1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;explore&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.9</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;ucb_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.0</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;cost&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">6.50</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bundle_offer&quot;</span><span class="p">,</span><span class="w">           </span><span class="nt">&quot;exploit&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.8</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;explore&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;ucb_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">2.9</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;cost&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">9.00</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;product_recommendation&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;exploit&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.5</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;explore&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;ucb_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">2.7</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;cost&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.30</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;free_shipping&quot;</span><span class="p">,</span><span class="w">          </span><span class="nt">&quot;exploit&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;explore&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;ucb_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">2.2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;cost&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">4.99</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;no_action&quot;</span><span class="p">,</span><span class="w">              </span><span class="nt">&quot;exploit&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;explore&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.5</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;ucb_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">2.0</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;cost&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.00</span><span class="w"> </span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+<p><strong>What the fields mean:</strong></p>
+<ul>
+<li><code>exploit</code> is <code>θₐᵀ · x</code> — the learned estimate of expected reward for this customer and this action</li>
+<li><code>explore</code> is <code>α · √(xᵀ · Aₐ⁻¹ · x)</code> — the UCB bonus, bigger when uncertain, shrinks as the action gets pulled more</li>
+<li><code>ucb_score</code> is just <code>exploit + explore</code> — the value LinUCB ranks on</li>
+<li><code>cost</code> is the static cost from the <code>actions</code> table (included so the frontend doesn't need a separate lookup)</li>
+</ul>
+<p><strong>Preview vs. production mode:</strong></p>
+<ul>
+<li><code>preview=true</code>: just compute and return. Don't modify any table. Used on the Model page.</li>
+<li><code>preview=false</code> (the default): compute, pick the highest-scoring action, insert a row into <code>interactions</code> with <code>decision_at = now()</code> and <code>observed_at = NULL</code>, then return:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;interaction_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10001</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;recommended_action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;discount_10&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;scores&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;discount_10&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;exploit&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">2.1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;explore&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.9</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;ucb_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.0</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;cost&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">6.50</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>This is the shape used by the current backend implementation.</p>
+<p><strong>Current implementation note:</strong> the backend now supports both preview and live behavior. The current scoring path reconstructs LinUCB-style state from observed interactions already stored in the database.</p>
+<p><strong>Tables touched:</strong></p>
+<ul>
+<li><code>customers</code> (to read the context vector)</li>
+<li><code>actions</code> (for costs)</li>
+<li><code>interactions</code> (to reconstruct learned state and to INSERT in non-preview mode)</li>
+<li><code>model_state</code> (persisted via <code>/feedback</code>, not required for preview reads in the current implementation)</li>
+</ul>
+<hr />
+<h3 id="8-post-feedback">8. POST /feedback</h3>
+<p><strong>Who uses it:</strong> Nobody on the frontend. This is called by the Prefect <code>observe_outcomes_flow</code> when an interaction's conversion window closes.</p>
+<p><strong>Why it's documented here:</strong> the frontend's <code>pending_observations</code> counter and the 3-timestamp lifecycle in <code>interactions</code> both depend on this endpoint working correctly. So it's worth having it all in one place.</p>
+<p><strong>Request body:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;interaction_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10001</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;converted&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;revenue&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">72.50</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;converted_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-21T10:15:02Z&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Response:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;interaction_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10001</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;reward&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">66.00</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;observed_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-21T10:15:03Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model_updated&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>What the backend does:</strong></p>
+<ol>
+<li>UPDATE the <code>interactions</code> row: set <code>converted</code>, <code>revenue</code>, <code>converted_at</code>, and <code>observed_at = now()</code>.</li>
+<li>Compute <code>reward = revenue - cost</code> and save it.</li>
+<li>Run the LinUCB update for that action's arm: <code>Aₐ += xxᵀ</code>, <code>bₐ += r·x</code>, then <code>θₐ = Aₐ⁻¹bₐ</code>.</li>
+<li>UPSERT the new state into <code>model_state</code> for that <code>(simulation_id, action_id)</code> pair, incrementing <code>round_number</code> and <code>n_pulls</code>.</li>
+</ol>
+<p>If someone calls <code>/feedback</code> twice for the same <code>interaction_id</code>, return 409 with <code>error: "conflict"</code> — the second call shouldn't be allowed to overwrite the first.</p>
+<p><strong>Tables touched:</strong> <code>interactions</code> (UPDATE), <code>model_state</code> (UPSERT).</p>
+<hr />
+<h2 id="how-the-data-flows-through-interactions">How the data flows through <code>interactions</code></h2>
+<p>Every interaction row goes through three stages, marked by three timestamps:</p>
+<div class="highlight"><pre><span></span><code>decision_at    — set when the row is first inserted (by POST /decide or
+                 the decision_loop_flow). The action has been assigned
+                 but no outcome is known yet.
+
+   ... wait conversion_window_hours (default 48) ...
+
+converted_at   — set when the customer actually buys (or the window closes
+                 without a conversion). Can be NULL if no purchase happened.
+observed_at    — set at the same time. Means the outcome is now known and
+                 the model has been updated.
+</code></pre></div>
+<p>Until <code>observed_at</code> is filled in, the columns <code>converted</code>, <code>revenue</code>, <code>reward</code>, and <code>converted_at</code> are all <code>NULL</code>. The schema enforces this with a CHECK constraint:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">observed_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="n">converted</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">)</span>
+</code></pre></div>
+<p>When writing <code>/metrics</code> queries, the canonical filter for "this counts toward cumulative reward" is <code>observed_at IS NOT NULL</code>. The <code>pending_observations</code> counter is the opposite: <code>observed_at IS NULL</code>.</p>
+<hr />
+<h2 id="tables-and-columns-the-frontend-uses">Tables and columns the frontend uses</h2>
+<p>Quick reference — the columns each endpoint actually reads:</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Columns</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>simulations</code></td>
+<td><code>simulation_id</code>, <code>sim_name</code>, <code>num_rounds</code>, <code>num_customers</code>, <code>alpha</code>, <code>context_dim</code>, <code>conversion_window_hours</code>, <code>notes</code>, <code>started_at</code>, <code>completed_at</code></td>
+<td>/simulations, /metrics</td>
+</tr>
+<tr>
+<td><code>customers</code></td>
+<td><code>customer_id</code>, <code>gender</code>, <code>segment_label</code>, all 6 RFM columns</td>
+<td>/customers, /customers/{id}</td>
+</tr>
+<tr>
+<td><code>customer_latents</code></td>
+<td><code>z_price_sensitivity</code>, <code>z_brand_loyalty</code>, <code>z_impulse_tendency</code></td>
+<td>/customers/{id}?debug=true only</td>
+</tr>
+<tr>
+<td><code>actions</code></td>
+<td><code>action_id</code>, <code>action_name</code>, <code>action_cost</code></td>
+<td>/metrics, /model/state, /decide</td>
+</tr>
+<tr>
+<td><code>interactions</code></td>
+<td><code>interaction_id</code>, <code>customer_id</code>, <code>action_id</code>, <code>simulation_id</code>, <code>round_number</code>, <code>context_vector</code>, <code>converted</code>, <code>revenue</code>, <code>cost</code>, <code>reward</code>, <code>decision_at</code>, <code>observed_at</code></td>
+<td>/metrics, /customers/{id}, /model/state, /decide</td>
+</tr>
+<tr>
+<td><code>model_state</code></td>
+<td><code>simulation_id</code>, <code>action_id</code>, <code>theta_vector</code>, <code>n_pulls</code>, <code>alpha</code>, <code>updated_at</code>, <code>round_number</code></td>
+<td>persisted by /feedback; available for model-state storage and later reuse</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "toc.integrate", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

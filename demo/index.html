@@ -1,0 +1,1251 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="DS 223 Marketing Analytics Group Project — contextual bandit campaign decision support">
+      
+      
+        <meta name="author" content="Group 1, AUA Spring 2026">
+      
+      
+        <link rel="canonical" href="https://ds-223-2026-spring.github.io/ds223-1-project/demo/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../database/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../images/campx_logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Demo - CampX — Marketing Campaign Optimization MVP</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ds223-marketing-analytics-group-project-demo" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="CampX — Marketing Campaign Optimization MVP" class="md-header__button md-logo" aria-label="CampX — Marketing Campaign Optimization MVP" data-md-component="logo">
+      
+  <img src="../images/campx_logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CampX — Marketing Campaign Optimization MVP
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Demo
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="lime"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Product Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Demo
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../database/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Database
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../modeling/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Data Science
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Backend API
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../app/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Frontend App
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../integration/" class="md-tabs__link">
+          
+  
+  
+  Project Notes
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="CampX — Marketing Campaign Optimization MVP" class="md-nav__button md-logo" aria-label="CampX — Marketing Campaign Optimization MVP" data-md-component="logo">
+      
+  <img src="../images/campx_logo.png" alt="logo">
+
+    </a>
+    CampX — Marketing Campaign Optimization MVP
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Product Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Demo
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#product-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Product Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#problem-definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem Definition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solution-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solution Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Solution Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#microservice-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Microservice Components
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#live-demo-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Live Demo Flow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Live Demo Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-product-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Product Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-frontend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Frontend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Database
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#erd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ERD
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#final-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Final Notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../modeling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Science
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frontend App
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project Notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../git/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git Workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mkdocs_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MkDocs Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../etl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ETL Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ds_data_spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DS Feature & Reward Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="ds223-marketing-analytics-group-project-demo">DS223 Marketing Analytics — Group Project Demo</h1>
+<h2 id="product-overview">Product Overview</h2>
+<p><strong>Product Name:</strong> CampX<br />
+<strong>Course:</strong> DS223 Marketing Analytics — Group Project<br />
+<strong>Project Type:</strong> Marketing Analytics MVP</p>
+<p>CampX is a promotional campaign decision-support MVP. It helps illustrate how a marketing team could use customer behavior data to choose among different promotional action types and track the resulting campaign value.</p>
+<p>In this project, each synthetic retail customer has RFM-style features such as recency, frequency, monetary value, basket diversity, average order size, and purchase regularity. Based on those features, CampX evaluates five possible promotional actions: no action, 10% discount, free shipping, product recommendation, and bundle offer.</p>
+<p>The system is built as an end-to-end microservice application: a Python data science workflow generates synthetic campaign data and LinUCB model outputs, PostgreSQL stores the results, FastAPI exposes the backend contract, and Streamlit presents the dashboard. The project uses synthetic data, so the goal is to demonstrate architecture, integration, and decision-support logic rather than claim validated business lift on real customers.</p>
+<hr />
+<h2 id="problem-definition">Problem Definition</h2>
+<p>Marketing teams often need to decide which offer or promotional action should be shown to each customer. Sending the same discount to everyone can waste budget, reduce margins, and ignore differences in customer behavior.</p>
+<p>Different customer profiles may respond differently:</p>
+<ul>
+<li>Some customers may need a discount.</li>
+<li>Some may respond to free shipping.</li>
+<li>Some may engage with a recommendation or bundle.</li>
+<li>Some may convert without any promotion.</li>
+</ul>
+<p>CampX frames this as a campaign optimization problem: use customer context to select a promotional action type and evaluate the result using simulated revenue minus promotional cost.</p>
+<hr />
+<h2 id="solution-architecture">Solution Architecture</h2>
+<p>CampX is implemented as a containerized microservice-style project.</p>
+<h3 id="microservice-components">Microservice Components</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Technology</th>
+<th>Role in the MVP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Frontend</td>
+<td>Streamlit</td>
+<td>User-facing dashboard for campaign setup, live decisions, performance, model behavior, and customers</td>
+</tr>
+<tr>
+<td>Backend</td>
+<td>FastAPI</td>
+<td>API layer exposing application logic, campaign metrics, customers, actions, model state, and baselines</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>PostgreSQL</td>
+<td>Storage for customers, actions, simulations, interactions, model state, and artifacts</td>
+</tr>
+<tr>
+<td>Data Science</td>
+<td>Python</td>
+<td>Synthetic data generation, LinUCB-style contextual bandit logic, baselines, and reproducibility outputs</td>
+</tr>
+<tr>
+<td>Documentation</td>
+<td>MkDocs</td>
+<td>Project documentation, architecture notes, API overview, and module-specific explanations</td>
+</tr>
+</tbody>
+</table>
+<h3 id="data-flow">Data Flow</h3>
+<div class="highlight"><pre><span></span><code>Data Science pipeline → PostgreSQL → FastAPI → Streamlit dashboard
+</code></pre></div>
+<p>The DS pipeline creates synthetic customer profiles, campaign interactions, model state, and output artifacts. PostgreSQL stores these outputs. FastAPI exposes them through documented endpoints. Streamlit consumes the API responses and presents the campaign workflow to the user.</p>
+<hr />
+<h2 id="live-demo-flow">Live Demo Flow</h2>
+<h3 id="1-product-overview">1. Product Overview</h3>
+<p>CampX addresses a common marketing decision: which promotional action should be shown to which customer. A single blanket discount can be wasteful because customers differ in purchase history, price sensitivity, loyalty, and likely response to incentives.</p>
+<p>The MVP focuses on <strong>promotional action-type selection</strong>. Given synthetic retail customer profiles with RFM-style features, CampX evaluates five possible actions: no action, 10% discount, free shipping, product recommendation, and bundle offer. The outcome is measured as simulated net campaign value:</p>
+<div class="highlight"><pre><span></span><code>reward = simulated realized revenue - promotional action cost
+
+The system is implemented as a runnable microservice MVP. The Python DS workflow generates synthetic customers, LinUCB campaign interactions, model state, baselines, and artifacts. PostgreSQL stores the campaign data. FastAPI exposes the data and decision endpoints. Streamlit presents the campaign dashboard. MkDocs documents the product, architecture, API, database, and modeling assumptions.
+</code></pre></div>
+<hr />
+<h3 id="2-frontend">2. Frontend</h3>
+<p>The Streamlit frontend presents the product experience.</p>
+<p><img alt="CampX streamlit landing page" src="../images/campx_home.png" /> </p>
+<p><a href="http://localhost:8501">http://localhost:8501</a></p>
+<p>Main pages:</p>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Home</td>
+<td>Product overview and service summary</td>
+</tr>
+<tr>
+<td>Campaign Setup</td>
+<td>Campaign-run configuration and existing run selection</td>
+</tr>
+<tr>
+<td>Live Decisions</td>
+<td>Round-level campaign decisions and recent interactions</td>
+</tr>
+<tr>
+<td>Performance</td>
+<td>Cumulative campaign value, baseline comparison, action distribution, conversion, reward, and segment performance</td>
+</tr>
+<tr>
+<td>Decision Logic</td>
+<td>Model-state inspection and action-score breakdown</td>
+</tr>
+<tr>
+<td>Customers</td>
+<td>Customer profiles, RFM-style features, segments, and interaction history</td>
+</tr>
+</tbody>
+</table>
+<p>The frontend is intended to make the system understandable to a marketing analyst rather than only to a developer.</p>
+<hr />
+<h3 id="3-backend">3. Backend</h3>
+<p>The FastAPI backend acts as the contract layer between the frontend, database, and data science outputs.</p>
+<p><a href="http://localhost:8000/docs">http://localhost:8000/docs</a></p>
+<p>Representative endpoints:</p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /health</code></td>
+<td>Confirms backend availability</td>
+</tr>
+<tr>
+<td><code>GET /actions</code></td>
+<td>Returns the promotional action definitions</td>
+</tr>
+<tr>
+<td><code>GET /customers</code></td>
+<td>Returns synthetic customer profiles</td>
+</tr>
+<tr>
+<td><code>GET /simulations</code></td>
+<td>Lists campaign runs</td>
+</tr>
+<tr>
+<td><code>GET /metrics</code></td>
+<td>Provides dashboard-ready campaign metrics</td>
+</tr>
+<tr>
+<td><code>GET /model/state</code></td>
+<td>Provides model-state information for decision logic</td>
+</tr>
+<tr>
+<td><code>POST /decide</code></td>
+<td>Returns an action recommendation or preview for a customer</td>
+</tr>
+<tr>
+<td><code>GET /baselines</code></td>
+<td>Returns baseline comparison data</td>
+</tr>
+<tr>
+<td><code>POST /simulations/{simulation_id}/step</code></td>
+<td>Advances one campaign decision step for incremental simulation</td>
+</tr>
+</tbody>
+</table>
+<p>The backend exposes Swagger documentation through FastAPI and provides a clear request-response interface for the frontend.</p>
+<hr />
+<h3 id="4-database">4. Database</h3>
+<p>PostgreSQL stores the core entities used by the MVP.</p>
+<p>Main database objects:</p>
+<table>
+<thead>
+<tr>
+<th>Object</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>customers</code></td>
+<td>Synthetic customer profile features</td>
+</tr>
+<tr>
+<td><code>customer_latents</code></td>
+<td>Simulation-only hidden variables used for synthetic outcome generation</td>
+</tr>
+<tr>
+<td><code>actions</code></td>
+<td>Promotional action definitions and costs</td>
+</tr>
+<tr>
+<td><code>simulations</code></td>
+<td>Campaign-run metadata</td>
+</tr>
+<tr>
+<td><code>interactions</code></td>
+<td>Round-level decisions, conversions, revenue, costs, and rewards</td>
+</tr>
+<tr>
+<td><code>model_state</code></td>
+<td>Stored model-state outputs</td>
+</tr>
+<tr>
+<td><code>simulation_artifacts</code></td>
+<td>Data science artifacts and output references</td>
+</tr>
+</tbody>
+</table>
+<p>The database supports the full path from generated customer data to dashboard metrics.</p>
+<h3 id="erd">ERD</h3>
+<p><img alt="CampX database schema" src="../images/campx_erd.png" /></p>
+<hr />
+<h3 id="5-documentation">5. Documentation</h3>
+<p>MkDocs is used to document the project structure, service responsibilities, data model, API contract, data science pipeline, and demo flow.</p>
+<p>Documentation sections include:</p>
+<ul>
+<li>Product overview</li>
+<li>Backend API</li>
+<li>Database</li>
+<li>Data science/modeling</li>
+<li>Frontend app</li>
+<li>Integration map</li>
+<li>Docker/local run notes</li>
+<li>Demo overview</li>
+</ul>
+<p><a href="https://ds-223-2026-spring.github.io/ds223-1-project/">https://ds-223-2026-spring.github.io/ds223-1-project/</a></p>
+<p>The deployed documentation provides a central reference for understanding both the product concept and the implementation.</p>
+<hr />
+<h2 id="final-notes">Final Notes</h2>
+<p>CampX is a course MVP. Its value is in demonstrating a working, integrated marketing analytics system rather than claiming production readiness.</p>
+<p>Important scope boundaries:</p>
+<ul>
+<li>Data is synthetic retail-style data.</li>
+<li>Reward is simulated revenue minus promotional action cost.</li>
+<li>The model selects promotional action types, not exact product SKUs or exact bundles.</li>
+<li>Product and bundle tables are included as catalog scaffolding for future item-level personalization.</li>
+<li>Dedicated workflow scheduling is out of final MVP scope.</li>
+<li>The current system is intended for demo and educational purposes, not real campaign deployment.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "toc.integrate", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

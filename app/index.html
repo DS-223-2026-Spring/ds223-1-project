@@ -1,0 +1,1386 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="DS 223 Marketing Analytics Group Project — contextual bandit campaign decision support">
+      
+      
+        <meta name="author" content="Group 1, AUA Spring 2026">
+      
+      
+        <link rel="canonical" href="https://ds-223-2026-spring.github.io/ds223-1-project/app/">
+      
+      
+        <link rel="prev" href="../api/">
+      
+      
+        <link rel="next" href="../integration/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../images/campx_logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Frontend App - CampX — Marketing Campaign Optimization MVP</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#frontend-app-streamlit" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="CampX — Marketing Campaign Optimization MVP" class="md-header__button md-logo" aria-label="CampX — Marketing Campaign Optimization MVP" data-md-component="logo">
+      
+  <img src="../images/campx_logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CampX — Marketing Campaign Optimization MVP
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Frontend App
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="lime"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Product Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../demo/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Demo
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../database/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Database
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../modeling/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Data Science
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Backend API
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Frontend App
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../integration/" class="md-tabs__link">
+          
+  
+  
+  Project Notes
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="CampX — Marketing Campaign Optimization MVP" class="md-nav__button md-logo" aria-label="CampX — Marketing Campaign Optimization MVP" data-md-component="logo">
+      
+  <img src="../images/campx_logo.png" alt="logo">
+
+    </a>
+    CampX — Marketing Campaign Optimization MVP
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Product Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../modeling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Science
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frontend App
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frontend App
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design Notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#frontend-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Frontend Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Frontend Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bandit_utilspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bandit_utils.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#campx.app.bandit_utils" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bandit_utils
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#campx.app.bandit_utils.APIError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        APIError
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#campx.app.bandit_utils.render_sidebar_and_css" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        render_sidebar_and_css
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project Notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../git/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git Workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mkdocs_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MkDocs Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../etl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ETL Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ds_data_spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DS Feature & Reward Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="frontend-app-streamlit">Frontend App — Streamlit</h1>
+<h2 id="overview">Overview</h2>
+<p>The CampX frontend is a Streamlit multi-page app that connects to the FastAPI backend and provides an interactive dashboard for campaign management and analysis.</p>
+<p><img alt="CampX streamlit landing page" src="../images/campx_home.png" /> </p>
+<p>App URL (local):</p>
+<div class="highlight"><pre><span></span><code>http://localhost:8501
+</code></pre></div>
+<h2 id="pages">Pages</h2>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Home</td>
+<td><code>app.py</code></td>
+<td>Product overview, navigation, and key metrics summary</td>
+</tr>
+<tr>
+<td>Campaign Setup</td>
+<td><code>pages/1_create_simulation.py</code></td>
+<td>Configure and launch a new campaign run; review existing runs</td>
+</tr>
+<tr>
+<td>Live Decisions</td>
+<td><code>pages/2_interaction.py</code></td>
+<td>Monitor reward per round and action selection over time</td>
+</tr>
+<tr>
+<td>Performance</td>
+<td><code>pages/3_analytics.py</code></td>
+<td>Cumulative campaign value, policy summary, action distribution, conversion by action, segment performance</td>
+</tr>
+<tr>
+<td>Decision Logic</td>
+<td><code>pages/4_model.py</code></td>
+<td>Inspect learned LinUCB weights, promotion selection volume, and per-customer action score breakdown</td>
+</tr>
+<tr>
+<td>Customers</td>
+<td><code>pages/5_customers.py</code></td>
+<td>Browse and filter customer profiles by segment and RFM features; view interaction history</td>
+</tr>
+</tbody>
+</table>
+<h2 id="design-notes">Design Notes</h2>
+<ul>
+<li>All pages use a shared <code>bandit_utils.py</code> helper module for API calls, formatting, and UI components.</li>
+<li>Navigation is rendered as a tab bar at the top of every page.</li>
+<li>Charts use native Streamlit components (<code>st.line_chart</code>, <code>st.bar_chart</code>, <code>st.area_chart</code>, <code>st.dataframe</code>).</li>
+<li>The sidebar campaign run selector is shared across Performance, Live Decisions, Decision Logic, and Customers.</li>
+<li>The DS container runs as a batch job and exits with code 0 after persisting data. The frontend does not depend on it being running.</li>
+</ul>
+<h2 id="frontend-reference">Frontend Reference</h2>
+<h3 id="bandit_utilspy"><code>bandit_utils.py</code></h3>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<a id="campx.app.bandit_utils"></a>
+    <div class="doc doc-contents first">
+
+        <p>bandit_utils.py — shared API client, theme constants, product copy, and formatters.</p>
+<p>Owner: Armine Babajanyan (frontend branch)</p>
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="campx.app.bandit_utils.APIError" class="doc doc-heading">
+            <code>APIError</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="RuntimeError">RuntimeError</span></code></p>
+
+
+
+        <p>Raised when the backend returns a non-2xx response or is unreachable.</p>
+
+
+
+
+
+
+
+
+              <details class="mkdocstrings-source">
+                <summary>Source code in <code>campx/app/bandit_utils.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">APIError</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when the backend returns a non-2xx response or is unreachable.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">status_code</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
+</code></pre></div></td></tr></table></div>
+              </details>
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="campx.app.bandit_utils.render_sidebar_and_css" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">render_sidebar_and_css</span><span class="p">()</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Render global sidebar and inject product-grade CSS.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>campx/app/bandit_utils.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span>
+<span class="normal">351</span>
+<span class="normal">352</span>
+<span class="normal">353</span>
+<span class="normal">354</span>
+<span class="normal">355</span>
+<span class="normal">356</span>
+<span class="normal">357</span>
+<span class="normal">358</span>
+<span class="normal">359</span>
+<span class="normal">360</span>
+<span class="normal">361</span>
+<span class="normal">362</span>
+<span class="normal">363</span>
+<span class="normal">364</span>
+<span class="normal">365</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span>
+<span class="normal">423</span>
+<span class="normal">424</span>
+<span class="normal">425</span>
+<span class="normal">426</span>
+<span class="normal">427</span>
+<span class="normal">428</span>
+<span class="normal">429</span>
+<span class="normal">430</span>
+<span class="normal">431</span>
+<span class="normal">432</span>
+<span class="normal">433</span>
+<span class="normal">434</span>
+<span class="normal">435</span>
+<span class="normal">436</span>
+<span class="normal">437</span>
+<span class="normal">438</span>
+<span class="normal">439</span>
+<span class="normal">440</span>
+<span class="normal">441</span>
+<span class="normal">442</span>
+<span class="normal">443</span>
+<span class="normal">444</span>
+<span class="normal">445</span>
+<span class="normal">446</span>
+<span class="normal">447</span>
+<span class="normal">448</span>
+<span class="normal">449</span>
+<span class="normal">450</span>
+<span class="normal">451</span>
+<span class="normal">452</span>
+<span class="normal">453</span>
+<span class="normal">454</span>
+<span class="normal">455</span>
+<span class="normal">456</span>
+<span class="normal">457</span>
+<span class="normal">458</span>
+<span class="normal">459</span>
+<span class="normal">460</span>
+<span class="normal">461</span>
+<span class="normal">462</span>
+<span class="normal">463</span>
+<span class="normal">464</span>
+<span class="normal">465</span>
+<span class="normal">466</span>
+<span class="normal">467</span>
+<span class="normal">468</span>
+<span class="normal">469</span>
+<span class="normal">470</span>
+<span class="normal">471</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">render_sidebar_and_css</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Render global sidebar and inject product-grade CSS.&quot;&quot;&quot;</span>
+    <span class="n">st</span><span class="o">.</span><span class="n">markdown</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        &lt;style&gt;</span>
+<span class="s2">        [data-testid=&#39;stSidebarNav&#39;] </span><span class="se">{{</span><span class="s2"> display: none; </span><span class="se">}}</span>
+<span class="s2">        div[data-testid=&quot;stSidebarContent&quot;] </span><span class="se">{{</span><span class="s2"> padding-top: 1.5rem; </span><span class="se">}}</span>
+
+<span class="s2">        .block-container </span><span class="se">{{</span>
+<span class="s2">            padding-top: 2.35rem !important;</span>
+<span class="s2">            padding-bottom: 4rem !important;</span>
+<span class="s2">            max-width: 1420px;</span>
+<span class="s2">        </span><span class="se">}}</span>
+
+<span class="s2">        h1, h2, h3 </span><span class="se">{{</span>
+<span class="s2">            font-weight: 800 !important;</span>
+<span class="s2">            color: </span><span class="si">{</span><span class="n">NAVY</span><span class="si">}</span><span class="s2">;</span>
+<span class="s2">            letter-spacing: -0.025em;</span>
+<span class="s2">        </span><span class="se">}}</span>
+
+<span class="s2">        p, label, span, div </span><span class="se">{{</span>
+<span class="s2">            font-family: inherit;</span>
+<span class="s2">        </span><span class="se">}}</span>
+
+<span class="s2">        [data-testid=&quot;stPageLink-NavLink&quot;] </span><span class="se">{{</span>
+<span class="s2">            background-color: #ffffff;</span>
+<span class="s2">            border-radius: 10px;</span>
+<span class="s2">            padding: 10px 14px;</span>
+<span class="s2">            margin: 0 5px;</span>
+<span class="s2">            text-align: center;</span>
+<span class="s2">            text-decoration: none;</span>
+<span class="s2">            color: #475569;</span>
+<span class="s2">            font-weight: 650;</span>
+<span class="s2">            display: flex;</span>
+<span class="s2">            justify-content: center;</span>
+<span class="s2">            align-items: center;</span>
+<span class="s2">            transition: all 0.18s ease-in-out;</span>
+<span class="s2">            border: 1px solid #e2e8f0;</span>
+<span class="s2">            box-shadow: 0 1px 2px rgba(15,23,42,0.05);</span>
+<span class="s2">            min-height: 42px;</span>
+<span class="s2">        </span><span class="se">}}</span>
+<span class="s2">        [data-testid=&quot;stPageLink-NavLink&quot;]:hover </span><span class="se">{{</span>
+<span class="s2">            color: </span><span class="si">{</span><span class="n">NAVY</span><span class="si">}</span><span class="s2">;</span>
+<span class="s2">            background-color: #f8fafc;</span>
+<span class="s2">            border-color: #cbd5e1;</span>
+<span class="s2">            transform: translateY(-1px);</span>
+<span class="s2">        </span><span class="se">}}</span>
+<span class="s2">        [data-testid=&quot;stPageLink-NavLink&quot;][data-active=&quot;true&quot;],</span>
+<span class="s2">        [data-testid=&quot;stPageLink-NavLink&quot;]:active </span><span class="se">{{</span>
+<span class="s2">            background-color: #ffffff;</span>
+<span class="s2">            color: </span><span class="si">{</span><span class="n">TEAL</span><span class="si">}</span><span class="s2">;</span>
+<span class="s2">            border-color: </span><span class="si">{</span><span class="n">TEAL</span><span class="si">}</span><span class="s2">;</span>
+<span class="s2">            box-shadow: 0 2px 6px rgba(15, 118, 110, 0.16);</span>
+<span class="s2">        </span><span class="se">}}</span>
+
+<span class="s2">        [data-testid=&quot;stButton&quot;] button[kind=&quot;primary&quot;],</span>
+<span class="s2">        [data-testid=&quot;stFormSubmitButton&quot;] button[kind=&quot;primary&quot;] </span><span class="se">{{</span>
+<span class="s2">            background: </span><span class="si">{</span><span class="n">TEAL</span><span class="si">}</span><span class="s2"> !important;</span>
+<span class="s2">            border: 1px solid </span><span class="si">{</span><span class="n">TEAL</span><span class="si">}</span><span class="s2"> !important;</span>
+<span class="s2">            color: white !important;</span>
+<span class="s2">            font-weight: 700 !important;</span>
+<span class="s2">            border-radius: 10px !important;</span>
+<span class="s2">        </span><span class="se">}}</span>
+<span class="s2">        [data-testid=&quot;stButton&quot;] button[kind=&quot;primary&quot;]:hover,</span>
+<span class="s2">        [data-testid=&quot;stFormSubmitButton&quot;] button[kind=&quot;primary&quot;]:hover </span><span class="se">{{</span>
+<span class="s2">            background: #0b5f59 !important;</span>
+<span class="s2">            border-color: #0b5f59 !important;</span>
+<span class="s2">        </span><span class="se">}}</span>
+
+<span class="s2">        [data-testid=&quot;stDataFrame&quot;] </span><span class="se">{{</span>
+<span class="s2">            border: 1px solid rgba(15, 23, 42, 0.10);</span>
+<span class="s2">            border-radius: 10px;</span>
+<span class="s2">            overflow: hidden;</span>
+<span class="s2">            box-shadow: 0 4px 8px rgba(15,23,42,0.025);</span>
+<span class="s2">        </span><span class="se">}}</span>
+
+<span class="s2">        [data-testid=&quot;stMetric&quot;] </span><span class="se">{{</span>
+<span class="s2">            background-color: #ffffff;</span>
+<span class="s2">            border: 1px solid rgba(15, 23, 42, 0.08);</span>
+<span class="s2">            box-shadow: 0 5px 14px rgba(15, 23, 42, 0.035);</span>
+<span class="s2">            border-radius: 14px;</span>
+<span class="s2">            padding: 1rem 1.25rem;</span>
+<span class="s2">            transition: all 0.18s ease-in-out;</span>
+<span class="s2">        </span><span class="se">}}</span>
+<span class="s2">        [data-testid=&quot;stMetric&quot;]:hover </span><span class="se">{{</span>
+<span class="s2">            transform: translateY(-1px);</span>
+<span class="s2">            box-shadow: 0 10px 18px rgba(15, 118, 110, 0.08);</span>
+<span class="s2">            border-color: rgba(15, 118, 110, 0.22);</span>
+<span class="s2">        </span><span class="se">}}</span>
+<span class="s2">        [data-testid=&quot;stMetricValue&quot;] </span><span class="se">{{</span>
+<span class="s2">            font-weight: 800 !important;</span>
+<span class="s2">            color: </span><span class="si">{</span><span class="n">TEAL</span><span class="si">}</span><span class="s2"> !important;</span>
+<span class="s2">        </span><span class="se">}}</span>
+<span class="s2">        [data-testid=&quot;stMetricLabel&quot;] </span><span class="se">{{</span>
+<span class="s2">            font-weight: 650 !important;</span>
+<span class="s2">            color: </span><span class="si">{</span><span class="n">MUTED</span><span class="si">}</span><span class="s2"> !important;</span>
+<span class="s2">            font-size: 0.82rem !important;</span>
+<span class="s2">            text-transform: uppercase;</span>
+<span class="s2">            letter-spacing: 0.055em;</span>
+<span class="s2">        </span><span class="se">}}</span>
+<span class="s2">        &lt;/style&gt;</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="n">unsafe_allow_html</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">st</span><span class="o">.</span><span class="n">sidebar</span><span class="p">:</span>
+        <span class="n">st</span><span class="o">.</span><span class="n">markdown</span><span class="p">(</span><span class="s2">&quot;### CampX&quot;</span><span class="p">)</span>
+        <span class="n">st</span><span class="o">.</span><span class="n">caption</span><span class="p">(</span><span class="s2">&quot;Promotion decision support&quot;</span><span class="p">)</span>
+        <span class="n">st</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">st</span><span class="o">.</span><span class="n">markdown</span><span class="p">(</span><span class="s2">&quot;**Overview**&quot;</span><span class="p">)</span>
+        <span class="n">st</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+            <span class="s2">&quot;CampX helps marketing teams compare promotional actions, monitor campaign value, &quot;</span>
+            <span class="s2">&quot;and allocate incentives based on customer behavior.&quot;</span>
+        <span class="p">)</span>
+        <span class="n">st</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">st</span><span class="o">.</span><span class="n">markdown</span><span class="p">(</span><span class="s2">&quot;**MVP scope**&quot;</span><span class="p">)</span>
+        <span class="n">st</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+            <span class="s2">&quot;This course MVP uses synthetic retail-style customer data to demonstrate an end-to-end &quot;</span>
+            <span class="s2">&quot;campaign optimization workflow.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">with</span> <span class="n">st</span><span class="o">.</span><span class="n">expander</span><span class="p">(</span><span class="s2">&quot;Technical note&quot;</span><span class="p">):</span>
+            <span class="n">st</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+                <span class="s2">&quot;The decision policy uses a LinUCB contextual bandit. It balances exploration &quot;</span>
+                <span class="s2">&quot;(collecting feedback for uncertain actions) and exploitation (using actions with stronger learned value).&quot;</span>
+            <span class="p">)</span>
+            <span class="n">st</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Reward is modeled as realized revenue minus action cost.&quot;</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "toc.integrate", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
