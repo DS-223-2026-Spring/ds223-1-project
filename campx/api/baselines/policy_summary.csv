@@ -1,0 +1,6 @@
+policy_name,total_reward,mean_reward,conversion_rate,mean_revenue,mean_cost,mean_p_convert,final_cumulative_reward
+linear_reward_model,142311.06,28.46,0.309,30.54,2.07,0.3104,142312.36
+best_historical_action,142031.8,28.41,0.2834,31.1,2.69,0.2743,142033.2
+segment_reward_lookup,139818.48,27.96,0.2728,30.56,2.6,0.2743,139818.88
+segment_heuristic,102206.62,20.44,0.287,21.08,0.64,0.294,102207.32
+random_uniform,93354.34,18.67,0.2466,19.69,1.02,0.254,93354.34

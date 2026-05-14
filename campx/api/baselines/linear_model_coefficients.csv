@@ -1,0 +1,6 @@
+policy_name,action_id,intercept,recency,frequency,monetary,basket_diversity,avg_order_size,purchase_regularity,action_name
+linear_reward_model,0,19.769815,0.229459,-2.580317,4.572281,-0.376444,2.596718,7.459769,no_action
+linear_reward_model,1,12.189237,1.819534,1.184613,-2.192903,0.864727,0.32838,-0.701714,discount_10
+linear_reward_model,2,14.243615,-0.5431,0.373248,-2.04194,0.617262,0.87492,0.93294,free_shipping
+linear_reward_model,3,23.212096,-0.960245,-3.403222,4.477019,2.988189,4.290376,1.509914,product_recommendation
+linear_reward_model,4,27.992271,-0.264829,-3.463721,4.293043,6.487667,5.302714,0.927964,bundle_offer

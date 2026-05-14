@@ -1,0 +1,10 @@
+policy_name,rule_key,action_id,action_name
+best_historical_action,all_customers,4,bundle_offer
+segment_heuristic,At-Risk,2,free_shipping
+segment_heuristic,Champion,0,no_action
+segment_heuristic,Lost,1,discount_10
+segment_heuristic,Loyal,3,product_recommendation
+segment_reward_lookup,At-Risk,4,bundle_offer
+segment_reward_lookup,Champion,4,bundle_offer
+segment_reward_lookup,Lost,4,bundle_offer
+segment_reward_lookup,Loyal,4,bundle_offer

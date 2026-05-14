@@ -54,6 +54,8 @@ Docker Compose runs the services locally and connects the frontend, backend, dat
 
 ## Repository Structure
 
+## Repository Structure
+
 ```text
 ds223-1-project/
 ├── .github/                  # GitHub workflow and PR template
@@ -65,8 +67,7 @@ ds223-1-project/
 │   ├── api/                  # FastAPI backend, schemas, routes, DB helpers
 │   ├── app/                  # Streamlit frontend, assets, pages, API client helpers
 │   ├── db/                   # PostgreSQL schema, indexes, seed data, views, procedures
-│   ├── ds/                   # Synthetic data, LinUCB workflow, baselines, final outputs
-│   └── etl/                  # ETL-related project folder
+│   └── ds/                   # Synthetic data, LinUCB workflow, baselines, final outputs
 ├── docs/                     # Source documentation for MkDocs
 ├── outputs/final_outputs/    # Generated DS outputs used for reproducibility/reference
 ├── docker-compose.yml        # Local multi-service runtime
@@ -111,6 +112,7 @@ Do not commit real production credentials or private secrets.
 ### 3. Build and start the stack
 
 ```bash
+docker compose down -v
 docker compose up --build
 ```
 
@@ -124,19 +126,6 @@ This starts:
 | MkDocs documentation | <https://ds-223-2026-spring.github.io/ds223-1-project/> |
 
 The DS container runs as a batch job. It generates and persists synthetic customers, LinUCB campaign interactions, model state, baselines, and artifacts, then exits with code `0`. This is expected.
-
----
-
-## Clean Database Reset
-
-If the machine has a stale PostgreSQL volume from an earlier run, reset the local database before starting:
-
-```bash
-docker compose down -v
-docker compose up --build
-```
-
-Use this only when you intentionally want a clean database. It deletes the local PostgreSQL Docker volume.
 
 ---
 

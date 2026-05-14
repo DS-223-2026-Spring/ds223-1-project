@@ -1,0 +1,17 @@
+policy_name,action_id,count,share,action_name
+best_historical_action,4,5000,1.0,bundle_offer
+linear_reward_model,0,1143,0.2286,no_action
+linear_reward_model,1,243,0.0486,discount_10
+linear_reward_model,2,178,0.0356,free_shipping
+linear_reward_model,3,53,0.0106,product_recommendation
+linear_reward_model,4,3383,0.6766,bundle_offer
+random_uniform,0,1018,0.2036,no_action
+random_uniform,1,983,0.1966,discount_10
+random_uniform,2,997,0.1994,free_shipping
+random_uniform,3,1050,0.21,product_recommendation
+random_uniform,4,952,0.1904,bundle_offer
+segment_heuristic,0,1083,0.2166,no_action
+segment_heuristic,1,1006,0.2012,discount_10
+segment_heuristic,2,719,0.1438,free_shipping
+segment_heuristic,3,2192,0.4384,product_recommendation
+segment_reward_lookup,4,5000,1.0,bundle_offer
