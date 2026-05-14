@@ -113,7 +113,6 @@ This starts:
 |---|---|
 | Streamlit frontend | <http://localhost:8501> |
 | FastAPI Swagger docs | <http://localhost:8000/docs> |
-| API health check | <http://localhost:8000/health> |
 | pgAdmin | <http://localhost:5050> |
 | MkDocs documentation | <https://ds-223-2026-spring.github.io/ds223-1-project/> |
 
