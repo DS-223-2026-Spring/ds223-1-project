@@ -6,11 +6,11 @@
 **Course:** DS223 Marketing Analytics — Group Project  
 **Project Type:** Marketing Analytics MVP
 
-CampX is a campaign decision-support platform for promotional marketing. It demonstrates how a microservice architecture can connect a database, backend API, frontend dashboard, and data science pipeline into a working MVP.
+CampX is a promotional campaign decision-support MVP. It helps illustrate how a marketing team could use customer behavior data to choose among different promotional action types and track the resulting campaign value.
 
-The product demonstrates how marketing teams could choose among promotional action types for synthetic retail customers. Given RFM-style customer features, the system evaluates actions such as no action, discount, free shipping, product recommendation, and bundle offer. Campaign outcomes are stored and visualized as simulated net campaign value.
+In this project, each synthetic retail customer has RFM-style features such as recency, frequency, monetary value, basket diversity, average order size, and purchase regularity. Based on those features, CampX evaluates five possible promotional actions: no action, 10% discount, free shipping, product recommendation, and bundle offer.
 
-CampX uses synthetic retail-style data. The goal is to demonstrate architecture, integration, and decision-support logic, not production deployment or validated business lift on real customers.
+The system is built as an end-to-end microservice application: a Python data science workflow generates synthetic campaign data and LinUCB model outputs, PostgreSQL stores the results, FastAPI exposes the backend contract, and Streamlit presents the dashboard. The project uses synthetic data, so the goal is to demonstrate architecture, integration, and decision-support logic rather than claim validated business lift on real customers.
 
 ---
 
