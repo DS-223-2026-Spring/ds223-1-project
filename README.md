@@ -56,17 +56,24 @@ Docker Compose runs the services locally and connects the frontend, backend, dat
 
 ```text
 ds223-1-project/
-├── docker-compose.yml        # Local multi-service runtime
-├── README.md                 # Repository entry point
-├── mkdocs.yaml               # MkDocs configuration
-├── LICENSE
+├── .github/                  # GitHub workflow and PR template
+│   └── workflows/
+│       └── ci.yaml           # CI workflow for project checks / docs build
+├── campx/                    # Product source code
+│   ├── .env                  # Local development environment defaults
+│   ├── __init__.py
+│   ├── api/                  # FastAPI backend, schemas, routes, DB helpers
+│   ├── app/                  # Streamlit frontend, assets, pages, API client helpers
+│   ├── db/                   # PostgreSQL schema, indexes, seed data, views, procedures
+│   ├── ds/                   # Synthetic data, LinUCB workflow, baselines, final outputs
+│   └── etl/                  # ETL-related project folder
 ├── docs/                     # Source documentation for MkDocs
-└── campx/                    # Product source code
-    ├── api/                  # FastAPI backend
-    ├── app/                  # Streamlit frontend
-    ├── db/                   # PostgreSQL schema, views, procedures, seed data
-    ├── ds/                   # Synthetic data, LinUCB, baselines, final outputs
-    └── etl/                  # ETL-related project folder
+├── outputs/final_outputs/    # Generated DS outputs used for reproducibility/reference
+├── docker-compose.yml        # Local multi-service runtime
+├── mkdocs.yaml               # MkDocs configuration
+├── README.md                 # Repository entry point
+├── LICENSE
+└── .gitignore
 ```
 
 ---
